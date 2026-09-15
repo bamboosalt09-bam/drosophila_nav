@@ -8,7 +8,7 @@
 assumptions:
 
   A1_goal_input_form:
-    status: open
+    status: CLOSED -- confirmed correct against the official code
     doc_text: "I_goal = A cos(theta_g - theta0 - h)"
     problem: >
       As written the goal input contains no neural phase theta, so it is a
@@ -24,7 +24,7 @@ assumptions:
     action_required: "verify against the official Westeinde notebook"
 
   A2_activation_and_normalisation:
-    status: open
+    status: CLOSED -- replaced by the source's rescale+ELU1 (see source_code_findings)
     implemented: "activity = ELU(gain_S * drive), alpha = 1, normalize = none"
     alternatives_available: [global_peak, global_rms]
     note: >
@@ -35,7 +35,7 @@ assumptions:
     action_required: "confirm the source normalisation and the placement of gain S"
 
   A3_population_readout:
-    status: closed
+    status: WITHDRAWN -- source sums over cells; this assumption no longer applies
     implemented: "population output = MEAN over the phase grid (not SUM)"
     justification: >
       Makes results independent of n_units, which is a discretisation knob of
@@ -44,7 +44,7 @@ assumptions:
       (n_units 200..2000 agree to 2e-3 relative).
 
   A4_dn_stage_nonlinearity:
-    status: open
+    status: CLOSED -- source applies ELU1 at every stage; that is what makes PFL2 matter
     implemented: "ELU applied again at DNa03 and DNa02 (dn_activation = True)"
     see_also: O1
 
@@ -59,7 +59,7 @@ assumptions:
 open_issues:
 
   O1_pfl2_has_no_effect_on_steering:
-    status: open
+    status: CLOSED -- cause found and fixed (missing rescale); PFL2 now dominates
     found: "Stage 0 part 1, open-loop characterisation"
     observation: >
       PFL2 has the expected anti-goal tuning (minimum at the goal, maximum at
@@ -210,3 +210,41 @@ open_problems_created_by_the_source_implementation:
       false = inhibitory, but the code negates PFL3 when the flag is TRUE.
       Default False therefore means EXCITATORY, which is what the handoff
       document assumed (S4).  No change needed, but do not trust the docstring.
+
+# =========================================================================
+# STATUS after the source-code comparison (2026-09-15)
+# =========================================================================
+stage0_reproduction:
+  verdict: PASSED
+  evidence:
+    - tests/test_source_agreement.py (43 tests green)
+    - results/stage0/default/fig6_source_overlay.png
+  agreement:
+    pfl_population_activity: "bit-identical (max abs diff 0.0)"
+    pfl3_RL_difference: "bit-identical"
+    pfl2_sum_and_bump_amplitude: "bit-identical"
+    dna03_and_dna02: "max abs diff ~7e-15 (float accumulation order)"
+    steering: "max abs diff 3.4e-14"
+  grid_used: "coarse (goal step 30 deg, HD step 4 deg, 6 scalars, 1000 cells)"
+  why_coarse: >
+    The full official grid needs several GB; this machine has ~3 GB free.
+    Our core is calibrated on the SAME coarse grid for the comparison, so the
+    equality being tested is exact rather than approximate.
+  what_this_licenses: >
+    Calling src/core/westeinde2024.py a reproduction of the Westeinde et al.
+    2024 reduced steering model (abstract connectivity, ELU1).  It does NOT
+    license any claim about the connectome-scale 'data' variant, which is not
+    implemented, nor about whole-brain simulation.
+
+still_open:
+  data_connectivity_variant:
+    status: not implemented
+    note: >
+      The source's connectivity_option = 'data' (12 cells per type, per-cell
+      hemibrain synapse counts, DNa03->DNa02 = 271) is a real-connectome
+      version of the same circuit.  Deferred; relevant to the later
+      whole-brain FlyWire direction.
+  decoder_gain_kappa:
+    status: source value known, not yet wired into our decoder
+    value: "k = 200, applied to the grid-normalised steering, at fs = 10 Hz"
+    units: "degrees per 0.1 s timestep"

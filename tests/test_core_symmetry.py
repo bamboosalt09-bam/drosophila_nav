@@ -1,22 +1,38 @@
-"""Stage 0 gate tests for the reduced steering core.
+"""Stage 0 structural tests for the reduced steering core.
 
-Covers handoff document section 44, items 1-6 and 11 (the items that concern
-the core alone; body / plugin / feedback tests come in later stages).
+Covers handoff document section 44, items 1-6 and 11 (the items about the core
+alone).  Numerical agreement with the official notebook lives in
+test_source_agreement.py.
 
 Run:  python -m pytest -q
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
-from core.westeinde2024 import CoreParams, WesteindeSteeringCore, elu
+from core.calibration import calibrate, load
+from core.westeinde2024 import (CoreParams, NormConstants, WesteindeSteeringCore,
+                                elu1, linear_rescale)
 from utils.angles import deg2rad, wrap, wrap_deg
+
+REPO = Path(__file__).resolve().parents[1]
+NORM_JSON = REPO / "configs" / "norm_constants.json"
 
 
 @pytest.fixture(scope="module")
-def core():
-    return WesteindeSteeringCore(CoreParams())
+def norm() -> NormConstants:
+    """Frozen constants: the committed file if present, else recompute."""
+    if NORM_JSON.exists():
+        return load(NORM_JSON)
+    return calibrate(CoreParams(), verbose=False)
+
+
+@pytest.fixture(scope="module")
+def core(norm):
+    return WesteindeSteeringCore(CoreParams(), norm)
 
 
 # -- 1 & 2: angle wrap and degree/radian consistency -----------------------
@@ -32,169 +48,182 @@ def test_wrap_deg_matches_wrap_rad():
     assert np.allclose(wrap_deg(degs), np.rad2deg(wrap(np.deg2rad(degs))), atol=1e-9)
 
 
+def test_radian_api_matches_degree_api(core):
+    for hd in (-150.0, -33.0, 0.0, 47.5, 120.0):
+        a = core.evaluate_deg(hd, 0.0).steering
+        b = core.steering(deg2rad(hd), 0.0)
+        assert a == pytest.approx(b, abs=1e-12)
+
+
 def test_core_takes_radians_not_degrees(core):
-    """A degree value fed as radians must NOT give the same answer."""
-    s_rad = core.steering(deg2rad(60.0), 0.0)
-    s_deg = core.steering(60.0, 0.0)  # 60 radians -> wrapped to something else
-    assert not np.isclose(s_rad, s_deg, atol=1e-6)
+    """A degree value fed to the radian API must NOT give the same answer."""
+    assert not np.isclose(core.steering(deg2rad(60.0), 0.0),
+                          core.steering(60.0, 0.0), atol=1e-6)
 
 
-# -- 3: left/right symmetry ------------------------------------------------
+# -- 3 & 5: left/right symmetry and opposite signs -------------------------
 @pytest.mark.parametrize("err_deg", [10.0, 30.0, 45.0, 60.0, 90.0, 120.0, 135.0, 170.0])
 def test_left_right_symmetry(core, err_deg):
-    st_p = core.evaluate(deg2rad(err_deg), 0.0)
-    st_m = core.evaluate(deg2rad(-err_deg), 0.0)
-    # mirrored populations
-    assert st_p.pfl3r == pytest.approx(st_m.pfl3l, abs=1e-12)
-    assert st_p.pfl3l == pytest.approx(st_m.pfl3r, abs=1e-12)
-    assert st_p.pfl2 == pytest.approx(st_m.pfl2, abs=1e-12)
-    # 5: opposite errors produce opposite steering
-    assert st_p.steering == pytest.approx(-st_m.steering, abs=1e-12)
+    p = core.evaluate_deg(err_deg, 0.0)
+    m = core.evaluate_deg(-err_deg, 0.0)
+    assert p.sum_pfl3r == pytest.approx(m.sum_pfl3l, rel=1e-12)
+    assert p.sum_pfl3l == pytest.approx(m.sum_pfl3r, rel=1e-12)
+    assert p.sum_pfl2 == pytest.approx(m.sum_pfl2, rel=1e-12)
+    assert p.dna02r == pytest.approx(m.dna02l, rel=1e-12)
+    assert p.steering == pytest.approx(-m.steering, abs=1e-12)
 
 
 # -- 4: zero error -> zero steering ---------------------------------------
 def test_zero_error_gives_zero_steering(core):
-    assert core.steering(0.0, 0.0) == pytest.approx(0.0, abs=1e-12)
-    # At a goal that is not aligned with the phase grid the population mean
-    # keeps a tiny discretisation residual (order 1e-11 for n_units=1000,
-    # against steering magnitudes of order 1).  That is numerical, not a
-    # broken symmetry: test_discretisation_residual_is_negligible pins it.
-    assert core.steering(deg2rad(137.0), deg2rad(137.0)) == pytest.approx(0.0, abs=1e-8)
-
-
-def test_discretisation_residual_is_negligible(core):
-    """Zero-error steering stays ~1e-8 for arbitrary, grid-unaligned goals."""
-    goals = np.deg2rad([13.7, 77.3, 137.0, 201.4, -88.9])
-    residuals = [abs(core.steering(g, g)) for g in goals]
-    assert max(residuals) < 1e-8
-    # and it is small compared with a real steering signal
-    assert max(residuals) < 1e-6 * abs(core.steering(deg2rad(90.0), 0.0))
+    assert core.evaluate_deg(0.0, 0.0).steering == pytest.approx(0.0, abs=1e-12)
 
 
 def test_only_heading_error_matters(core):
     """Rotating heading and goal together must not change the output."""
-    base = core.steering(deg2rad(40.0), deg2rad(0.0))
+    base = core.evaluate_deg(40.0, 0.0).steering
     for shift in (30.0, 123.0, -250.0):
-        rotated = core.steering(deg2rad(40.0 + shift), deg2rad(shift))
+        rotated = core.evaluate_deg(40.0 + shift, shift).steering
         assert rotated == pytest.approx(base, abs=1e-9)
 
 
-# -- 5: correct sign of the steering drive --------------------------------
+# -- sign convention: the loop must be NEGATIVE feedback ------------------
 @pytest.mark.parametrize("err_deg", [5.0, 30.0, 90.0, 150.0, 179.0])
-def test_positive_error_gives_positive_drive(core, err_deg):
-    """e = wrap(heading - goal) > 0  ->  DNa02R > DNa02L.
+def test_positive_error_gives_negative_steering(core, err_deg):
+    """e = wrap(heading - goal) > 0 must command a turn back toward the goal.
 
-    This fixes the *raw* sign convention of the core.  Converting it to a
-    physical yaw rate (and thus its sign) is the decoder's job.
+    The source closed loop is hd[t] = hd[t-1] + k*steering with k > 0, so a
+    positive error has to produce a negative command.  This pins the R/L phase
+    convention: an earlier version of this core had it mirrored, which would
+    have made the loop diverge.
     """
-    st = core.evaluate(deg2rad(err_deg), 0.0)
-    assert st.dna02r > st.dna02l
-    assert st.steering > 0.0
+    st = core.evaluate_deg(err_deg, 0.0)
+    assert st.steering < 0.0
+    assert st.dna02r < st.dna02l
 
 
-# -- 6: output finite, and well behaved over the whole circle -------------
+def test_steering_is_restoring_over_the_whole_range(core):
+    hds = np.arange(1.0, 180.0, 1.0)
+    out = core.sweep_deg(hds, 0.0)
+    assert np.all(out["steering"] < 0.0)
+
+
+# -- 6: finite everywhere -------------------------------------------------
 def test_output_finite_everywhere(core):
-    errs = np.deg2rad(np.arange(-180.0, 180.0, 1.0))
-    out = core.sweep(errs)
+    out = core.sweep_deg(np.arange(-180.0, 180.0, 1.0), 0.0)
     for key, arr in out.items():
         assert np.all(np.isfinite(arr)), "non-finite values in " + key
 
 
-# -- structural checks of the reduced model -------------------------------
-def test_pfl3_tuning_peaks_near_plus_minus_67_5(core):
-    errs = np.deg2rad(np.arange(-180.0, 180.0, 0.5))
-    out = core.sweep(errs)
-    peak_r = np.rad2deg(errs[int(np.argmax(out["pfl3r"]))])
-    peak_l = np.rad2deg(errs[int(np.argmax(out["pfl3l"]))])
-    assert peak_r == pytest.approx(67.5, abs=2.0)
-    assert peak_l == pytest.approx(-67.5, abs=2.0)
-
-
+# -- structure of the reduced model ---------------------------------------
 def test_pfl2_is_anti_goal(core):
-    """PFL2 must be minimal at the goal and maximal 180 deg away."""
-    errs = np.deg2rad(np.arange(-180.0, 180.0, 0.5))
-    out = core.sweep(errs)
-    peak = np.rad2deg(errs[int(np.argmax(out["pfl2"]))])
-    trough = np.rad2deg(errs[int(np.argmin(out["pfl2"]))])
-    assert abs(abs(peak) - 180.0) < 2.0 or abs(peak) > 178.0
-    assert trough == pytest.approx(0.0, abs=2.0)
+    """PFL2 bump amplitude must grow with |heading error|, peaking anti-goal."""
+    hds = np.arange(-180.0, 180.5, 0.5)
+    out = core.sweep_deg(hds, 0.0)
+    amp = out["pfl2_bump_amp"]
+    assert amp[np.argmin(np.abs(hds))] == pytest.approx(0.0, abs=1e-9)
+    assert abs(abs(hds[int(np.argmax(amp))]) - 180.0) < 1.0
+    # monotone in |e| on the positive side
+    pos = hds >= 0
+    assert np.all(np.diff(amp[pos]) > -1e-12)
 
 
 def test_180_is_an_equilibrium_not_a_failure(core):
     """Exactly anti-goal cancels by symmetry (handoff doc section 48)."""
-    assert core.steering(deg2rad(180.0), 0.0) == pytest.approx(0.0, abs=1e-12)
-    # but it is an UNSTABLE equilibrium: a small perturbation drives away
-    assert core.steering(deg2rad(179.0), 0.0) > 0.0
-    assert core.steering(deg2rad(-179.0), 0.0) < 0.0
+    assert core.evaluate_deg(180.0, 0.0).steering == pytest.approx(0.0, abs=1e-12)
+    # unstable: a small perturbation drives away from it
+    assert core.evaluate_deg(179.0, 0.0).steering < 0.0
+    assert core.evaluate_deg(-179.0, 0.0).steering > 0.0
 
 
-def test_steering_is_restoring_over_the_whole_range(core):
-    """sign(steering) == sign(e) for every e in (0, 180) and (-180, 0)."""
-    errs = np.deg2rad(np.arange(1.0, 180.0, 1.0))
-    out = core.sweep(errs)
-    assert np.all(out["steering"] > 0.0)
+# -- PFL2 now has a functional role (was open issue O1) -------------------
+def test_pfl2_dominates_the_steering_magnitude(core, norm):
+    """Silencing PFL2 must collapse the steering command.
+
+    Before the source code was consulted this core applied a plain ELU with no
+    rescaling; every DN input stayed positive, the ELU never left its identity
+    regime, and the bilateral PFL2 drive cancelled EXACTLY in DNa02R - DNa02L.
+    The source's rescale-to-[-1,1] is what puts the DN stage on the nonlinear
+    branch.  This test would fail if that rescale were ever dropped.
+
+    The lesion reuses the SAME frozen constants: silencing a population is not
+    a reason to recalibrate the core.
+    """
+    lesioned = WesteindeSteeringCore(CoreParams(pfl2_silenced=True), norm)
+    for err_deg in (30.0, 60.0, 90.0, 120.0, 150.0):
+        intact = abs(core.evaluate_deg(err_deg, 0.0).steering)
+        without = abs(lesioned.evaluate_deg(err_deg, 0.0).steering)
+        assert intact > 10.0 * without, (
+            "PFL2 lesion barely changed steering at %.0f deg "
+            "(%.6f vs %.6f) -- the DN nonlinearity is not engaging"
+            % (err_deg, intact, without))
 
 
-# -- 11: the core is frozen and deterministic -----------------------------
+def test_dn_stage_is_not_a_constant_gain(core):
+    """The DN cascade must not collapse to steering = const * dPFL3."""
+    ratios = []
+    for err_deg in (30.0, 90.0, 150.0):
+        st = core.evaluate_deg(err_deg, 0.0)
+        ratios.append(st.steering / (st.sum_pfl3r - st.sum_pfl3l))
+    assert max(ratios) / min(ratios) > 1.5, (
+        "steering / dPFL3 is nearly constant (%r): the DN stage is linear"
+        % ratios)
+
+
+# -- frozen constants -----------------------------------------------------
+def test_core_refuses_to_run_without_frozen_constants():
+    bare = WesteindeSteeringCore(CoreParams())
+    with pytest.raises(RuntimeError, match="frozen normalisation"):
+        bare.evaluate_deg(45.0, 0.0)
+
+
+def test_committed_constants_match_a_fresh_calibration():
+    """configs/norm_constants.json must still describe the official grid."""
+    if not NORM_JSON.exists():
+        pytest.skip("configs/norm_constants.json not generated yet")
+        return
+    committed = load(NORM_JSON)
+    fresh = calibrate(CoreParams(), verbose=False)
+    assert committed.steering_max == pytest.approx(fresh.steering_max, rel=1e-12)
+    for stage in ("pfl2", "pfl3r", "pfl3l", "dna03r", "dna03l",
+                  "dna02r", "dna02l"):
+        a = getattr(committed, stage).as_tuple()
+        b = getattr(fresh, stage).as_tuple()
+        assert a == pytest.approx(b, rel=1e-12), stage
+
+
+def test_left_right_constants_are_symmetric(norm):
+    """Mirror-image stages must share limits, or symmetry breaks silently."""
+    assert norm.pfl3r.as_tuple() == pytest.approx(norm.pfl3l.as_tuple(), rel=1e-12)
+    assert norm.dna03r.as_tuple() == pytest.approx(norm.dna03l.as_tuple(), rel=1e-12)
+    assert norm.dna02r.as_tuple() == pytest.approx(norm.dna02l.as_tuple(), rel=1e-12)
+
+
+# -- 11: determinism ------------------------------------------------------
 def test_core_is_deterministic_and_stateless(core):
-    a = core.steering(deg2rad(73.0), 0.0)
+    a = core.evaluate_deg(73.0, 0.0).steering
     for _ in range(5):
-        core.steering(deg2rad(-120.0), 0.0)  # other calls must leave no trace
-    b = core.steering(deg2rad(73.0), 0.0)
-    assert a == b
+        core.evaluate_deg(-120.0, 0.0)
+    assert core.evaluate_deg(73.0, 0.0).steering == a
 
 
-def test_result_is_independent_of_discretisation():
-    """n_units is a discretisation knob (A3), not a model parameter."""
-    s = [WesteindeSteeringCore(CoreParams(n_units=n)).steering(deg2rad(75.0), 0.0)
-         for n in (200, 500, 1000, 2000)]
-    assert np.allclose(s, s[0], rtol=2e-3)
+# -- primitives -----------------------------------------------------------
+def test_linear_rescale_clamps_like_np_interp():
+    """Clamping outside the anchors is source behaviour and must be kept."""
+    assert linear_rescale(-5.0, -1.0, 1.0, 0.0, 1.0) == pytest.approx(0.0)
+    assert linear_rescale(5.0, -1.0, 1.0, 0.0, 1.0) == pytest.approx(1.0)
+    assert linear_rescale(0.0, -1.0, 1.0, 0.0, 1.0) == pytest.approx(0.5)
 
 
-def test_elu_shape():
-    assert elu(2.0) == pytest.approx(2.0)
-    assert float(elu(0.0)) == pytest.approx(0.0)
-    assert float(elu(-1.0)) == pytest.approx(np.expm1(-1.0))
-    assert float(elu(-50.0)) > -1.0000001  # bounded below by -alpha
+def test_linear_rescale_rejects_degenerate_range():
+    with pytest.raises(ValueError):
+        linear_rescale(0.0, 1.0, 1.0, 0.0, 1.0)
 
 
-# -- OPEN ISSUE O1: PFL2 currently does not influence steering ------------
-# These two tests PIN THE CURRENT BEHAVIOUR so that it cannot change silently.
-# They are not a claim that this matches the source paper.  See
-# provenance/reproduction_adjustments.yaml, issue O1.
-def test_dn_cascade_is_currently_a_constant_gain_of_13(core):
-    """With ELU and non-negative population activity the DN stage is linear.
-
-    Every DN input is positive, so the ELU never leaves its identity regime and
-        steering = (w_pfl3_dna02 + w_dna03_dna02 * w_pfl3_dna03) * dPFL3
-                 = (1 + 12 * 1) * dPFL3 = 13 * dPFL3
-    """
-    for err_deg in (30.0, 90.0, 150.0):
-        st = core.evaluate(deg2rad(err_deg), 0.0)
-        assert st.steering == pytest.approx(13.0 * (st.pfl3r - st.pfl3l), rel=1e-12)
-
-
-def test_pfl2_currently_cancels_in_the_steering_readout(core):
-    """PFL2 is bilateral, so common drive cancels in DNa02R - DNa02L.
-
-    Its tuning is correct (anti-goal, see test_pfl2_is_anti_goal) but it has no
-    effect on the steering command in this implementation.  OPEN ISSUE O1:
-    check against the official notebook whether the source model has a
-    saturating / supralinear DN stage that gives PFL2 a gain-modulating role.
-    """
-    lesioned = WesteindeSteeringCore(CoreParams(w_pfl2_dna03=0.0))
-    for err_deg in (30.0, 90.0, 150.0):
-        assert core.steering(deg2rad(err_deg), 0.0) == pytest.approx(
-            lesioned.steering(deg2rad(err_deg), 0.0), rel=1e-12)
-
-
-def test_per_population_normalisation_would_break_the_model():
-    """Documents WHY normalisation must be global (see core._normalise).
-
-    If each population were divided by its own peak, PFL3R and PFL3L would
-    become identical and the steering drive would vanish.  We assert the
-    global modes keep a non-zero drive.
-    """
-    for mode in ("none", "global_peak", "global_rms"):
-        c = WesteindeSteeringCore(CoreParams(normalize=mode))
-        assert abs(c.steering(deg2rad(90.0), 0.0)) > 1e-6, mode
+def test_elu1_matches_the_source_formula():
+    x = np.array([-2.0, -0.5, 0.0, 0.5, 2.0])
+    lo, hi = -2.0, 2.0
+    scaled = np.interp(x, (lo, hi), (-1.0, 1.0))
+    expected_raw = np.where(scaled >= 0, scaled, np.exp(scaled) - 1.0)
+    post_lo, post_hi = expected_raw.min(), expected_raw.max()
+    expected = np.interp(expected_raw, (post_lo, post_hi), (0.0, 1.0))
+    assert np.allclose(elu1(x, lo, hi, post_lo, post_hi), expected, atol=1e-15)

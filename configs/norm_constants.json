@@ -1,0 +1,62 @@
+{
+  "core_params": {
+    "n_units": 1000,
+    "phase_shift_pfl3_deg": 67.5,
+    "phase_shift_pfl2_deg": 180.0,
+    "offset_deg": 0.0,
+    "goal_amplitude": 1.0,
+    "pfl_scalar_S": 1.0,
+    "w_pfl3_dna03": 1.0,
+    "w_pfl2_dna03": 4.0,
+    "w_pfl3_dna02": 1.0,
+    "w_dna03_dna02": 12.0,
+    "dna02_tile_count": 1000,
+    "pfl3_inhibitory": false,
+    "pfl2_silenced": false,
+    "label": "westeinde2024_reduced_abstract_ELU1"
+  },
+  "pfl2": {
+    "pre_lo": -1.9999998781530333,
+    "pre_hi": 1.9999998781530333,
+    "post_lo": -0.6321205588285577,
+    "post_hi": 1.0
+  },
+  "pfl3r": {
+    "pre_lo": -1.999980930980017,
+    "pre_hi": 1.999980930980017,
+    "post_lo": -0.6321205588285577,
+    "post_hi": 1.0
+  },
+  "pfl3l": {
+    "pre_lo": -1.999980930980017,
+    "pre_hi": 1.999980930980017,
+    "post_lo": -0.6321205588285577,
+    "post_hi": 1.0
+  },
+  "dna03r": {
+    "pre_lo": 1936.50081609859,
+    "pre_hi": 2196.696365960678,
+    "post_lo": -0.6321205588285577,
+    "post_hi": 1.0
+  },
+  "dna03l": {
+    "pre_lo": 1936.50081609859,
+    "pre_hi": 2196.696365960678,
+    "post_lo": -0.6321205588285577,
+    "post_hi": 1.0
+  },
+  "dna02r": {
+    "pre_lo": 387.300163219718,
+    "pre_hi": 12415.775026953917,
+    "post_lo": -0.6321205588285577,
+    "post_hi": 1.0
+  },
+  "dna02l": {
+    "pre_lo": 387.300163219718,
+    "pre_hi": 12415.775026953892,
+    "post_lo": -0.6321205588285577,
+    "post_hi": 1.0
+  },
+  "steering_max": 0.31510289573735395,
+  "grid_description": "goal -180:10:180, S linspace(0,1,6), HD -180:1:180, n_units 1000"
+}

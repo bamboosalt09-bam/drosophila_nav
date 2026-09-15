@@ -28,3 +28,20 @@ not_yet_determined:
     (handoff document sections 6 and 46).  Calibration criterion not chosen yet.
   core_timestep_T_core_s: 0.1     # from the source 10 Hz update rate
   body_timestep_dt_body_s: 0.0025 # planned, abstract yaw plant
+
+# ---- updated 2026-09-15 after obtaining the official code ----------------
+reproduction:
+  status: Stage 0 reproduction PASSED (see reproduction_adjustments.yaml)
+  official_code: github.com/wilson-lab/WesteindeWilson_AnalysisCode
+  configuration_reproduced: "connectivity_option='abstract', nonlinearity_option='ELU1'"
+  frozen_normalisation: configs/norm_constants.json
+  calibration_grid: "goal -180:10:180, S linspace(0,1,6), HD -180:1:180, 1000 units"
+
+determined_from_source:
+  decoder_gain_kappa: 200        # applied to grid-normalised steering
+  core_update_rate_hz: 10
+  steering_units: "degrees per timestep (0.1 s)"
+  noise_recipe: "gaussian -> butterworth(order 5, 2 Hz, fs 10) -> zscore -> x10"
+  initial_hd_deg: 180
+  runs_per_condition: 50
+  timepoints: 1000

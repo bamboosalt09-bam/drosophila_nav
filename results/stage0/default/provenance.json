@@ -1,61 +1,105 @@
 {
-  "generated_utc": "2026-09-15T12:43:32+00:00",
+  "generated_utc": "2026-09-15T13:09:15+00:00",
   "script": "experiments/stage0_core_io.py",
-  "git_commit": "91d1c5f3a607524375e209a1b96c3f477d521c89",
-  "core_source_sha256_16": "cd5294e66ba96d42",
+  "git_commit": "d922506486e650b7078c990965a5ffd5e9817975",
+  "core_source_sha256_16": "5292559b0cfd91d9",
   "source_paper": {
     "citation": "Westeinde et al., Nature 2024, Transforming a head direction signal into a goal-oriented steering command",
     "doi": "10.1038/s41586-024-07039-2",
-    "doi_status": "TO BE VERIFIED against the publisher record"
+    "author_correction": "10.1038/s41586-024-08245-8 (genotypes only, model unaffected)",
+    "official_code": "github.com/wilson-lab/WesteindeWilson_AnalysisCode"
   },
-  "connectome_dataset": "hemibrain v1.2.1 (via published connectivity statistics, not re-derived here)",
+  "connectome_dataset": "hemibrain v1.2.1 (abstract weights 1:4:12; the source's per-cell 'data' variant is not used here)",
   "core_params": {
     "n_units": 1000,
     "phase_shift_pfl3_deg": 67.5,
     "phase_shift_pfl2_deg": 180.0,
+    "offset_deg": 0.0,
     "goal_amplitude": 1.0,
-    "theta0_deg": 0.0,
+    "pfl_scalar_S": 1.0,
     "w_pfl3_dna03": 1.0,
-    "w_pfl3_dna02": 1.0,
     "w_pfl2_dna03": 4.0,
+    "w_pfl3_dna02": 1.0,
     "w_dna03_dna02": 12.0,
-    "gain_S": 1.0,
-    "elu_alpha": 1.0,
-    "normalize": "none",
-    "dn_activation": true,
-    "label": "westeinde2024_reduced"
+    "dna02_tile_count": 1000,
+    "pfl3_inhibitory": false,
+    "pfl2_silenced": false,
+    "label": "westeinde2024_reduced_abstract_ELU1"
   },
-  "explicit_assumptions": [
-    "A1 goal-bump form",
-    "A2 activation/normalisation",
-    "A3 mean readout",
-    "A4 DN-stage nonlinearity",
-    "A5 sign handled by decoder"
-  ],
+  "norm_constants_source": "configs\\norm_constants.json",
+  "norm_constants": {
+    "pfl2": {
+      "pre_lo": -1.9999998781530333,
+      "pre_hi": 1.9999998781530333,
+      "post_lo": -0.6321205588285577,
+      "post_hi": 1.0
+    },
+    "pfl3r": {
+      "pre_lo": -1.999980930980017,
+      "pre_hi": 1.999980930980017,
+      "post_lo": -0.6321205588285577,
+      "post_hi": 1.0
+    },
+    "pfl3l": {
+      "pre_lo": -1.999980930980017,
+      "pre_hi": 1.999980930980017,
+      "post_lo": -0.6321205588285577,
+      "post_hi": 1.0
+    },
+    "dna03r": {
+      "pre_lo": 1936.50081609859,
+      "pre_hi": 2196.696365960678,
+      "post_lo": -0.6321205588285577,
+      "post_hi": 1.0
+    },
+    "dna03l": {
+      "pre_lo": 1936.50081609859,
+      "pre_hi": 2196.696365960678,
+      "post_lo": -0.6321205588285577,
+      "post_hi": 1.0
+    },
+    "dna02r": {
+      "pre_lo": 387.300163219718,
+      "pre_hi": 12415.775026953917,
+      "post_lo": -0.6321205588285577,
+      "post_hi": 1.0
+    },
+    "dna02l": {
+      "pre_lo": 387.300163219718,
+      "pre_hi": 12415.775026953892,
+      "post_lo": -0.6321205588285577,
+      "post_hi": 1.0
+    },
+    "steering_max": 0.31510289573735395,
+    "grid_description": "goal -180:10:180, S linspace(0,1,6), HD -180:1:180, n_units 1000"
+  },
   "python": "3.13.5",
   "numpy": "2.5.3",
   "diagnostics": {
-    "steering_at_0deg": -4.440892098500626e-16,
-    "steering_slope_at_0_per_deg": 0.05672767845501969,
-    "steering_slope_at_0_per_rad": 3.250256557047839,
-    "peak_steering": 3.6827741831148906,
-    "peak_steering_at_deg": 96.5,
-    "steering_at_180deg": 0.0,
-    "odd_symmetry_max_residual": 7.993605777301127e-15,
-    "pfl3r_peak_at_deg": 67.5,
-    "pfl3l_peak_at_deg": -67.5,
-    "pfl2_peak_at_deg": -180.0,
-    "pfl2_trough_at_deg": 0.0
+    "steering_at_0deg": -2.202104137338988e-16,
+    "steering_slope_at_0_per_deg": -0.0037753865233531463,
+    "peak_abs_steering": 0.9999999999985673,
+    "peak_abs_steering_at_deg": 100.0,
+    "steering_at_180deg": -7.751406563433237e-15,
+    "odd_symmetry_max_residual": 2.964295475749168e-14,
+    "pfl2_bump_amp_at_0": 4.440892098500626e-16,
+    "pfl2_bump_amp_at_180": 0.9999959152051093
+  },
+  "source_overlay": {
+    "available": true,
+    "max_abs_deviation": 3.4083846855992306e-14,
+    "goal_deg": 0.0,
+    "S": 1.0,
+    "grid": "coarse (goal step 30, HD step 4)"
   },
   "qualitative_checks": {
     "steering(0) == 0": true,
     "odd symmetry": true,
     "restoring sign for 0 < e < 180": true,
-    "PFL3R peak near +67.5": true,
-    "PFL3L peak near -67.5": true,
-    "PFL2 trough near 0 (anti-goal)": true,
-    "PFL2 peak near +-180": true,
-    "steering(180) == 0 (unstable eq.)": true
+    "steering(180) == 0 (unstable eq.)": true,
+    "PFL2 bump minimal at goal": true,
+    "PFL2 bump maximal anti-goal": true,
+    "matches official notebook (< 1e-12)": true
   },
   "all_checks_passed": true
 }
