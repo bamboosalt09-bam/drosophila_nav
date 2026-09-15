@@ -88,3 +88,125 @@ open_issues:
     action_required: >
       Read the official Westeinde et al. 2024 code/notebook before choosing.
       Do NOT invent a mechanism to make PFL2 matter.
+
+# =========================================================================
+# 2026-09-15: OFFICIAL SOURCE CODE OBTAINED
+# github.com/wilson-lab/WesteindeWilson_AnalysisCode
+#   Westeinde_et_al_model/Westeinde et al Model.ipynb
+#   "Coded by Lydia Hamburg, joint work between the Druckmann and Wilson labs"
+# Local copy: reference/westeinde_official/  (reference only, not our code)
+# Author Correction (Nature 2025, s41586-024-08245-8) corrects PFL2
+# split-GAL4 genotype strings only; the model is unaffected.
+# =========================================================================
+
+source_code_findings:
+
+  A1_goal_input_form:
+    resolution: CONFIRMED -- our correction was right
+    official: "goal_cells = A * cos(deg2rad(-hd_prefs + P - offset_deg))"
+    meaning: "A * cos(theta - theta_g), a goal bump at neural phase theta_g"
+    verdict: >
+      The handoff document's "I_goal = A cos(theta_g - theta0 - h)" was a
+      transcription error.  Our implemented form matches the source.
+
+  A2_normalisation:
+    resolution: OUR IMPLEMENTATION IS WRONG -- must be replaced
+    official_ELU1: |
+      scaled    = linear_rescale(activity, -1, 1)   # min-max over the array
+      nonlinear = scaled          if scaled >= 0
+                  exp(scaled) - 1 if scaled <  0
+      output    = linear_rescale(nonlinear, 0, 1)   # min-max again
+    applied_at: "EVERY stage -- PFL2/PFL3R/PFL3L, DNa03R/L, and DNa02R/L"
+    our_error: "plain ELU with no rescaling, at the PFL stage only in effect"
+    other_options_in_source: [ELU2, Sigmoid, ReLU, LeakyReLU, None]
+    source_default: ELU1
+
+  O1_pfl2_has_no_effect_on_steering:
+    resolution: SOLVED -- caused by the missing rescale
+    explanation: >
+      linear_rescale(-1, 1) re-centres the DN drive so that low-drive
+      conditions land on the NEGATIVE branch of the ELU.  The DN stage is then
+      genuinely nonlinear, and PFL2's bilateral common drive no longer cancels
+      in DNa02R - DNa02L.  Without the rescale every DN input stays positive,
+      the ELU is the identity, and PFL2 cancels exactly -- which is what we
+      observed.
+
+  population_readout:
+    resolution: OUR IMPLEMENTATION IS WRONG
+    official: "np.sum over cells (axis=3)"
+    ours: "mean over cells"
+    note: >
+      With the min-max rescale in place the sum does not blow up with
+      n_units, so assumption A3 is no longer needed and must be dropped.
+
+  left_right_phase_convention:
+    resolution: OURS IS MIRRORED
+    official: "pfl3r_HD_input = cos(HD - hd_prefs + 67.5)"
+    ours: "cos(theta - heading + 67.5)"
+    consequence: >
+      With theta playing the role of hd_prefs, the official PFL3R equals our
+      PFL3L.  Our steering therefore has the OPPOSITE sign to the source, and
+      the source's own closed loop (hd += k*steering) would diverge with our
+      sign.  Fix by mirroring the phase shifts, not by hiding the sign in kappa.
+
+  decoder_gain_kappa:
+    resolution: SOURCE VALUE FOUND
+    official: "k = 200  # factor relating PFL activity to steering"
+    applied_to: >
+      the steering signal AFTER it is divided by its maximum over the whole
+      (goal_phase x S x HD) sweep, so k multiplies a quantity whose peak is 1.
+    units: "degrees per timestep, with fs = 10 Hz, i.e. 0.1 s per step"
+    closed_loop: "hd[t] = wrap_to_180(hd[t-1] + k*steering_norm + noise[t])"
+    note: >
+      That closed loop adds the COMMAND directly to the heading -- it is an
+      ideal body with no dynamics.  It is exactly our condition A, and exactly
+      the structure our study replaces from condition B onward (doc 3.4).
+
+  noise_specification:
+    resolution: SOURCE VALUES FOUND
+    recipe: "gaussian -> butterworth low-pass (order 5, fpass 2 Hz, fs 10 Hz) -> zscore -> * noise_level"
+    noise_level: 10
+    num_runs: 50
+    num_timepoints: 1000     # 100 s at 10 Hz
+    initial_hd_deg: 180      # starts at the unstable equilibrium on purpose
+
+  hemibrain_data_variant:
+    resolution: NEW -- not mentioned in the handoff document
+    option: "connectivity_option = 'data'"
+    contents: >
+      12 cells per type with per-cell hemibrain synapse counts and per-cell
+      PB-glomerulus HD preferences, instead of the abstract 1:4:12 weights.
+      DNa03 -> DNa02 is 271 in the data variant.
+    relevance: >
+      Gives a real-connectome version of the SAME core, at 12 cells per type.
+      Relevant to the long-term Q2 (whole-brain FlyWire) direction.
+    caution: >
+      The notebook hardcodes np.tile(..., (1000,1,1,1)) in the DNa02 step,
+      which assumes num_cells = 1000.  Verify before trusting 'data' mode.
+
+open_problems_created_by_the_source_implementation:
+
+  batch_dependence_of_the_normalisation:
+    severity: high
+    problem: >
+      linear_rescale takes min/max over the ENTIRE array, which spans all goal
+      phases, all S values and all head directions.  The model output for one
+      (heading, goal) therefore depends on which other conditions were in the
+      sweep.  The source model is not a pure function of (heading, goal).
+    why_it_matters_here: >
+      Our core must be a frozen, pure function, or "the core is identical
+      across body conditions" becomes false.
+    planned_resolution: >
+      Compute the rescale constants ONCE from a reference sweep that matches
+      the official grid (goal_phase -180:10:180, S in linspace(0,1,6),
+      HD -180:1:180), freeze them as core parameters, and record them in
+      provenance.  Document as a deliberate deviation required for closed-loop
+      use.
+
+  docstring_contradicts_code:
+    severity: low
+    detail: >
+      The notebook docstring says pfl3_inhibitory_option true = excitatory,
+      false = inhibitory, but the code negates PFL3 when the flag is TRUE.
+      Default False therefore means EXCITATORY, which is what the handoff
+      document assumed (S4).  No change needed, but do not trust the docstring.
