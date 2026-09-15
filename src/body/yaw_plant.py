@@ -41,6 +41,9 @@ import numpy as np
 
 from utils.angles import wrap
 
+_PI = math.pi
+_TWO_PI = 2.0 * math.pi
+
 
 @dataclass
 class YawPlantParams:
@@ -118,26 +121,47 @@ class YawPlant:
         n_sub = max(1, int(round(float(duration) / p.dt_body)))
         dt = float(duration) / n_sub
 
+        # Scalar arithmetic on purpose: np.clip / wrap on a single float cost
+        # microseconds each, and the parameter sweep runs tens of millions of
+        # sub-steps.  The results are identical to the numpy versions.
+        tau = p.tau_r
+        a_max = p.alpha_max
+        r_lim = p.r_max
+        r = self._r
+        psi = self._psi
+        n_accel = n_rate = 0
+
         for _ in range(n_sub):
-            if p.tau_r > 0.0:
-                a_req = (r_cmd - self._r) / p.tau_r
+            a_req = (r_cmd - r) / tau if tau > 0.0 else (r_cmd - r) / dt
+
+            if a_req > a_max:
+                a = a_max
+                n_accel += 1
+            elif a_req < -a_max:
+                a = -a_max
+                n_accel += 1
             else:
-                # no lag: ask for whatever acceleration closes the gap in one
-                # sub-step, then let alpha_max decide what is actually possible
-                a_req = (r_cmd - self._r) / dt
+                a = a_req
 
-            a = float(np.clip(a_req, -p.alpha_max, p.alpha_max))
-            if a != a_req:
-                self._n_accel_sat += 1
+            r_new = r + a * dt
+            if r_new > r_lim:
+                r = r_lim
+                n_rate += 1
+            elif r_new < -r_lim:
+                r = -r_lim
+                n_rate += 1
+            else:
+                r = r_new
 
-            r_new = self._r + a * dt
-            r_clipped = float(np.clip(r_new, -p.r_max, p.r_max))
-            if r_clipped != r_new:
-                self._n_rate_sat += 1
+            psi += r * dt
+            if psi >= _PI or psi < -_PI:
+                psi = (psi + _PI) % _TWO_PI - _PI
 
-            self._r = r_clipped
-            self._psi = float(wrap(self._psi + self._r * dt))
-            self._n_substeps += 1
+        self._r = r
+        self._psi = psi
+        self._n_accel_sat += n_accel
+        self._n_rate_sat += n_rate
+        self._n_substeps += n_sub
 
     # -- diagnostics ------------------------------------------------------
     @property

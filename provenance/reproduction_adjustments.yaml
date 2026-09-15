@@ -379,3 +379,65 @@ stage1_components_added:
       Explicit Euler on the first-order lag is unstable unless
       dt_body << tau_r; the plant refuses to construct when
       tau_r < 2*dt_body rather than producing silent garbage.
+
+# =========================================================================
+# RETRACTION -- Stage 1 noise control (2026-09-15)
+# experiments/stage1_noise_control.py, results/stage1_noise_control/
+# =========================================================================
+retracted_findings:
+
+  rescued_by_body:
+    claimed: >
+      "Body limits rescue the core: 72.2% of the trials where the ideal body
+      failed were completed successfully by the constrained body."
+    status: RETRACTED -- artifact of the noise-free protocol
+    evidence: >
+      With the source's own command noise switched on, the ideal body succeeds
+      at 100% of initial headings including +-90 deg, over 8 seeds.  Stage 0
+      finding F1 (the period-2 limit cycle) exists only in the deterministic,
+      noise-free condition; noise perturbs the trajectory out of the cycle and
+      into the goal basin.  There is therefore nothing for the body to rescue,
+      and the RESCUED_BY_BODY class only ever fires under a protocol that
+      manufactures the failure it then rescues.
+    what_remains_true: >
+      F1 itself is real and still matters as a deterministic property of the
+      core+decoder at k = 200 -- but it must be reported as "noise-free only",
+      never as a failure mode of the circuit in general.
+    lesson: >
+      Section 24's "noise off, to isolate the body effect" is not free.  It
+      removes a term the source model relies on.  Any Stage 1 result that
+      depends on a baseline FAILURE has to be re-checked with noise on.
+
+  r_max_main_effect:
+    claimed: >
+      "A faster body is worse: success falls from 0.979 to 0.646 as
+      r_max goes from 0.01 to 1.0 R_max."
+    status: RETRACTED as a main effect -- it is an interaction
+    evidence: >
+      At tau_r = T the success rate is 1.00 at every r_max tested (spread
+      0.00).  The apparent main effect came from marginalising over tau_r,
+      which mixes in the high-lag cells where the two interact.
+    corrected_statement: >
+      Rate capability alone does not hurt.  A fast body is harmful only in
+      combination with response lag: at tau_r = 8T, success goes
+      1.00 / 1.00 / 0.92 / 0.49 for r_max = 0.01 / 0.05 / 0.25 / 1.0 R_max.
+      The boundary lives in the (r_max, tau_r) plane, not on either axis.
+    lesson: >
+      Same class of error as the selection effect caught in
+      stage1_sweep_analysis.py: a marginal average over a grid with a strong
+      interaction is not a main effect.
+
+surviving_findings:
+  tau_r_degradation:
+    status: HOLDS with noise on
+    statement: >
+      Response lag degrades heading recovery monotonically, and does so
+      without any feasibility limit being reached -- a genuine control
+      failure rather than a physical one.
+  three_axes_differ:
+    status: HOLDS
+    statement: >
+      The rate limit only ever causes failure by making the task physically
+      infeasible (success rate tracks feasibility exactly).  The acceleration
+      cap and the response lag cause failures while the task remains feasible.
+      That difference is the section 30 result.
