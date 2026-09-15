@@ -1,0 +1,90 @@
+# Every place where this implementation does something the handoff document
+# / source paper does not fully specify.  Nothing here may be silently
+# promoted to "exact reproduction of Westeinde et al. 2024".
+#
+# status: open   -> must be resolved against the official code/notebook
+#         closed -> resolved, with the resolution recorded
+
+assumptions:
+
+  A1_goal_input_form:
+    status: open
+    doc_text: "I_goal = A cos(theta_g - theta0 - h)"
+    problem: >
+      As written the goal input contains no neural phase theta, so it is a
+      constant across the whole population.  A constant cannot create any
+      left/right asymmetry, and the core would output exactly zero steering
+      at every heading error.
+    implemented_instead: "I_goal(theta) = A * cos(theta - theta0 - theta_g)"
+    justification: >
+      Standard goal-bump form: a goal representation sitting at neural phase
+      theta_g, summed with the phase-shifted heading input.  Reproduces the
+      expected qualitative behaviour (PFL3R/PFL3L tuned to +-67.5 deg,
+      PFL2 anti-goal, odd-symmetric restoring steering).
+    action_required: "verify against the official Westeinde notebook"
+
+  A2_activation_and_normalisation:
+    status: open
+    implemented: "activity = ELU(gain_S * drive), alpha = 1, normalize = none"
+    alternatives_available: [global_peak, global_rms]
+    note: >
+      Normalisation must be COMMON to all populations.  Per-population
+      normalisation would erase the R/L amplitude difference and force the
+      steering output to zero (pinned by
+      tests/test_core_symmetry.py::test_per_population_normalisation_would_break_the_model).
+    action_required: "confirm the source normalisation and the placement of gain S"
+
+  A3_population_readout:
+    status: closed
+    implemented: "population output = MEAN over the phase grid (not SUM)"
+    justification: >
+      Makes results independent of n_units, which is a discretisation knob of
+      the reduced model rather than a biological cell count.  Verified by
+      tests/test_core_symmetry.py::test_result_is_independent_of_discretisation
+      (n_units 200..2000 agree to 2e-3 relative).
+
+  A4_dn_stage_nonlinearity:
+    status: open
+    implemented: "ELU applied again at DNa03 and DNa02 (dn_activation = True)"
+    see_also: O1
+
+  A5_sign_convention:
+    status: closed
+    implemented: >
+      The core returns the RAW value DNa02R - DNa02L, positive for
+      e = wrap(heading - goal) > 0.  Converting it into a physical yaw rate,
+      including the sign needed for negative feedback under the project's
+      CCW-positive convention, is the decoder's job (kappa), not the core's.
+
+open_issues:
+
+  O1_pfl2_has_no_effect_on_steering:
+    status: open
+    found: "Stage 0 part 1, open-loop characterisation"
+    observation: >
+      PFL2 has the expected anti-goal tuning (minimum at the goal, maximum at
+      180 deg) but changes the steering command by exactly zero.  Lesioning it
+      (w_pfl2_dna03 = 0) leaves the output bit-identical.
+    mechanism: >
+      Population activities are non-negative, so every DNa03/DNa02 input is
+      positive and the ELU never leaves its identity regime.  The whole DN
+      cascade therefore collapses to a constant gain
+      (w_pfl3_dna02 + w_dna03_dna02 * w_pfl3_dna03) = 1 + 12 = 13, and PFL2,
+      being bilateral common drive, cancels exactly in DNa02R - DNa02L.
+    pinned_by:
+      - tests/test_core_symmetry.py::test_dn_cascade_is_currently_a_constant_gain_of_13
+      - tests/test_core_symmetry.py::test_pfl2_currently_cancels_in_the_steering_readout
+    consequences_if_left_unresolved: >
+      Stage 0 still validates the PFL3-driven steering pathway, but any claim
+      about PFL2 (e.g. that it modulates turn magnitude when facing away from
+      the goal) would be unsupported by this implementation.  The weights
+      PFL2 -> DNa03 = 4 and DNa03 -> DNa02 = 12 would carry no functional
+      content beyond an overall scale absorbed by the decoder gain kappa.
+    candidate_resolutions_NOT_yet_chosen:
+      - "source DN stage may be saturating / supralinear rather than ELU"
+      - "PFL2 may act on forward speed or on an overall gain term, not on the
+         left-right difference"
+      - "PFL2 -> DNa03 may be asymmetric or inhibitory in the source model"
+    action_required: >
+      Read the official Westeinde et al. 2024 code/notebook before choosing.
+      Do NOT invent a mechanism to make PFL2 matter.

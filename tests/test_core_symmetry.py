@@ -158,6 +158,36 @@ def test_elu_shape():
     assert float(elu(-50.0)) > -1.0000001  # bounded below by -alpha
 
 
+# -- OPEN ISSUE O1: PFL2 currently does not influence steering ------------
+# These two tests PIN THE CURRENT BEHAVIOUR so that it cannot change silently.
+# They are not a claim that this matches the source paper.  See
+# provenance/reproduction_adjustments.yaml, issue O1.
+def test_dn_cascade_is_currently_a_constant_gain_of_13(core):
+    """With ELU and non-negative population activity the DN stage is linear.
+
+    Every DN input is positive, so the ELU never leaves its identity regime and
+        steering = (w_pfl3_dna02 + w_dna03_dna02 * w_pfl3_dna03) * dPFL3
+                 = (1 + 12 * 1) * dPFL3 = 13 * dPFL3
+    """
+    for err_deg in (30.0, 90.0, 150.0):
+        st = core.evaluate(deg2rad(err_deg), 0.0)
+        assert st.steering == pytest.approx(13.0 * (st.pfl3r - st.pfl3l), rel=1e-12)
+
+
+def test_pfl2_currently_cancels_in_the_steering_readout(core):
+    """PFL2 is bilateral, so common drive cancels in DNa02R - DNa02L.
+
+    Its tuning is correct (anti-goal, see test_pfl2_is_anti_goal) but it has no
+    effect on the steering command in this implementation.  OPEN ISSUE O1:
+    check against the official notebook whether the source model has a
+    saturating / supralinear DN stage that gives PFL2 a gain-modulating role.
+    """
+    lesioned = WesteindeSteeringCore(CoreParams(w_pfl2_dna03=0.0))
+    for err_deg in (30.0, 90.0, 150.0):
+        assert core.steering(deg2rad(err_deg), 0.0) == pytest.approx(
+            lesioned.steering(deg2rad(err_deg), 0.0), rel=1e-12)
+
+
 def test_per_population_normalisation_would_break_the_model():
     """Documents WHY normalisation must be global (see core._normalise).
 

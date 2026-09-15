@@ -1,0 +1,43 @@
+# Literature basis.  Roles are fixed by the handoff document, section 4.
+# DOIs marked "unverified" were not checked against the publisher record in
+# this session; verify before any write-up.
+
+first_core:
+  key: westeinde2024
+  citation: >
+    Westeinde et al. (2024) Transforming a head direction signal into a
+    goal-oriented steering command. Nature.
+  doi: 10.1038/s41586-024-07039-2
+  doi_status: unverified
+  role: source model for the reduced PFL2/PFL3 -> DNa03 -> DNa02 steering core
+  connectome: hemibrain v1.2.1
+  core_update_rate_hz: 10
+
+structural_basis:
+  key: hulse_elife
+  citation: >
+    Hulse et al. A connectome of the Drosophila central complex. eLife.
+  role: anatomical/structural grounding only; not used as an executable core
+
+comparison_candidates:
+  - key: mussells_pires2024
+    role: independent second core for later replication (EPG + FC2 -> PFL3)
+  - key: duan_neurips2025
+    role: more connectome-constrained head-direction dynamics; later extension
+  - key: shiu2024
+    role: whole-brain LIF model; out of scope for the first study
+  - key: flynn_arxiv2026
+    role: learned connectome-topology RNN for robot navigation; the work this
+          project must differentiate itself from (we use a FIXED circuit)
+
+not_used_now:
+  - key: loihi2_fly_connectome
+    role: long-term neuromorphic reference only
+  - key: flygym_neuromechfly
+    role: candidate for a later physics-based fly body
+
+forbidden_claims:
+  - "running the whole fly connectome"
+  - "whole-brain fly simulation"
+  - "first fly-derived navigation / closed-loop steering model"
+  - "first connectome-inspired robot control"

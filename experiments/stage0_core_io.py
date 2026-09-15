@@ -122,7 +122,11 @@ def main(argv=None) -> int:
     checks = [
         ("steering(0) == 0", abs(diag["steering_at_0deg"]) < 1e-8),
         ("odd symmetry", sym_residual < 1e-8),
-        ("restoring sign for e>0", bool(np.all(steer[err_deg > 0.5] > 0))),
+        # e = +-180 is excluded on purpose: it is the symmetric unstable
+        # equilibrium where left and right cancel exactly (doc section 48),
+        # not a sign violation.
+        ("restoring sign for 0 < e < 180",
+         bool(np.all(steer[(err_deg > 0.5) & (err_deg < 179.5)] > 0))),
         ("PFL3R peak near +67.5", abs(diag["pfl3r_peak_at_deg"] - 67.5) < 3.0),
         ("PFL3L peak near -67.5", abs(diag["pfl3l_peak_at_deg"] + 67.5) < 3.0),
         ("PFL2 trough near 0 (anti-goal)", abs(diag["pfl2_trough_at_deg"]) < 3.0),

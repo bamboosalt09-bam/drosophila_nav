@@ -1,0 +1,30 @@
+model:
+  name: westeinde2024_reduced
+  stage: "Stage 0 (core validation, no body attached)"
+  implementation: src/core/westeinde2024.py
+
+source_derived_parameters:   # S1-S6, handoff document section 6
+  phase_shift_pfl3_deg: 67.5     # +R / -L
+  phase_shift_pfl2_deg: 180.0
+  goal_amplitude_A: 1.0
+  w_pfl3_dna03: 1.0
+  w_pfl3_dna02: 1.0
+  w_pfl2_dna03: 4.0
+  w_dna03_dna02: 12.0
+  readout: "DNa02R - DNa02L"
+  population_discretisation: 1000
+
+simulation_parameters:       # NOT source values -- our choices
+  n_units: 1000
+  gain_S: 1.0
+  elu_alpha: 1.0
+  normalize: none
+  dn_activation: true
+  angle_convention: "radians internally, CCW positive, wrap to [-pi, pi)"
+
+not_yet_determined:
+  decoder_gain_kappa: >
+    Set only during Stage 0 calibration, then frozen for every body condition
+    (handoff document sections 6 and 46).  Calibration criterion not chosen yet.
+  core_timestep_T_core_s: 0.1     # from the source 10 Hz update rate
+  body_timestep_dt_body_s: 0.0025 # planned, abstract yaw plant

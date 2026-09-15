@@ -1,0 +1,23 @@
+# Stage 0 reproduction configuration.
+# Anything under `core` is frozen for the whole study once Stage 0 passes.
+core:
+  n_units: 1000
+  phase_shift_pfl3_deg: 67.5
+  phase_shift_pfl2_deg: 180.0
+  goal_amplitude: 1.0
+  theta0_deg: 0.0
+  w_pfl3_dna03: 1.0
+  w_pfl3_dna02: 1.0
+  w_pfl2_dna03: 4.0
+  w_dna03_dna02: 12.0
+  gain_S: 1.0
+  elu_alpha: 1.0
+  normalize: none
+  dn_activation: true
+
+stage0_io_sweep:
+  heading_error_deg: {start: -180.0, stop: 180.0, step: 0.5}
+
+timing:
+  core_update_hz: 10.0      # source model update rate
+  T_core_s: 0.1
