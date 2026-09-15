@@ -49,6 +49,7 @@ import pandas as pd
 from body.ideal_yaw import IdealYawBody
 from body.yaw_plant import YawPlant, from_neural_scale
 from core.calibration import calibrate, load
+from core.p_controller import PController
 from core.westeinde2024 import CoreParams, WesteindeSteeringCore
 from decoder.steering import SteeringDecoder
 from environment.heading_task import (CALIBRATION_ERRORS_DEG, HeadingTask,
@@ -93,6 +94,8 @@ def build_parser():
     p.add_argument("--hold", type=float, default=1.0)
     p.add_argument("--quick", action="store_true",
                    help="3x3x3 grid and calibration errors only")
+    p.add_argument("--controller", choices=("fly", "p"), default="fly",
+                   help="'p' swaps the fly core for the condition-D baseline")
     p.add_argument("--tag", default="default")
     return p
 
@@ -107,7 +110,8 @@ def main(argv=None) -> int:
     scale = json.loads(SCALE_JSON.read_text(encoding="utf-8"))
     R = float(scale["body_scale_rad_per_s"])
 
-    core = WesteindeSteeringCore(CoreParams(), norm)
+    core = (PController() if args.controller == "p"
+            else WesteindeSteeringCore(CoreParams(), norm))
     decoder = SteeringDecoder()
     T = decoder.T_core_s
     crit = mx.SuccessCriterion(tolerance_rad=np.deg2rad(args.tolerance_deg),
@@ -122,6 +126,7 @@ def main(argv=None) -> int:
 
     combos = list(itertools.product(r_ratios, a_ratios, t_ratios))
     print("=== Stage 1 step 2: body-constraint sweep (tag: %s) ===" % args.tag)
+    print("  controller: %s" % args.controller)
     print("  body scale R_max = %.1f deg/s, T_core = %.2f s" % (np.rad2deg(R), T))
     print("  %d body conditions x %d initial errors = %d trials"
           % (len(combos), len(errors), len(combos) * len(errors)))
@@ -298,7 +303,9 @@ def main(argv=None) -> int:
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "script": "experiments/stage1_body_sweep.py",
         "git_commit": git_commit(),
-        "core_params": CoreParams().as_dict(),
+        "controller": args.controller,
+        "core_params": (core.as_dict() if args.controller == "p"
+                        else CoreParams().as_dict()),
         "decoder": decoder.as_dict(),
         "body_scale_rad_per_s": R,
         "body_scale_deg_per_s": float(np.rad2deg(R)),

@@ -1,0 +1,214 @@
+{
+  "generated_utc": "2026-09-15T15:57:22+00:00",
+  "script": "experiments/stage1_body_sweep.py",
+  "git_commit": "fb6893fce3a8403f4d5f75e16d55d437658e3646",
+  "controller": "p",
+  "core_params": {
+    "name": "p_controller",
+    "K_per_rad": 0.35,
+    "law": "steering = clip(-K*wrap(heading-goal), -1, 1)"
+  },
+  "decoder": {
+    "kappa_deg_per_step": 200.0,
+    "T_core_s": 0.1,
+    "name": "source_k200",
+    "max_yaw_rate_rad_s": 34.906585039886586,
+    "max_yaw_rate_deg_s": 1999.9999999999998
+  },
+  "body_scale_rad_per_s": 34.906585039886586,
+  "body_scale_deg_per_s": 1999.9999999999998,
+  "grid": {
+    "r_max_ratio": [
+      0.002,
+      0.005,
+      0.01,
+      0.02,
+      0.05,
+      0.25,
+      1.0
+    ],
+    "alpha_ratio": [
+      0.005,
+      0.01,
+      0.02,
+      0.05,
+      0.25,
+      4.0
+    ],
+    "tau_ratio": [
+      1.0,
+      2.0,
+      4.0,
+      8.0,
+      16.0,
+      32.0
+    ]
+  },
+  "initial_errors_deg": [
+    -135.0,
+    -90.0,
+    -60.0,
+    -30.0,
+    30.0,
+    60.0,
+    90.0,
+    135.0,
+    -170.0,
+    -150.0,
+    -120.0,
+    -75.0,
+    -45.0,
+    45.0,
+    75.0,
+    120.0,
+    150.0,
+    170.0
+  ],
+  "success_criterion": {
+    "tolerance_deg": 14.999999999999998,
+    "timeout_s": 10.0,
+    "hold_s": 1.0,
+    "note": "simulation analysis criterion, not a biological threshold"
+  },
+  "tolerance_sensitivity_deg": [
+    10.0,
+    15.0,
+    20.0
+  ],
+  "noise": "none (doc section 24: isolate the body effect)",
+  "classification_thresholds": {
+    "near_infeasible_margin": 1.5,
+    "saturation_fraction": 0.5,
+    "oscillation_crossings": 4,
+    "overshoot_ratio": 0.5
+  },
+  "baseline_condition_A": {
+    "-135.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 17.346175830559204,
+      "zero_crossings": 24
+    },
+    "-90.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 11.564117220372804,
+      "zero_crossings": 24
+    },
+    "-60.0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 7.70941148024853,
+      "zero_crossings": 23
+    },
+    "-30.0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 3.8547057401242633,
+      "zero_crossings": 23
+    },
+    "30.0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 3.8547057401242633,
+      "zero_crossings": 23
+    },
+    "60.0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 7.70941148024853,
+      "zero_crossings": 23
+    },
+    "90.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 11.564117220372804,
+      "zero_crossings": 24
+    },
+    "135.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 17.346175830559204,
+      "zero_crossings": 24
+    },
+    "-170.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 20.854705740124263,
+      "zero_crossings": 24
+    },
+    "-150.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 19.273528700621338,
+      "zero_crossings": 24
+    },
+    "-120.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 15.418822960497076,
+      "zero_crossings": 24
+    },
+    "-75.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 9.636764350310676,
+      "zero_crossings": 24
+    },
+    "-45.0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 5.782058610186403,
+      "zero_crossings": 23
+    },
+    "45.0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 5.782058610186403,
+      "zero_crossings": 23
+    },
+    "75.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 9.63676435031068,
+      "zero_crossings": 24
+    },
+    "120.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 15.418822960497073,
+      "zero_crossings": 24
+    },
+    "150.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 19.27352870062134,
+      "zero_crossings": 24
+    },
+    "170.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 20.854705740124263,
+      "zero_crossings": 24
+    }
+  },
+  "outcome_counts": {
+    "success": 2738,
+    "body_infeasible": 828,
+    "success_near_infeasible": 312,
+    "saturation_dominated": 274,
+    "slow_but_stable": 218,
+    "overshoot_dominant": 164,
+    "persistent_oscillation": 2
+  },
+  "attributable_fraction": 0.8174603174603174,
+  "n_rescued_by_body": 0,
+  "n_baseline_failures": 0,
+  "axis_effect_range": {
+    "r_max_ratio": 0.4691358024691358,
+    "alpha_ratio": 0.19312169312169314,
+    "tau_ratio": 0.21957671957671965
+  },
+  "largest_effect_axis": "r_max_ratio",
+  "n_trials": 4536
+}

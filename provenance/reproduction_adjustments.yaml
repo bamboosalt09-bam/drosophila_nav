@@ -441,3 +441,53 @@ surviving_findings:
       infeasible (success rate tracks feasibility exactly).  The acceleration
       cap and the response lag cause failures while the task remains feasible.
       That difference is the section 30 result.
+
+# =========================================================================
+# Conditions C and D (2026-09-16)
+# =========================================================================
+condition_C_state_aware_plugin:
+  doc_section: 14.2
+  status: NOT IMPLEMENTED -- measured to be a no-op where it matters
+  proposed_law: "r_cmd = clip(r_brain, r - alpha_max*tau_r, r + alpha_max*tau_r) n [-r_max, r_max]"
+  when_it_binds: "only when alpha_ratio * tau_ratio < r_max_ratio"
+  measurement:
+    failure_cells_alpha_4: "max trajectory deviation from B is exactly 0.00 deg"
+    where_it_binds: "success 0.78 -> 0.67 at (r_max 1.0, alpha 0.005-0.01, tau 1)"
+  conclusion: >
+    In every cell where condition B actually fails, alpha_max*tau_r vastly
+    exceeds r_max, so the clamp reduces to B's rate clip and the two are
+    bit-identical.  Where it does bind it is neutral to harmful.  The document
+    anticipated this in 14.2 and section 31 records that a null result for C
+    is itself a result, so the plugin file was not written.
+  if_revisited: >
+    A plugin that could matter here would have to compensate the RESPONSE LAG,
+    not the feasibility envelope -- and must stay goal-blind while doing it.
+
+condition_D_p_controller:
+  doc_section: 15
+  implementation: src/core/p_controller.py
+  law: "steering = clip(-K * wrap(heading - goal), -1, 1)"
+  K: 0.35
+  calibration: >
+    Chosen on the 8 calibration initial headings with an ideal body, lowest
+    IAE among K that succeed on all of them; frozen for the sweep exactly like
+    kappa (sections 15, 47).  K >= 1.0 saturates and fails on all 8 -- the same
+    over-gain failure the fly core shows at k = 200.
+  paired_result:
+    fly_core_success: 0.857
+    p_controller_success: 0.793
+    cells_where_both_fail: 59
+    cells_where_only_fly_fails: 3
+    cells_where_only_p_fails: 10
+  reading: >
+    The task-feasibility question section 15 exists to answer comes back clean:
+    where the fly core fails, a generic controller under the same freeze
+    almost always fails too (59 cells), so those failures are body-attributable
+    rather than circuit-specific.  Only 3 cells are fly-specific, all at
+    r_max = 1.0 R_max with tau_r = 8T -- the fast-body-plus-lag corner, which
+    is the same interaction found in the sweep.
+  caveat: >
+    K is frozen, not re-tuned per body condition.  That is the protocol
+    (section 3.3 applies to the baseline too), so the comparison is fair by
+    construction, but "the fly core beats a P controller" means "beats a P
+    controller under the same freeze", not "beats a tuned P controller".
