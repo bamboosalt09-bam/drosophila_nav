@@ -60,6 +60,8 @@ def main(argv=None) -> int:
     ap.add_argument("--tag", default="default")
     ap.add_argument("--r-min", type=float, default=0.01,
                     help="lowest r_max ratio to include in paired comparisons")
+    ap.add_argument("--compare", default=None,
+                    help="another tag to diff against, cell by cell")
     args = ap.parse_args(argv)
 
     d = REPO / "results" / "stage1_sweep" / args.tag
@@ -183,6 +185,73 @@ def main(argv=None) -> int:
         fig.savefig(d / "fig5_rescue_map.png", dpi=150, bbox_inches="tight")
         plt.close(fig)
 
+    # ---- section 29: phase map by DOMINANT OUTCOME, not success rate ----
+    # The success-rate maps say how often it worked; this says what happened.
+    codes = ["success", "success_near_infeasible", "slow_but_stable",
+             "saturation_dominated", "overshoot_dominant",
+             "persistent_oscillation", "controller_instability",
+             "failure_other", "rescued_by_body", "baseline_failure",
+             "body_infeasible"]
+    cmap = plt.get_cmap("tab20")
+    colors = {c: cmap(i / 20.0) for i, c in enumerate(codes)}
+    dom = (df.groupby(["r_max_ratio", "tau_ratio"])["outcome"]
+             .agg(lambda x: x.value_counts().idxmax()).reset_index())
+    rows = sorted(df["r_max_ratio"].unique())
+    cols = sorted(df["tau_ratio"].unique())
+    grid_i = np.full((len(rows), len(cols)), np.nan)
+    for _, r in dom.iterrows():
+        grid_i[rows.index(r["r_max_ratio"]), cols.index(r["tau_ratio"])] =             codes.index(r["outcome"])
+
+    fig, ax = plt.subplots(figsize=(7.5, 4.6))
+    ax.imshow(grid_i, origin="lower", cmap=cmap, vmin=0, vmax=19, aspect="auto")
+    ax.set_xticks(range(len(cols)))
+    ax.set_xticklabels(["%g" % c for c in cols])
+    ax.set_yticks(range(len(rows)))
+    ax.set_yticklabels(["%g" % r for r in rows])
+    ax.set_xlabel("tau_r / T_core")
+    ax.set_ylabel("r_max / R_max")
+    present = [c for c in codes if c in set(dom["outcome"])]
+    ax.legend(handles=[plt.Line2D([0], [0], marker="s", ls="", color=colors[c],
+                                  label=c) for c in present],
+              fontsize=7, loc="center left", bbox_to_anchor=(1.02, 0.5))
+    fig.suptitle("Stage 1 / section 29: dominant outcome per body condition"
+                 "  (tag: %s, over alpha_max)" % args.tag, fontsize=10)
+    fig.savefig(d / "fig6_outcome_phase_map.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    dom.to_csv(d / "dominant_outcome.csv", index=False)
+    print("--- dominant outcome per (r_max, tau) written ---")
+
+    # ---- optional cell-by-cell comparison with another sweep ------------
+    comparison = None
+    if args.compare:
+        other = pd.read_csv(REPO / "results" / "stage1_sweep" / args.compare
+                            / "sweep_trials.csv")
+        o_sub, _ = paired_subset(other, "r_max_ratio", args.r_min)
+        keys = ["r_max_ratio", "alpha_ratio", "tau_ratio"]
+        a = sub.groupby(keys)["success"].mean()
+        b = o_sub.groupby(keys)["success"].mean()
+        j = pd.concat([a.rename(args.tag), b.rename(args.compare)], axis=1).dropna()
+        j["delta"] = j[args.compare] - j[args.tag]
+        j.to_csv(d / ("comparison_vs_%s.csv" % args.compare))
+        comparison = {"tag": args.tag, "other": args.compare,
+                      "mean_self": float(j[args.tag].mean()),
+                      "mean_other": float(j[args.compare].mean()),
+                      "cells_better": int((j["delta"] > 0.001).sum()),
+                      "cells_worse": int((j["delta"] < -0.001).sum()),
+                      "cells_equal": int((j["delta"].abs() <= 0.001).sum())}
+        print("--- %s vs %s (paired cells) ---" % (args.tag, args.compare))
+        print("  mean success  %s %.3f   %s %.3f"
+              % (args.tag, comparison["mean_self"], args.compare,
+                 comparison["mean_other"]))
+        print("  cells better %d / worse %d / equal %d"
+              % (comparison["cells_better"], comparison["cells_worse"],
+                 comparison["cells_equal"]))
+        print("  by tau:")
+        for tr, g in j.groupby("tau_ratio"):
+            print("    tau=%5g : %s %.3f -> %s %.3f  (%+.3f)"
+                  % (tr, args.tag, g[args.tag].mean(), args.compare,
+                     g[args.compare].mean(), g["delta"].mean()))
+
     out = {
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": str((d / "sweep_trials.csv").relative_to(REPO)),
@@ -191,6 +260,7 @@ def main(argv=None) -> int:
         "axis_success_rates": summary,
         "axis_direction": direction,
         "rescue_rate_where_baseline_failed": rescue_rate,
+        "comparison": comparison,
         "selection_effect_note": (
             "Unpaired averages along r_max are misleading: at r_max = 0.002 "
             "only |e0| = 30 and 45 deg remain feasible, versus 8 distinct "

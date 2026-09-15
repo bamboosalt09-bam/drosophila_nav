@@ -21,6 +21,7 @@ from core.westeinde2024 import CoreParams, WesteindeSteeringCore
 from decoder.steering import SteeringDecoder
 from environment.heading_task import HeadingTask
 from plugins.passthrough import PassthroughPlugin
+from plugins.lag_comp import LagCompPlugin
 from plugins.rate_clip import RateClipPlugin
 from sensors.ideal_heading import IdealHeadingSensor
 from sim.closed_loop import run_closed_loop
@@ -267,3 +268,54 @@ def test_constrained_body_is_slower_than_the_ideal_one(core, decoder):
         return int(idx[0]) if idx.size else len(res.psi)
 
     assert first_below(slow) > first_below(ideal)
+
+
+# =========================================================================
+# plugin C: lag compensation
+# =========================================================================
+def test_lag_comp_is_goal_blind_and_cannot_navigate(core, decoder):
+    """Zero core output must leave the heading exactly where it started.
+
+    The whole point of plugin C is that it shapes commands without knowing
+    where the goal is.  This is the section 44 item 12 ablation applied to it.
+    """
+    class ZeroCore:
+        def steering(self, heading, goal):
+            return 0.0
+
+    params = from_neural_scale(np.deg2rad(2000.0), r_max_ratio=0.25,
+                               alpha_max_ratio=4.0, tau_ratio=32.0)
+    task = HeadingTask(goal=0.0, initial_heading=np.deg2rad(120.0),
+                       duration_s=15.0)
+    res = run_closed_loop(ZeroCore(), decoder,
+                          LagCompPlugin(r_max=params.r_max, tau_r=params.tau_r),
+                          YawPlant(params), IdealHeadingSensor(), task)
+    assert np.allclose(res.psi, res.psi[0], atol=1e-12)
+
+
+@pytest.mark.parametrize("tau_ratio", [1.0, 8.0, 32.0])
+def test_lag_comp_inverts_one_cycle_of_the_lag(tau_ratio):
+    """One cycle after the command, the actual rate lands on r_brain.
+
+    Not exactly: the plugin inverts the exact exponential while the plant
+    integrates with explicit Euler, so the residual is the discretisation
+    difference, of order dt_body / (2*tau_r).  Measured 7.4e-3 at tau = T and
+    3.9e-4 at tau = 32T, matching that bound -- so the tolerance is written as
+    the bound rather than as a round number.
+    """
+    params = from_neural_scale(np.deg2rad(2000.0), alpha_max_ratio=4.0,
+                               tau_ratio=tau_ratio)
+    plant = YawPlant(params)
+    plant.reset()
+    target = np.deg2rad(200.0)
+    plug = LagCompPlugin(r_max=params.r_max, tau_r=params.tau_r)
+    plant.step(plug.command(target, plant.r), T_CORE)
+    assert plant.r == pytest.approx(target,
+                                    rel=params.dt_body / params.tau_r)
+
+
+def test_lag_comp_still_respects_r_max():
+    params = from_neural_scale(np.deg2rad(2000.0), r_max_ratio=0.1,
+                               tau_ratio=32.0)
+    plug = LagCompPlugin(r_max=params.r_max, tau_r=params.tau_r)
+    assert abs(plug.command(np.deg2rad(5000.0), 0.0)) <= params.r_max + 1e-12

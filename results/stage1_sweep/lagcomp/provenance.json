@@ -1,0 +1,226 @@
+{
+  "generated_utc": "2026-09-15T23:33:02+00:00",
+  "script": "experiments/stage1_body_sweep.py",
+  "git_commit": "f9da1a7113c5a9a4b3c984fe1fc75cc33123709d",
+  "controller": "fly",
+  "plugin": "lag_comp",
+  "core_params": {
+    "n_units": 1000,
+    "phase_shift_pfl3_deg": 67.5,
+    "phase_shift_pfl2_deg": 180.0,
+    "offset_deg": 0.0,
+    "goal_amplitude": 1.0,
+    "pfl_scalar_S": 1.0,
+    "w_pfl3_dna03": 1.0,
+    "w_pfl2_dna03": 4.0,
+    "w_pfl3_dna02": 1.0,
+    "w_dna03_dna02": 12.0,
+    "dna02_tile_count": 1000,
+    "pfl3_inhibitory": false,
+    "pfl2_silenced": false,
+    "label": "westeinde2024_reduced_abstract_ELU1"
+  },
+  "decoder": {
+    "kappa_deg_per_step": 200.0,
+    "T_core_s": 0.1,
+    "name": "source_k200",
+    "max_yaw_rate_rad_s": 34.906585039886586,
+    "max_yaw_rate_deg_s": 1999.9999999999998
+  },
+  "body_scale_rad_per_s": 34.906585039886586,
+  "body_scale_deg_per_s": 1999.9999999999998,
+  "grid": {
+    "r_max_ratio": [
+      0.002,
+      0.005,
+      0.01,
+      0.02,
+      0.05,
+      0.25,
+      1.0
+    ],
+    "alpha_ratio": [
+      0.005,
+      0.01,
+      0.02,
+      0.05,
+      0.25,
+      4.0
+    ],
+    "tau_ratio": [
+      1.0,
+      2.0,
+      4.0,
+      8.0,
+      16.0,
+      32.0
+    ]
+  },
+  "initial_errors_deg": [
+    -135.0,
+    -90.0,
+    -60.0,
+    -30.0,
+    30.0,
+    60.0,
+    90.0,
+    135.0,
+    -170.0,
+    -150.0,
+    -120.0,
+    -75.0,
+    -45.0,
+    45.0,
+    75.0,
+    120.0,
+    150.0,
+    170.0
+  ],
+  "success_criterion": {
+    "tolerance_deg": 14.999999999999998,
+    "timeout_s": 10.0,
+    "hold_s": 1.0,
+    "note": "simulation analysis criterion, not a biological threshold"
+  },
+  "tolerance_sensitivity_deg": [
+    10.0,
+    15.0,
+    20.0
+  ],
+  "noise": "none (doc section 24: isolate the body effect)",
+  "classification_thresholds": {
+    "near_infeasible_margin": 1.5,
+    "saturation_fraction": 0.5,
+    "oscillation_crossings": 4,
+    "overshoot_ratio": 0.5
+  },
+  "baseline_condition_A": {
+    "-135.0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 15.136033302446016,
+      "zero_crossings": 38
+    },
+    "-90.0": {
+      "success": false,
+      "settling_s": null,
+      "iae": 1508.51472226073,
+      "zero_crossings": 150
+    },
+    "-60.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 9.350212801660572,
+      "zero_crossings": 38
+    },
+    "-30.0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 3.3613327826683284,
+      "zero_crossings": 36
+    },
+    "30.0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 3.3613327826678727,
+      "zero_crossings": 37
+    },
+    "60.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 9.350212801661069,
+      "zero_crossings": 37
+    },
+    "90.0": {
+      "success": false,
+      "settling_s": null,
+      "iae": 1508.5147222606658,
+      "zero_crossings": 150
+    },
+    "135.0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 15.13603330244674,
+      "zero_crossings": 35
+    },
+    "-170.0": {
+      "success": true,
+      "settling_s": 0.30000000000000004,
+      "iae": 32.590073724406935,
+      "zero_crossings": 38
+    },
+    "-150.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 20.297565794234593,
+      "zero_crossings": 38
+    },
+    "-120.0": {
+      "success": true,
+      "settling_s": 0.30000000000000004,
+      "iae": 21.25673651166937,
+      "zero_crossings": 38
+    },
+    "-75.0": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 27.437820090957977,
+      "zero_crossings": 40
+    },
+    "-45.0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 5.25571134605347,
+      "zero_crossings": 37
+    },
+    "45.0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 5.255711346053918,
+      "zero_crossings": 37
+    },
+    "75.0": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 27.437820090958983,
+      "zero_crossings": 39
+    },
+    "120.0": {
+      "success": true,
+      "settling_s": 0.30000000000000004,
+      "iae": 21.25673651166952,
+      "zero_crossings": 39
+    },
+    "150.0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 20.297565794234195,
+      "zero_crossings": 35
+    },
+    "170.0": {
+      "success": true,
+      "settling_s": 0.30000000000000004,
+      "iae": 32.590073724408406,
+      "zero_crossings": 37
+    }
+  },
+  "outcome_counts": {
+    "success": 2882,
+    "body_infeasible": 828,
+    "rescued_by_body": 394,
+    "success_near_infeasible": 252,
+    "saturation_dominated": 96,
+    "slow_but_stable": 58,
+    "baseline_failure": 26
+  },
+  "attributable_fraction": 0.7248677248677249,
+  "n_rescued_by_body": 394,
+  "n_baseline_failures": 504,
+  "axis_effect_range": {
+    "r_max_ratio": 0.13888888888888884,
+    "alpha_ratio": 0.1428571428571429,
+    "tau_ratio": 0.011904761904761862
+  },
+  "largest_effect_axis": "alpha_ratio",
+  "n_trials": 4536
+}

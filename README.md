@@ -3,7 +3,7 @@
 Closed-loop simulation study: a **fixed** Drosophila-derived steering circuit
 driven into bodies with different motion constraints.
 
-Current stage: **Stage 0 complete — core reproduced, ideal closed loop reproduced.**
+Current stage: **Stage 1 complete — body sweep, conditions B/C/D, 3D viewer.**
 The core is verified against the authors' own notebook code: PFL population
 activity is bit-identical and the steering command agrees to 3.4e-14
 (`tests/test_source_agreement.py`, `results/stage0/default/fig6_source_overlay.png`).

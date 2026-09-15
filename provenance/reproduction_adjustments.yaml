@@ -491,3 +491,63 @@ condition_D_p_controller:
     (section 3.3 applies to the baseline too), so the comparison is fair by
     construction, but "the fly core beats a P controller" means "beats a P
     controller under the same freeze", not "beats a tuned P controller".
+
+# =========================================================================
+# Condition C redesigned -- lag compensation (2026-09-16)
+# =========================================================================
+condition_C_lag_compensation:
+  implementation: src/plugins/lag_comp.py
+  motivation: >
+    Section 14.2 said C would have to be redesigned, and the measurement
+    agreed: the proposed feasibility clamp is bit-identical to B wherever B
+    fails.  The surviving failures are caused by RESPONSE LAG, so this
+    compensates that instead.
+  law: "u = (r_brain - r*exp(-T/tau)) / (1 - exp(-T/tau)), clipped to r_max"
+  why_no_tuning_knob: >
+    Exact one-cycle inversion of the plant's first-order lag.  Nothing is
+    fitted, so there is no parameter that could smuggle in task knowledge.
+  goal_blind_verified:
+    by_signature: "command(r_brain, r_actual); tau_r and r_max are body capability (section 3.5)"
+    by_ablation: >
+      With the core output forced to zero the heading moves by exactly
+      0.000e+00 deg at tau = T and tau = 32T (section 44 item 12), pinned by
+      tests/test_body_limits.py::test_lag_comp_is_goal_blind_and_cannot_navigate
+  paired_result_vs_B:
+    mean_success: "0.859 -> 0.942"
+    cells: "42 better, 4 worse, 134 equal"
+    effect_is_entirely_on_tau:
+      tau_1_to_4: "+-0.008 (nothing)"
+      tau_8: "+0.046"
+      tau_16: "+0.154"
+      tau_32: "+0.308"
+    tau_axis_after_C: "0.942 -> 0.933 across tau = 1..32T, i.e. no effect"
+  remaining_boundary:
+    statement: >
+      With C installed the lag axis is gone and the only failure mode left is
+      the acceleration cap interacting with the rate limit.
+    evidence: |
+      alpha >= 0.02:  r_max 0.98 / 1.00 / 1.00 / 1.00 / 1.00   (flat)
+      alpha <  0.02:  r_max 0.98 / 1.00 / 1.00 / 0.62 / 0.58
+    caution: >
+      Checked explicitly, because the same marginalisation error was made
+      twice before: C's apparent r_max main effect is again an INTERACTION,
+      this time with alpha_max.  Do not report it as a main effect.
+  where_C_hurts:
+    cells: "4, all at alpha_max = 0.01 R_max/T, delta -0.125"
+    reason: >
+      Same mechanism as its benefit: the inversion commands a large yaw rate,
+      and a body whose acceleration cap cannot deliver it ends up worse off
+      than under the plain rate clip.  C helps when lag is the binding
+      constraint and hurts when acceleration is.
+  it_does_not_repeal_physics: >
+    Where the acceleration cap genuinely binds (alpha = 0.005, accel
+    saturation fraction 0.77) C reaches only 0.44 against B's 0.22 -- a
+    partial gain, not a fix.
+
+section_29_phase_map:
+  status: done
+  figure: "results/stage1_sweep/<tag>/fig6_outcome_phase_map.png"
+  content: >
+    Dominant OUTCOME per (r_max, tau_r) cell rather than a success rate, which
+    is what section 29 actually asks for: the map says what happened, not just
+    how often it worked.  Generated for every sweep tag.

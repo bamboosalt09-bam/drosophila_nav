@@ -58,6 +58,7 @@ from eval import classify as cls
 from eval import metrics as mx
 from eval.feasibility import is_task_feasible
 from plugins.passthrough import PassthroughPlugin
+from plugins.lag_comp import LagCompPlugin
 from plugins.rate_clip import RateClipPlugin
 from sensors.ideal_heading import IdealHeadingSensor
 from sim.closed_loop import run_closed_loop
@@ -96,6 +97,8 @@ def build_parser():
                    help="3x3x3 grid and calibration errors only")
     p.add_argument("--controller", choices=("fly", "p"), default="fly",
                    help="'p' swaps the fly core for the condition-D baseline")
+    p.add_argument("--plugin", choices=("rate_clip", "lag_comp"),
+                   default="rate_clip", help="'lag_comp' is condition C")
     p.add_argument("--tag", default="default")
     return p
 
@@ -126,7 +129,7 @@ def main(argv=None) -> int:
 
     combos = list(itertools.product(r_ratios, a_ratios, t_ratios))
     print("=== Stage 1 step 2: body-constraint sweep (tag: %s) ===" % args.tag)
-    print("  controller: %s" % args.controller)
+    print("  controller: %s   plugin: %s" % (args.controller, args.plugin))
     print("  body scale R_max = %.1f deg/s, T_core = %.2f s" % (np.rad2deg(R), T))
     print("  %d body conditions x %d initial errors = %d trials"
           % (len(combos), len(errors), len(combos) * len(errors)))
@@ -160,7 +163,10 @@ def main(argv=None) -> int:
         for e0 in errors:
             task = HeadingTask(goal=0.0, initial_heading=np.deg2rad(e0),
                                duration_s=args.duration)
-            plugin = RateClipPlugin(r_max=params.r_max)
+            plugin = (LagCompPlugin(r_max=params.r_max, tau_r=params.tau_r,
+                                    T_core=T)
+                      if args.plugin == "lag_comp"
+                      else RateClipPlugin(r_max=params.r_max))
             body = YawPlant(params)
             res = run_closed_loop(core, decoder, plugin, body,
                                   IdealHeadingSensor(), task)
@@ -304,6 +310,7 @@ def main(argv=None) -> int:
         "script": "experiments/stage1_body_sweep.py",
         "git_commit": git_commit(),
         "controller": args.controller,
+        "plugin": args.plugin,
         "core_params": (core.as_dict() if args.controller == "p"
                         else CoreParams().as_dict()),
         "decoder": decoder.as_dict(),

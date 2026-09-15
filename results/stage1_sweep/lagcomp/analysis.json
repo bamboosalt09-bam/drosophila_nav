@@ -1,0 +1,73 @@
+{
+  "generated_utc": "2026-09-15T23:33:45+00:00",
+  "source": "results\\stage1_sweep\\lagcomp\\sweep_trials.csv",
+  "paired_sample": {
+    "r_min": 0.01,
+    "initial_headings_deg": [
+      -170.0,
+      -150.0,
+      -135.0,
+      -120.0,
+      -90.0,
+      -75.0,
+      -60.0,
+      -45.0,
+      -30.0,
+      30.0,
+      45.0,
+      60.0,
+      75.0,
+      90.0,
+      120.0,
+      135.0,
+      150.0,
+      170.0
+    ],
+    "n_trials": 2880
+  },
+  "axis_success_rates": {
+    "r_max_ratio": {
+      "0.01": 0.9791666666666666,
+      "0.02": 1.0,
+      "0.05": 1.0,
+      "0.25": 0.8715277777777778,
+      "1.0": 0.8611111111111112
+    },
+    "alpha_ratio": {
+      "0.005": 0.7958333333333333,
+      "0.01": 0.875,
+      "0.02": 0.9958333333333333,
+      "0.05": 0.9958333333333333,
+      "0.25": 0.9958333333333333,
+      "4.0": 0.9958333333333333
+    },
+    "tau_ratio": {
+      "1.0": 0.9416666666666667,
+      "2.0": 0.95,
+      "4.0": 0.9416666666666667,
+      "8.0": 0.9416666666666667,
+      "16.0": 0.9458333333333333,
+      "32.0": 0.9333333333333333
+    }
+  },
+  "axis_direction": {
+    "r_max_ratio": {
+      "low": 0.9791666666666666,
+      "high": 0.8611111111111112,
+      "more_capability": "hurts"
+    },
+    "alpha_ratio": {
+      "low": 0.7958333333333333,
+      "high": 0.9958333333333333,
+      "more_capability": "helps"
+    },
+    "tau_ratio": {
+      "low": 0.9416666666666667,
+      "high": 0.9333333333333333,
+      "more_capability": "no effect"
+    }
+  },
+  "rescue_rate_where_baseline_failed": 0.7817460317460317,
+  "comparison": null,
+  "selection_effect_note": "Unpaired averages along r_max are misleading: at r_max = 0.002 only |e0| = 30 and 45 deg remain feasible, versus 8 distinct magnitudes at r_max >= 0.01. All numbers above are paired."
+}
