@@ -1,0 +1,163 @@
+{
+  "generated_utc": "2026-09-15T14:03:25+00:00",
+  "git_commit": "17a76318eebf84897c2d0d0b33b2075279bb9b95",
+  "body_scale_deg_per_s": 1999.9999999999998,
+  "body_scale_rad_per_s": 34.906585039886586,
+  "body_scale_definition": "R_max = kappa * max|steering| = the fastest yaw rate the core can ever request. Exact and duration-independent, because the core's normalised steering is bounded by |steering| <= 1 on the calibration grid.",
+  "R99_deg_per_s": 1999.6871203845772,
+  "R99_rad_per_s": 34.90112426043509,
+  "R99_duration_scan": [
+    {
+      "duration_s": 2.0,
+      "r99_all": 1998.6154665194945,
+      "r99_converging": 1367.03872459554,
+      "fraction_below_1_deg_s": 0.575
+    },
+    {
+      "duration_s": 5.0,
+      "r99_all": 1999.3185485778683,
+      "r99_converging": 898.4045117899873,
+      "fraction_below_1_deg_s": 0.68
+    },
+    {
+      "duration_s": 10.0,
+      "r99_all": 1999.6871203845772,
+      "r99_converging": 270.74092972794745,
+      "fraction_below_1_deg_s": 0.715
+    },
+    {
+      "duration_s": 30.0,
+      "r99_all": 1999.9605218975216,
+      "r99_converging": 5.093775447460581,
+      "fraction_below_1_deg_s": 0.7383333333333333
+    },
+    {
+      "duration_s": 100.0,
+      "r99_all": 2000.000489149066,
+      "r99_converging": 0.0002695126652928012,
+      "fraction_below_1_deg_s": 0.7465
+    }
+  ],
+  "why_not_R99": "Handoff document section 17 asks for R99, the 99th percentile of |r_brain| in the ideal baseline. Measured here it is not a well-defined scale. Restricted to converging trials it collapses with trial duration (1367 -> 0 deg/s from 2 s to 100 s) because the loop reaches the goal in 3-4 cycles and every later sample is ~0, so the percentile measures recording length. Taken over all trials it is set by the trials that FAIL into the period-2 limit cycle (finding F1) and saturates at the decoder peak. We keep the INTENT of section 17 -- body limits as dimensionless multiples of the brain's own command scale, never invented vehicle specs -- and replace the estimator with R_max. Numerically R99(all trials) = 1999.7 and R_max = 2000.0 differ by 0.02%, so the sweep grid is essentially unchanged.",
+  "max_first_cycle_command_deg_per_s": 1919.0670732780372,
+  "T_core_s": 0.1,
+  "measured_on": {
+    "initial_errors_deg": [
+      -135.0,
+      -90.0,
+      -60.0,
+      -30.0,
+      30.0,
+      60.0,
+      90.0,
+      135.0
+    ],
+    "set": "calibration only (test conditions excluded, doc 47)",
+    "body": "ideal_yaw",
+    "plugin": "passthrough",
+    "noise": "none",
+    "duration_s": 10.0
+  },
+  "decoder": {
+    "kappa_deg_per_step": 200.0,
+    "T_core_s": 0.1,
+    "name": "source_k200",
+    "max_yaw_rate_rad_s": 34.906585039886586,
+    "max_yaw_rate_deg_s": 1999.9999999999998
+  },
+  "distribution": {
+    "no_noise": {
+      "n_samples": 800,
+      "median": 1.3212624824033927e-12,
+      "p90": 1999.4082257081725,
+      "p99": 1999.6871203845772,
+      "max": 1999.7202147932362,
+      "fraction_below_1_deg_s": 0.715
+    },
+    "source_noise": {
+      "n_samples": 800,
+      "median": 93.59882958809924,
+      "p90": 237.021790687885,
+      "p99": 1962.4703493340385,
+      "max": 2116.776790285308,
+      "fraction_below_1_deg_s": 0.005
+    }
+  },
+  "R99_converging_trials_only_deg_per_s": 270.74092972794745,
+  "per_trial": [
+    {
+      "e0_deg": -135.0,
+      "no_noise_first_cmd_deg_s": 1476.9652683400493,
+      "no_noise_final_abs_err_deg": 7.63333123551244e-14,
+      "no_noise_converged": true,
+      "source_noise_first_cmd_deg_s": 1364.105645798848,
+      "source_noise_final_abs_err_deg": 12.429081279047207,
+      "source_noise_converged": false
+    },
+    {
+      "e0_deg": -90.0,
+      "no_noise_first_cmd_deg_s": 1919.0670732780222,
+      "no_noise_final_abs_err_deg": 99.37210654002514,
+      "no_noise_converged": false,
+      "source_noise_first_cmd_deg_s": 2040.3858807714832,
+      "source_noise_final_abs_err_deg": 7.448011704327669,
+      "source_noise_converged": false
+    },
+    {
+      "e0_deg": -59.999999999999986,
+      "no_noise_first_cmd_deg_s": 898.4045117899941,
+      "no_noise_final_abs_err_deg": 7.63333123551244e-14,
+      "no_noise_converged": true,
+      "source_noise_first_cmd_deg_s": 760.6110087080648,
+      "source_noise_final_abs_err_deg": 12.594975615597106,
+      "source_noise_converged": false
+    },
+    {
+      "e0_deg": -29.999999999999993,
+      "no_noise_first_cmd_deg_s": 272.6832680938267,
+      "no_noise_final_abs_err_deg": 2.5444437451708134e-14,
+      "no_noise_converged": true,
+      "source_noise_first_cmd_deg_s": 152.34493143126753,
+      "source_noise_final_abs_err_deg": 1.6265707761526165,
+      "source_noise_converged": false
+    },
+    {
+      "e0_deg": 29.999999999999993,
+      "no_noise_first_cmd_deg_s": 272.6832680938233,
+      "no_noise_final_abs_err_deg": 1.2722218725854067e-13,
+      "no_noise_converged": true,
+      "source_noise_first_cmd_deg_s": 219.18291762771165,
+      "source_noise_final_abs_err_deg": 6.3647888177496785,
+      "source_noise_converged": false
+    },
+    {
+      "e0_deg": 59.999999999999986,
+      "no_noise_first_cmd_deg_s": 898.4045117899872,
+      "no_noise_final_abs_err_deg": 2.5444437451708134e-14,
+      "no_noise_converged": true,
+      "source_noise_first_cmd_deg_s": 904.4746567561065,
+      "source_noise_final_abs_err_deg": 11.646068473216602,
+      "source_noise_converged": false
+    },
+    {
+      "e0_deg": 90.0,
+      "no_noise_first_cmd_deg_s": 1919.0670732780372,
+      "no_noise_final_abs_err_deg": 99.37210653993138,
+      "no_noise_converged": false,
+      "source_noise_first_cmd_deg_s": 1750.3940526058398,
+      "source_noise_final_abs_err_deg": 6.505857985965215,
+      "source_noise_converged": false
+    },
+    {
+      "e0_deg": 135.0,
+      "no_noise_first_cmd_deg_s": 1476.9652683400745,
+      "no_noise_final_abs_err_deg": 1.2722218725854067e-13,
+      "no_noise_converged": true,
+      "source_noise_first_cmd_deg_s": 1539.2139864622816,
+      "source_noise_final_abs_err_deg": 13.551952529627675,
+      "source_noise_converged": false
+    }
+  ],
+  "interpretation": "The command distribution is bimodal, not unimodal: 71.5% of samples are below 1 deg/s (the loop converges in 3-4 cycles) and the rest sit near the maximum. Read 'r_max = 0.5 R_max' as 'the body can execute half of the fastest turn the brain ever requests', never as a statement about a typical command.",
+  "warning": "This is a simulation scale, NOT a vehicle specification. Never present these numbers as a real drone's limits."
+}

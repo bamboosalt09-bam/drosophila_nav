@@ -326,3 +326,56 @@ findings_stage0_part2:
       reaches the goal and ours reaches the limit cycle.  Trajectory-level
       agreement is therefore not expected at the separatrix; rho statistics
       agree throughout.
+
+# =========================================================================
+# STAGE 1 -- constrained body (2026-09-15)
+# =========================================================================
+stage1_body_parameter_scale:
+  doc_section: 17
+  doc_recipe: "R99 = 99th percentile of |r_brain| in the ideal baseline"
+  status: REPLACED -- estimator changed, intent kept
+  evidence:
+    r99_converging_trials_by_duration_deg_per_s:
+      2s: 1367.0
+      5s: 898.4
+      10s: 270.7
+      30s: 5.1
+      100s: 0.0
+    r99_all_trials_by_duration_deg_per_s:
+      2s: 1998.6
+      100s: 2000.0
+  why_it_fails: >
+    The command time-series is not a distribution with a meaningful upper
+    percentile.  It is a short transient plus a long tail of ~zero: the ideal
+    loop reaches the goal in 3-4 cycles, so 71.5% of samples are below
+    1 deg/s and the percentile measures recording length, not command size.
+    Over all trials the statistic is instead dominated by the trials that fall
+    into the period-2 limit cycle (finding F1) and saturates at the decoder
+    peak.
+  replacement:
+    definition: "R_max = kappa * max|steering| = 2000 deg/s"
+    why_well_defined: >
+      The core's steering is normalised so that |steering| <= 1 on the
+      calibration grid, so R_max is exact, duration-independent and
+      trial-independent: the fastest turn the brain can ever request.
+    numerical_agreement: "R99(all trials) = 1999.7 vs R_max = 2000.0 (0.02%)"
+    consequence: "the sweep grid of section 17 is unchanged in practice"
+  frozen_in: configs/neural_command_scale.json
+  warning: >
+    R_max is a simulation scale, never a vehicle specification.  Read
+    "r_max = 0.5 R_max" as "the body can execute half of the fastest turn the
+    brain ever requests".
+
+stage1_components_added:
+  - src/body/yaw_plant.py      # rate limit, acceleration cap, first-order lag
+  - src/plugins/rate_clip.py   # plugin B, goal-blind
+  - tests/test_body_limits.py  # doc section 44 items 7, 8, 9
+  notes:
+    tau_r_vs_alpha_max: >
+      Kept as separate mechanisms and pinned by a test (doc section 11): a
+      small command is shaped by the lag and never touches the cap, a large
+      one saturates the cap.  They are not double counting.
+    integration_guard: >
+      Explicit Euler on the first-order lag is unstable unless
+      dt_body << tau_r; the plant refuses to construct when
+      tau_r < 2*dt_body rather than producing silent garbage.
