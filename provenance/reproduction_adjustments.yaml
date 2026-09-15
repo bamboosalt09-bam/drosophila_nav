@@ -248,3 +248,81 @@ still_open:
     status: source value known, not yet wired into our decoder
     value: "k = 200, applied to the grid-normalised steering, at fs = 10 Hz"
     units: "degrees per 0.1 s timestep"
+
+# =========================================================================
+# STAGE 0 PART 2 -- ideal closed loop (2026-09-15)
+# =========================================================================
+stage0_part2_ideal_loop:
+  verdict: PASSED
+  script: experiments/stage0_ideal_loop.py
+  results: results/stage0_loop/default/
+  configuration: >
+    50 runs x 6 PFL scalars x 1000 steps at 10 Hz, starting anti-goal at
+    180 deg, source noise (gaussian -> butterworth 2 Hz -> zscore -> x10),
+    k = 200, ideal body, passthrough plugin, ideal heading sensor.
+
+  source_trend_reproduced:
+    statistic: "rho = |mean(exp(i*heading))|, the source's heading consistency"
+    rho_by_S: {0.0: 0.377, 0.2: 0.603, 0.4: 0.888, 0.6: 0.951, 0.8: 0.971, 1.0: 0.973}
+    note: >
+      Monotone increase with the PFL scalar, reproducing the source's Figure 5
+      claim that PFL drive controls how tightly the goal is held.  S = 0 gives
+      exactly zero steering, so its rho is a no-control random-walk baseline,
+      not goal holding.
+
+  scheduler_equivalence:
+    claim: >
+      Condition A run through our general scheduler
+      (decoder -> passthrough plugin -> ideal body -> ideal sensor) IS the
+      source's own closed loop.
+    max_rho_difference: 0.041
+    deterministic_max_deviation_deg: 1.32   # over 18 calibration/test starts
+    residual_cause: >
+      The source loop snaps the heading to its precomputed 1 deg grid on every
+      step; ours evaluates the core at the exact heading.
+
+findings_stage0_part2:
+
+  F1_second_attractor:
+    severity: high -- affects how Stage 1 failures may be classified
+    observation: >
+      With the source's own gain k = 200 (peak 2000 deg/s at T_core = 0.1 s)
+      the IDEAL closed loop has two attractors: the goal, and a period-2 limit
+      cycle alternating near +99.6 / -100.4 deg.
+    basin: >
+      73.8% of initial heading errors converge to the goal; the rest fall into
+      the limit cycle.  The two basins INTERLEAVE -- 178 deg converges while
+      179 deg does not -- so there is no single "basin edge" angle.
+    mechanism: >
+      The per-step heading increment is k*steering, which reaches 200 deg.
+      Near the goal the map contracts (1 + k*ds/de = 0.245), but in the
+      mid-range it overshoots, and the overshoot is what sustains the cycle.
+    consequence: >
+      Oscillation observed later with a CONSTRAINED body must not be
+      attributed to the body without checking this baseline first
+      (handoff doc section 27).  The ideal body already oscillates from some
+      initial conditions.
+    not_a_bug: >
+      k = 200 is the source's value, applied to the source's normalised
+      steering.  We are not free to retune it -- doing so would break the
+      "frozen decoder" rule (doc section 46).  It is recorded as a property of
+      the reproduced model.
+
+  F2_anti_goal_equilibrium_is_unstable:
+    observation: >
+      Steering at exactly 180 deg is ~8e-15, not 0.  Started there, the loop
+      amplifies that rounding residual by a factor of 4.67 per cycle (the
+      instability multiplier 1 + k*ds/de at 180 deg) and escapes after about
+      19 steps.
+    reproducibility_warning: >
+      The escape is SEEDED BY FLOATING-POINT ROUNDING, so its direction is not
+      portable across platforms, numpy builds or BLAS versions.  Any 180 deg
+      stress test must use an explicit symmetry-breaking perturbation and
+      report it (handoff doc section 48).  Pinned by
+      tests/test_closed_loop.py::test_anti_goal_equilibrium_is_unstable_and_amplifies_rounding
+    separatrix_effect: >
+      Near 180 deg the source's 1 deg heading quantisation can select a
+      different attractor than our continuous loop: at 179 deg the source
+      reaches the goal and ours reaches the limit cycle.  Trajectory-level
+      agreement is therefore not expected at the separatrix; rho statistics
+      agree throughout.

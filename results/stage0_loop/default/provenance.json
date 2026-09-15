@@ -1,0 +1,115 @@
+{
+  "generated_utc": "2026-09-15T13:22:35+00:00",
+  "script": "experiments/stage0_ideal_loop.py",
+  "git_commit": "6bac81a50f299998df17f8adf319a94450a264f9",
+  "core_source_sha256_16": "5292559b0cfd91d9",
+  "core_params": {
+    "n_units": 1000,
+    "phase_shift_pfl3_deg": 67.5,
+    "phase_shift_pfl2_deg": 180.0,
+    "offset_deg": 0.0,
+    "goal_amplitude": 1.0,
+    "pfl_scalar_S": 1.0,
+    "w_pfl3_dna03": 1.0,
+    "w_pfl2_dna03": 4.0,
+    "w_pfl3_dna02": 1.0,
+    "w_dna03_dna02": 12.0,
+    "dna02_tile_count": 1000,
+    "pfl3_inhibitory": false,
+    "pfl2_silenced": false,
+    "label": "westeinde2024_reduced_abstract_ELU1"
+  },
+  "decoder": {
+    "kappa_deg_per_step": 200.0,
+    "T_core_s": 0.1,
+    "name": "source_k200",
+    "max_yaw_rate_rad_s": 34.906585039886586,
+    "max_yaw_rate_deg_s": 1999.9999999999998
+  },
+  "noise": {
+    "noise_level_deg_per_step": 10.0,
+    "fpass_hz": 2.0,
+    "fs_hz": 10.0,
+    "order": 5,
+    "name": "source_lowpass_gaussian",
+    "recipe": "gaussian -> butter lfilter -> zscore -> * level"
+  },
+  "seed": 20260915,
+  "runs": 50,
+  "steps": 1000,
+  "initial_hd_deg": 180.0,
+  "plugin": "passthrough",
+  "body": "ideal_yaw",
+  "sensor": "ideal_heading",
+  "rho_source_mean": [
+    0.3769222164388506,
+    0.6031665816469669,
+    0.8879756747831888,
+    0.9506326799490651,
+    0.9713806632762831,
+    0.9735313168637336
+  ],
+  "rho_ours_mean": [
+    0.37692221643885043,
+    0.6029949533553208,
+    0.8879626973028221,
+    0.9506138380275089,
+    0.971395765236635,
+    0.9728663351889284
+  ],
+  "max_rho_difference": 0.0407703090035908,
+  "max_trajectory_deviation_deg_noisy": 106.17402859696227,
+  "deterministic_max_deviation_deg": 1.317257635583644,
+  "deterministic_deviation_by_e0": {
+    "-135": 0.4287751567605653,
+    "-90": 1.0948592934218482,
+    "-60": 0.37209396479229895,
+    "-30": 0.46202312547902125,
+    "30": 0.46202312546685675,
+    "60": 0.37209396479295265,
+    "90": 1.0948592934839212,
+    "135": 0.42877515675772315,
+    "-170": 1.1723920128445116,
+    "-150": 0.4270502641365965,
+    "-120": 1.164348603167383,
+    "-75": 1.317257635583644,
+    "-45": 0.4163990424388828,
+    "45": 0.41639904245178627,
+    "75": 1.3172576355755439,
+    "120": 1.1643486031612724,
+    "150": 0.4270502641310543,
+    "170": 1.1723920128527539
+  },
+  "separatrix_deviation_by_e0": {
+    "180": 179.99999999997485,
+    "179": 102.76083126852168,
+    "-179": 102.76083126836892
+  },
+  "steering_max_at_S0": 0.0,
+  "non_goal_attractor": {
+    "upper_deg": 99.64286251762202,
+    "lower_deg": -100.37721003262911,
+    "period_steps": 2
+  },
+  "trajectory_deviation_note": "Individual trajectories can differ by ~100 deg when the path passes the anti-goal separatrix, because the source loop snaps heading to a 1 deg grid and that decides which attractor is reached. Away from the separatrix the two loops agree to ~1 deg, and the rho statistics agree throughout.",
+  "basin": {
+    "converged_fraction": 0.7381615598885793,
+    "outermost_converging_abs_e0_deg": 178.0,
+    "contiguous_edge_deg": null,
+    "counts": {
+      "converged": 265,
+      "oscillation": 94
+    }
+  },
+  "checks": {
+    "loops agree on rho (< 0.05)": true,
+    "deterministic loops agree away from the separatrix (< 2 deg)": true,
+    "S = 0 produces zero steering (open loop)": true,
+    "rho increases with S": true,
+    "S = 1 holds the goal (rho > 0.8)": true,
+    "a finite basin exists": true
+  },
+  "all_checks_passed": true,
+  "python": "3.13.5",
+  "numpy": "2.5.3"
+}
