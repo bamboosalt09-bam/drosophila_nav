@@ -31,12 +31,16 @@ import pandas as pd
 import sensors.flywire_eye as eye
 from core.flywire_brain import FlyWireBrain
 
-# Luminance -> drive.  Steady state is V_REST + drive * tau_mbr/dt, so 0.035
-# mV/step is the threshold; 0.06 puts a lit column comfortably over it.
+# Luminance -> drive, in mV per step.  Steady state is V_REST + drive *
+# tau_mbr/dt, so 0.035 reaches threshold -- but reaching threshold is not
+# enough to cross the optic lobe.  Measured stage by stage, descending
+# neurons stay silent at 0.06, reach 124 active at 0.20 and 213 at 0.50,
+# where the injected cells saturate at the 455 Hz refractory ceiling.
+# 0.20 is the working point: signal gets through without pinning the input.
 # ponytail: lamina cells actually INVERT luminance (L1/L2 hyperpolarise to
 # light).  Driving them proportionally is the crude version; flip the sign per
 # type if the polarity turns out to matter.
-DRIVE_LIT = 0.06
+DRIVE_LIT = 0.20
 
 
 def main(argv=None) -> int:
@@ -44,6 +48,8 @@ def main(argv=None) -> int:
     ap.add_argument("--duration", type=float, default=300.0, help="ms per heading")
     ap.add_argument("--headings", type=int, default=12)
     ap.add_argument("--bar-width", type=float, default=20.0)
+    ap.add_argument("--drive", type=float, default=DRIVE_LIT,
+                    help="mV per step for a fully lit column")
     ap.add_argument("--background", type=float, default=0.5,
                     help="surround luminance; 0 means a black background, "
                          "which leaves the eye almost entirely silent")
@@ -94,7 +100,7 @@ def main(argv=None) -> int:
         lum /= len(offs)
 
         drive = np.zeros(brain.n, dtype=np.float32)
-        drive[rows] = (lum * DRIVE_LIT).astype(np.float32)
+        drive[rows] = (lum * args.drive).astype(np.float32)
 
         brain.reset()
         counts, _ = brain.run(args.duration, drive_fn=lambda t: drive)
@@ -141,7 +147,7 @@ def main(argv=None) -> int:
     prov = {"generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "brain": brain.as_dict(), "eye": lat.as_dict(),
             "duration_ms": args.duration, "bar_width_deg": args.bar_width,
-            "drive_lit_mv_per_step": DRIVE_LIT,
+            "drive_lit_mv_per_step": args.drive,
             "n_injected": int(len(rows)),
             "steering_lr_spread_hz": float(spread),
             "corr_with_sin_heading": corr,
