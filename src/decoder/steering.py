@@ -68,3 +68,42 @@ class SteeringDecoder:
         d["max_yaw_rate_rad_s"] = self.max_yaw_rate
         d["max_yaw_rate_deg_s"] = float(np.rad2deg(self.max_yaw_rate))
         return d
+
+
+@dataclass(frozen=True)
+class DescendingPair:
+    """The two-number descending command, as fly simulators actually use it.
+
+    NeuroMechFly 2.0 drives the body with [dL, dR], which modulate the left
+    and right leg CPGs: the magnitude sets stepping amplitude and the sign
+    sets direction.  Odour taxis, visual taxis and navigation all reduce to
+    that 2D action space, and nobody wires motor neurons individually.
+
+    Collapsing the two sides to a single R-L scalar, as this project did up to
+    now, throws the forward channel away before anything can look at it -- and
+    a visual stimulus may well modulate approach speed rather than turning.
+    """
+
+    left: float
+    right: float
+
+    @property
+    def turn(self) -> float:
+        """Positive = turn right."""
+        return self.right - self.left
+
+    @property
+    def forward(self) -> float:
+        """Both sides stepping together."""
+        return self.left + self.right
+
+    @property
+    def balance(self) -> float:
+        """Turn as a fraction of total drive: scale-free, so a network that
+        merely gets quieter cannot look like it is steering better."""
+        tot = abs(self.left) + abs(self.right)
+        return self.turn / tot if tot > 0 else 0.0
+
+    def as_dict(self) -> Dict:
+        return {"left": self.left, "right": self.right, "turn": self.turn,
+                "forward": self.forward, "balance": self.balance}

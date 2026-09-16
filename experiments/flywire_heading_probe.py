@@ -30,6 +30,7 @@ import pandas as pd
 
 import sensors.flywire_eye as eye
 from core.flywire_brain import FlyWireBrain
+from decoder.steering import DescendingPair
 
 # Luminance -> drive, in mV per step.  Steady state is V_REST + drive *
 # tau_mbr/dt, so 0.035 reaches threshold -- but reaching threshold is not
@@ -110,7 +111,11 @@ def main(argv=None) -> int:
         hz = counts / (args.duration / 1000.0)
 
         r, l = hz[desc_r].sum(), hz[desc_l].sum()
+        pair = DescendingPair(left=float(l), right=float(r))
         recs.append({"heading_deg": float(h), "n_lit": int((lum > 0).sum()),
+                     "d_left": pair.left, "d_right": pair.right,
+                     "turn": pair.turn, "forward": pair.forward,
+                     "balance": pair.balance,
                      "total_hz": float(hz.sum()), "n_active": int((counts > 0).sum()),
                      "desc_right_hz": float(r), "desc_left_hz": float(l),
                      "steering_lr": float(r - l),
