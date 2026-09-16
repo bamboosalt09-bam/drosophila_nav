@@ -96,7 +96,10 @@ class FlyWireBrain:
         return np.flatnonzero(self.ann["cell_type"].isin(names).to_numpy())
 
     def side(self) -> np.ndarray:
-        return self.ann["side"].to_numpy(str)
+        # NOTE: Series.to_numpy(str) silently truncates to <U1 when the column
+        # holds NaN ("right" -> "r"), which made every side lookup match
+        # nothing.  astype(str) first.
+        return self.ann["side"].astype(str).to_numpy()
 
     # -- simulation -------------------------------------------------------
     def reset(self) -> None:

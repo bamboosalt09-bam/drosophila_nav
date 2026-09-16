@@ -118,8 +118,8 @@ def load(csv_path: str | Path = DEFAULT_CSV,
 
     return EyeLattice(
         root_id=df["root_id"].to_numpy(np.int64),
-        cell_type=df["type"].to_numpy(str),
-        eye=df["hemisphere"].to_numpy(str),
+        cell_type=df["type"].astype(str).to_numpy(),
+        eye=df["hemisphere"].astype(str).to_numpy(),
         azimuth_deg=azimuth,
         elevation_deg=dorsal * deg_per_column,
     )

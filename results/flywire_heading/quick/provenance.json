@@ -1,0 +1,26 @@
+{
+  "generated_utc": "2026-09-16T13:51:53+00:00",
+  "brain": {
+    "n_neurons": 139262,
+    "n_edges": 15091983,
+    "dt_ms": 0.1,
+    "w_syn_mV": 0.275,
+    "params": "Shiu et al. 2024 model.py",
+    "sign": "ACh/DA/OA/5-HT +, GABA/Glu -"
+  },
+  "eye": {
+    "n_neurons": 45528,
+    "n_types": 31,
+    "deg_per_column": 5.0,
+    "acceptance_deg": 5.8,
+    "source": "Matsliah et al. 2024 column_assignment.csv.gz",
+    "axes": "Zhao et al. 2022 Fig.2, measured as 120 deg apart"
+  },
+  "duration_ms": 200.0,
+  "bar_width_deg": 20.0,
+  "drive_lit_mv_per_step": 0.06,
+  "n_injected": 9958,
+  "steering_lr_spread_hz": 0.0,
+  "corr_with_sin_heading": NaN,
+  "wall_seconds": 9.32091030000447
+}
