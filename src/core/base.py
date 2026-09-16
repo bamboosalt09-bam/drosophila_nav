@@ -13,10 +13,33 @@ The study has two questions, and only the first one is being answered now:
 Decision (2026-09-15): run Q1 now; Q2 is a later expansion, and when it comes
 its scope is WHOLE-BRAIN FlyWire, in the spirit of Shiu et al. 2024.
 
-For that to be possible without rewriting the study, every core -- the current
-reduced Westeinde model, and any future connectome-scale one -- must be
-swappable behind ONE narrow interface.  Everything downstream (decoder,
-plugin, body, sensor, sweep, metrics, renderer) then stays untouched.
+For that to be possible without rewriting the study, every core must be
+swappable behind ONE narrow interface.
+
+What this interface has actually been shown to do, and what it has not
+---------------------------------------------------------------------
+SHOWN: a controller with the SAME input/output MEANING -- a heading and a
+goal in, a dimensionless steering command out -- can be substituted without
+touching the decoder, plugin, body, sensor, sweep, metrics or renderer.
+Condition D (the P controller, src/core/p_controller.py) is that
+demonstration, and it is the whole of it.
+
+NOT SHOWN, and not to be promised: that a connectome-scale core needs only
+to satisfy this signature.  Such a model additionally requires
+  * sensory encoding   -- a heading is not an input to a connectome; some set
+                          of cells must be driven, with a chosen tuning,
+                          gain and baseline
+  * temporal alignment -- the core's own dynamics have a timescale that has
+                          no reason to equal T_core = 0.1 s, so the loop's
+                          fixed-rate scheduling becomes an assumption rather
+                          than a given
+  * output decoding    -- which cells are read, and how their activity maps
+                          onto one steering scalar, is a modelling decision
+                          that does not follow from the connectome
+None of those three live behind `steering(heading, goal)`.  They are separate
+design problems, and each one is a place where a result could be created by
+the interface rather than by the circuit.  The interface keeps the DOWNSTREAM
+half of the study fixed; it does not make the upstream half free.
 
 The interface deliberately does NOT expose:
   * any internal state (so "the core is frozen across body conditions" is a

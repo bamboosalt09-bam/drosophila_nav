@@ -719,3 +719,108 @@ noise_on_sweep:
       worse" is inadmissible on its own; it must name the level of the other
       two axes.  fig4's caption used to assert exactly those main effects and
       has been rewritten to point at this file instead.
+
+connectivity_data_audit:
+  status: AUDITED -- the option does not run as published; do not call it
+    "the connectome" without the qualifications below
+  audited_by: "reference/check_connectivity_data.py (executes the authors'
+    own cells 0/3/5/7, no reimplementation)"
+  why: >
+    The next step is to compare idealised against measured connectivity in the
+    SAME steering circuit.  The option is named 'data', which invites the
+    assumption that it is a per-cell connectome model.  Checked instead of
+    assumed, at the user's instruction.
+
+  two_bugs_stop_it_running:
+    B1_hd_prefs_is_a_python_list: >
+      Cell 5 sets hd_prefs = [165, ..., -165] as a LIST in the data branch
+      (it is a numpy array in the abstract branch).  Cell 7 then computes
+      -1*hd_prefs, which for a list is repetition by -1, i.e. the empty list.
+      The goal input silently becomes shape (361, 0) and the cell raises.
+      Repair: np.asarray(...).  No free parameter.
+    B2_hardcoded_1000_in_the_dna02_step: >
+      Cell 7 tiles the DNa03->DNa02 term by a literal (1000, 1, 1, 1) while
+      the data branch sets num_cells = 12, so the two operands cannot
+      broadcast.  Repair: tile by num_cells.  Verified to carry no free
+      parameter -- broadcasting admits only 1 or num_cells, and those two
+      give bit-identical results, because tiling then summing over the cell
+      axis is the same operation either way.
+
+  Q1_per_neuron_or_summed:
+    answer: "both, at different stages"
+    detail: >
+      PFL2/PFL3 -> DN weights are per-cell vectors of length 12, indexed by
+      protocerebral bridge glomerulus, so the PFL side IS per-neuron.  The
+      DNa03 -> DNa02 weight is a single scalar (271): the descending neurons
+      are single units, not populations.  The left hemisphere's weights are
+      np.flip of the right, i.e. left-right symmetry is ASSUMED, not measured.
+      12 cells per population is the hemibrain count for these types, not a
+      whole-connectome model.
+
+  Q2_synapse_count_to_weight:
+    answer: "no conversion at all -- raw synapse counts are the weights"
+    measured: "pfl2->dna03 mean 61.7 (range 1-96), pfl3->dna03 16.7,
+      pfl3->dna02 20.8, dna03->dna02 271"
+    note: >
+      The abstract weights are these ratios rounded: 61.7/16.7 = 3.70 -> 4,
+      271/20.8 = 13.01 -> 12.  So 'abstract' is not an arbitrary idealisation;
+      it is the data condition with per-cell heterogeneity averaged away.
+      That makes the comparison a test of HETEROGENEITY, not of whether the
+      connectome numbers were used at all.
+
+  Q3_what_normalisation_changes:
+    answer: >
+      ELU1 rescales by the batch min/max at every stage and the final steering
+      is divided by its own global max, so any uniform gain is removed.  What
+      survives the normalisation is the SHAPE of the response and the relative
+      weighting between cells -- which is exactly what differs here, so the
+      comparison is not a normalisation artifact.
+
+  Q4_same_input_body_evaluation:
+    answer: "NO -- the PFL head-direction preferences differ as well"
+    detail: >
+      Abstract assigns uniformly spaced preferences plus a fixed phase shift
+      (180 / +67.5 / -67.5 deg).  Data uses per-cell preferences predicted
+      from PB glomerulus, with no added shift.  The goal population is
+      identical at 12 cells (both give 165 ... -165 in 30 deg steps).
+      Cell count is NOT a confound: abstract at 12 cells reproduces abstract
+      at 1000 cells (steering at e = -90 deg: 0.959 vs 0.960).
+    weights_and_prefs_are_not_separable: >
+      Pairing the data weights with abstract HD preferences produces a
+      BROKEN controller -- steering at e = -45 deg flips sign (-0.061), i.e.
+      positive feedback near the goal.  The per-cell weights are only
+      meaningful in their glomerulus ordering, so "weights" and "preferences"
+      cannot be ablated independently.  Reported as a coupling, not as an
+      effect decomposition.
+
+  headline_consequence_for_the_next_experiment:
+    finding: >
+      The abstract condition is EXACTLY goal-phase invariant (restoring gain
+      CV 0.000, max/min 1.00 across all 37 goal phases), because 1000
+      uniformly spaced identical cells are rotationally symmetric.  The data
+      condition is NOT: its restoring gain varies 11.7x with goal direction
+      (CV 0.638), weakest at goal = +120 deg, strongest at goal = +10 deg.
+    consequence: >
+      Every Stage 1 run holds goal = 0.  For the abstract core that is
+      harmless, because of the invariance just measured.  For the data core it
+      would sample one arbitrary point of an 11.7x range, so the data-condition
+      sweep MUST vary the goal direction as well as the initial heading error.
+      Any comparison that does not is measuring the choice of goal, not the
+      connectivity.
+    also: >
+      The data core's restoring gain at goal = 0 is 33% lower than abstract's
+      (0.00253 vs 0.00380 per degree) and its response is flatter.  Since the
+      decoder gain kappa multiplies this, the two conditions do not produce
+      the same command scale, which raises the open design question below.
+
+  open_design_question_before_running:
+    question: "shared R_max, or one per condition?"
+    detail: >
+      R_max = kappa * max|steering| sets the physical meaning of every body
+      axis.  If each condition calibrates its own R_max, the two are not
+      driving the same bodies and the weaker data command is normalised away
+      -- hiding the very difference being tested.  If both share the abstract
+      condition's R_max, "body" means the same thing in both and the gain
+      difference shows up as behaviour.
+    recommendation: "share R_max, taken from the abstract condition"
+    status: NOT YET DECIDED -- to be settled with the user before any sweep
