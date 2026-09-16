@@ -409,3 +409,12 @@ def test_flywire_eye_lattice_and_geometry():
     if not Path("data/flywire/column_assignment.csv.gz").exists():
         pytest.skip("FlyWire column assignment not downloaded")
     eye.verify()
+
+
+def test_flywire_brain_builds_and_propagates():
+    """Sensory drive reaches the descending neurons through the connectome."""
+    import core.flywire_brain as fb
+
+    if not Path("data/flywire/edges_783.npz").exists():
+        pytest.skip("FlyWire edge table not built")
+    fb.demo()

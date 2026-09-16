@@ -1,0 +1,199 @@
+"""The whole FlyWire brain as a leaky integrate-and-fire network.
+
+No circuit is designated.  Input goes in at anatomically defined sensory
+neurons, output is read at anatomically defined descending neurons, and
+everything between is whatever the connectome does.
+
+Neuron parameters are Shiu et al. 2024's (github.com/philshiu/Drosophila_brain_model,
+model.py), so they are not ours to tune:
+
+    v_rest = v_reset = -52 mV, v_th = -45 mV
+    membrane tau 20 ms, synaptic tau 5 ms
+    refractory 2.2 ms, synaptic delay 1.8 ms
+    w = sign * synapse_count * 0.275 mV, no synapse-count threshold
+
+`w_syn` is the one free parameter in that model and they say so.  The sign
+comes from the predicted transmitter (ACh/DA/OA/5-HT +, GABA/Glu -), which is
+an assumption about the connectome rather than a measurement of it.
+
+ponytail: explicit Euler at dt = 0.1 ms and a dense voltage vector.  Fine at
+this scale on one core; a batched GPU version is the upgrade if a sweep is
+ever needed.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, Optional
+
+import numpy as np
+import pandas as pd
+import scipy.sparse as sp
+
+DATA = Path("data/flywire")
+
+# Shiu et al. 2024, model.py: default_params
+V_REST = -52.0
+V_RESET = -52.0
+V_TH = -45.0
+TAU_MBR_MS = 20.0
+TAU_SYN_MS = 5.0
+REFRACTORY_MS = 2.2
+DELAY_MS = 1.8
+W_SYN_MV = 0.275
+
+# ACh / DA / OA / 5-HT excitatory, GABA / Glu inhibitory
+_NT_SIGN = {"ach": 1.0, "da": 1.0, "oct": 1.0, "ser": 1.0,
+            "gaba": -1.0, "glut": -1.0}
+
+
+@dataclass
+class BrainState:
+    v: np.ndarray
+    g: np.ndarray
+    refrac_until_ms: np.ndarray
+    t_ms: float
+
+
+class FlyWireBrain:
+    """LIF over the whole connectome.  Indices are positions in `self.ids`."""
+
+    def __init__(self, min_synapses: int = 1, dt_ms: float = 0.1):
+        e = np.load(DATA / "edges_783.npz", allow_pickle=True)
+        ann = pd.read_csv(DATA / "neuron_annotations_783.tsv", sep="\t",
+                          low_memory=False)
+
+        keep = e["syn"] >= min_synapses
+        pre, post, syn = e["pre"][keep], e["post"][keep], e["syn"][keep]
+        nt_names = [str(x) for x in e["nt_names"]]
+        sign = np.array([_NT_SIGN[n] for n in nt_names])[e["top_nt"][keep]]
+
+        self.ids = np.union1d(np.union1d(pre, post),
+                              ann["root_id"].to_numpy(np.int64))
+        self.n = len(self.ids)
+        idx = pd.Index(self.ids)
+        i_pre, i_post = idx.get_indexer(pre), idx.get_indexer(post)
+
+        w = (sign * syn * W_SYN_MV).astype(np.float32)
+        # row = source, so one row holds that neuron's out-edges (event-driven)
+        self.out = sp.csr_matrix((w, (i_pre, i_post)), shape=(self.n, self.n),
+                                 dtype=np.float32)
+        self.out.sort_indices()
+        self.n_edges = self.out.nnz
+
+        self.ann = ann.set_index("root_id").reindex(self.ids)
+        self.dt_ms = float(dt_ms)
+        self._decay_v = np.float32(np.exp(-dt_ms / TAU_MBR_MS))
+        self._decay_g = np.float32(np.exp(-dt_ms / TAU_SYN_MS))
+        self._delay_steps = max(1, int(round(DELAY_MS / dt_ms)))
+        self.reset()
+
+    # -- anatomical selections, not functional ones ----------------------
+    def by_super_class(self, *names: str) -> np.ndarray:
+        return np.flatnonzero(self.ann["super_class"].isin(names).to_numpy())
+
+    def by_cell_type(self, *names: str) -> np.ndarray:
+        return np.flatnonzero(self.ann["cell_type"].isin(names).to_numpy())
+
+    def side(self) -> np.ndarray:
+        return self.ann["side"].to_numpy(str)
+
+    # -- simulation -------------------------------------------------------
+    def reset(self) -> None:
+        self.v = np.full(self.n, V_REST, dtype=np.float32)
+        self.g = np.zeros(self.n, dtype=np.float32)
+        self.refrac_until = np.full(self.n, -1.0, dtype=np.float32)
+        self.t_ms = 0.0
+        self._pending = [np.empty(0, np.int64)
+                         for _ in range(self._delay_steps)]
+        self._slot = 0
+
+    def step(self, drive_mv: Optional[np.ndarray] = None) -> np.ndarray:
+        """Advance dt. `drive_mv` is an external current, in mV per step."""
+        dv = np.float32(V_TH)
+        spikes = np.flatnonzero((self.v >= dv)
+                                & (self.refrac_until <= self.t_ms))
+
+        # synaptic input arrives DELAY_MS after the spike
+        arriving = self._pending[self._slot]
+        self._pending[self._slot] = spikes
+        self._slot = (self._slot + 1) % self._delay_steps
+
+        self.g *= self._decay_g
+        if arriving.size:
+            contrib = self.out[arriving].sum(axis=0)
+            self.g += np.asarray(contrib, dtype=np.float32).ravel()
+
+        # dv/dt = (v_rest - v + g) / tau_mbr
+        self.v += (V_REST - self.v + self.g) * np.float32(
+            self.dt_ms / TAU_MBR_MS)
+        if drive_mv is not None:
+            self.v += drive_mv
+
+        if spikes.size:
+            self.v[spikes] = V_RESET
+            self.g[spikes] = 0.0
+            self.refrac_until[spikes] = self.t_ms + REFRACTORY_MS
+        self.t_ms += self.dt_ms
+        return spikes
+
+    def run(self, duration_ms: float, drive_fn=None, record=None):
+        """Run and return spike counts (all neurons) plus optional traces."""
+        n_steps = int(round(duration_ms / self.dt_ms))
+        counts = np.zeros(self.n, dtype=np.int32)
+        traces = ({k: np.zeros((n_steps, len(v)), np.int8)
+                   for k, v in record.items()} if record else {})
+        for t in range(n_steps):
+            drive = drive_fn(self.t_ms) if drive_fn is not None else None
+            s = self.step(drive)
+            if s.size:
+                counts[s] += 1
+                for k, v in (record or {}).items():
+                    traces[k][t] = np.isin(v, s)
+        return counts, traces
+
+    def as_dict(self) -> Dict:
+        return {"n_neurons": self.n, "n_edges": int(self.n_edges),
+                "dt_ms": self.dt_ms, "w_syn_mV": W_SYN_MV,
+                "params": "Shiu et al. 2024 model.py",
+                "sign": "ACh/DA/OA/5-HT +, GABA/Glu -"}
+
+
+def demo() -> None:
+    """Smoke check: the network builds, runs, and fires at a plausible rate."""
+    import time
+
+    t0 = time.perf_counter()
+    b = FlyWireBrain()
+    print("built %d neurons, %d edges in %.1f s"
+          % (b.n, b.n_edges, time.perf_counter() - t0))
+
+    sensory = b.by_super_class("sensory", "sensory_ascending")
+    desc = b.by_super_class("descending")
+    print("  sensory %d   descending %d" % (len(sensory), len(desc)))
+    assert len(sensory) > 10000 and len(desc) > 1000
+
+    # A constant drive to sensory neurons, to see anything move at all.
+    # Steady state is V_REST + drive * (tau_mbr / dt) = -52 + drive * 200, so
+    # the drive has to exceed 0.035 mV/step to reach the -45 mV threshold.
+    drive = np.zeros(b.n, dtype=np.float32)
+    drive[sensory] = 0.06
+
+    t0 = time.perf_counter()
+    counts, _ = b.run(200.0, drive_fn=lambda t: drive)
+    el = time.perf_counter() - t0
+    hz = counts / 0.2
+    print("  200 ms in %.1f s wall (%.1f s per biological second)"
+          % (el, el / 0.2))
+    print("  firing: %d of %d neurons spiked, mean %.1f Hz, median active %.1f Hz"
+          % ((counts > 0).sum(), b.n, hz.mean(), np.median(hz[counts > 0])
+             if (counts > 0).any() else 0.0))
+    print("  descending: %d active, mean %.1f Hz"
+          % ((counts[desc] > 0).sum(), hz[desc].mean()))
+    assert (counts > 0).sum() > 0, "nothing fired at all"
+    assert hz.mean() < 500, "runaway excitation"
+    print("demo ok")
+
+
+if __name__ == "__main__":
+    demo()
