@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-09-15T23:33:40+00:00",
+  "generated_utc": "2026-09-16T00:34:20+00:00",
   "source": "results\\stage1_sweep\\default\\sweep_trials.csv",
   "paired_sample": {
     "r_min": 0.01,
@@ -68,14 +68,6 @@
     }
   },
   "rescue_rate_where_baseline_failed": 0.7222222222222222,
-  "comparison": {
-    "tag": "default",
-    "other": "lagcomp",
-    "mean_self": 0.8590277777777777,
-    "mean_other": 0.9423611111111111,
-    "cells_better": 42,
-    "cells_worse": 4,
-    "cells_equal": 134
-  },
+  "comparison": null,
   "selection_effect_note": "Unpaired averages along r_max are misleading: at r_max = 0.002 only |e0| = 30 and 45 deg remain feasible, versus 8 distinct magnitudes at r_max >= 0.01. All numbers above are paired."
 }

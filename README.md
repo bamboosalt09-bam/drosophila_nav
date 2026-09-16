@@ -23,6 +23,12 @@ is an artifact of the deterministic protocol and is retracted as a general
 claim.  What survives noise is the opposite direction: body constraints still
 cause genuine failure, and a lagging body can *improve* navigation by
 low-passing the neural command noise (finding R3, optimum near tau = 16 T).
+Separately: **no axis in this experiment has a main effect.** Every one
+of the three body axes changes its influence depending on where the other
+two sit (e.g. the acceleration cap does nothing at r_max <= 0.02 and is the
+dominant axis at r_max = 0.25), so no marginal mean over this grid is a
+valid summary.  `results/stage1_sweep/<tag>/interaction_split.csv` holds the
+conditional tables any such claim must be checked against.
 See `provenance/reproduction_adjustments.yaml: noise_on_sweep`.
 
 ## Architecture (kept separable from the start, for the later 3D renderer)

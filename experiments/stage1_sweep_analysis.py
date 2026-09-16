@@ -23,6 +23,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import sys
 from datetime import datetime, timezone
@@ -171,12 +172,48 @@ def main(argv=None) -> int:
         ax.set_xlabel(label)
         ax.grid(alpha=0.3)
     axes[0].set_ylabel("success rate")
-    fig.suptitle("Stage 1: each axis separately (paired sample). "
-                 "A FASTER body is worse; more lag is worse; "
-                 "more acceleration helps up to a point.", fontsize=10)
+    fig.suptitle("Stage 1: each axis MARGINALISED over the other two "
+                 "(paired sample). Read with interaction_split.csv -- every "
+                 "apparent main effect in this project has been an "
+                 "interaction.", fontsize=10)
     fig.tight_layout()
     fig.savefig(d / "fig4_axis_effects.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
+
+    # ---- interaction split -----------------------------------------------
+    # The marginal means above are the shape that has fooled this project
+    # three times (r_max x tau, r_max x alpha, tau x plugin).  For every
+    # ordered axis pair, hold one axis fixed and look at the spread of the
+    # other WITHIN each level: a real main effect keeps its spread at every
+    # level, an interaction does not.  Only the conditional table is stored;
+    # the spreads printed below are max-min of it, so nothing is duplicated.
+    rows_i = []
+    print("--- interaction split: spread of A within each level of B ---")
+    for a, b in itertools.permutations(
+            ("r_max_ratio", "alpha_ratio", "tau_ratio"), 2):
+        piv = sub.pivot_table(index=a, columns=b, values="success",
+                              aggfunc="mean")
+        for a_lvl, row in piv.iterrows():
+            for b_lvl, val in row.items():
+                rows_i.append({"axis": a, "axis_at": a_lvl, "held_fixed": b,
+                               "held_at": b_lvl, "success": float(val)})
+        spread = piv.max(axis=0) - piv.min(axis=0)
+        marg = sub.groupby(a)["success"].mean()
+        print("  %-12s within %-12s : %s   (marginal %.2f)"
+              % (a, b, "  ".join("%g:%.2f" % (k, v) for k, v in spread.items()),
+                 marg.max() - marg.min()))
+    isplit = pd.DataFrame(rows_i)
+    # self-check: every axis_at must be a level of `axis` and every held_at a
+    # level of `held_fixed`.  Averaging the table back over the held axis does
+    # NOT work as a check -- the grid is balanced, so a transposed table
+    # reproduces the same marginals and slips through.  Level membership does
+    # catch it, because the three axes have different level sets.
+    for col_axis, col_level in (("axis", "axis_at"), ("held_fixed", "held_at")):
+        for name, g in isplit.groupby(col_axis):
+            assert set(g[col_level]) == set(sub[name].unique()), (
+                "interaction_split is transposed: %s carries %s levels"
+                % (name, sorted(set(g[col_level]))))
+    isplit.to_csv(d / "interaction_split.csv", index=False)
 
     if len(resc):
         piv = resc.pivot_table(index="r_max_ratio", columns="tau_ratio",

@@ -1,0 +1,10 @@
+r_max_ratio,tau_ratio,outcome
+0.005,1.0,success
+0.005,8.0,success
+0.005,32.0,body_infeasible
+0.02,1.0,success
+0.02,8.0,success
+0.02,32.0,success
+0.25,1.0,success
+0.25,8.0,success
+0.25,32.0,overshoot_dominant

@@ -677,3 +677,45 @@ noise_on_sweep:
       from the 36288-row results list, which a 21x smaller benchmark does not
       show.  Progress prints now flush; a redirected run was block-buffered
       and therefore indistinguishable from a hung one for 40 minutes.
+
+  R6_no_axis_has_a_main_effect:
+    status: NEW -- this is why the marginal numbers keep misleading
+    stored_in: "results/stage1_sweep/<tag>/interaction_split.csv (192 rows,
+      one conditional success rate per axis x level x held-axis x held-level)"
+    produced_by: "experiments/stage1_sweep_analysis.py, on the paired subset"
+    method: >
+      For every ordered axis pair, hold one axis at each of its levels and
+      take the spread (max - min) of the other axis within that level.  A
+      genuine main effect keeps roughly the same spread at every level of the
+      other axes; an interaction does not.
+    condition_B_with_noise:
+      r_max_within_tau:    "0.19 0.19 0.22 0.44 0.68 0.76   (marginal 0.41)"
+      r_max_within_alpha:  "0.69 0.50 0.32 0.29 0.34 0.34   (marginal 0.41)"
+      tau_within_alpha:    "0.15 0.24 0.38 0.40 0.40 0.40   (marginal 0.32)"
+      tau_within_r_max:    "0.11 0.06 0.25 0.60 0.63        (marginal 0.32)"
+      alpha_within_r_max:  "0.00 0.00 0.17 0.48 0.40        (marginal 0.21)"
+      alpha_within_tau:    "0.33 0.33 0.32 0.20 0.06 0.02   (marginal 0.21)"
+      finding: >
+        Not one axis holds its spread.  The acceleration cap is the clearest
+        case: alpha changes NOTHING at r_max <= 0.02 (spread 0.00) and is the
+        dominant axis at r_max = 0.25 (spread 0.48); symmetrically it does
+        nothing once tau >= 16 (0.06, 0.02).  There is no main effect anywhere
+        in this experiment, so no marginal mean in it is a valid summary.
+    condition_C_restructures_the_grid:
+      r_max_within_tau:    "0.20 0.20 0.20 0.21 0.20 0.18   (flat)"
+      tau_within_alpha:    "0.06 0.05 0.04 0.04 0.04 0.04   (collapsed)"
+      tau_within_r_max:    "0.11 0.02 0.06 0.06 0.01        (collapsed)"
+      alpha_within_r_max:  "0.00 0.00 0.14 0.70 0.70        (steep)"
+      r_max_within_alpha:  "0.70 0.40 0.10 0.02 0.02 0.02   (steep)"
+      finding: >
+        C does not merely raise the mean.  It removes the r_max x tau
+        interaction outright (r_max's spread becomes flat at ~0.20 across
+        every tau) and collapses tau's own influence everywhere, leaving a
+        single clean boundary in alpha x r_max.  That is a stronger and more
+        checkable statement of what C achieved than the paired mean
+        0.825 -> 0.912, and it is the form the Stage 1 conclusion should take.
+    consequence_for_reporting: >
+      Any sentence of the form "a faster body is worse" or "more lag is
+      worse" is inadmissible on its own; it must name the level of the other
+      two axes.  fig4's caption used to assert exactly those main effects and
+      has been rewritten to point at this file instead.
