@@ -418,3 +418,12 @@ def test_flywire_brain_builds_and_propagates():
     if not Path("data/flywire/edges_783.npz").exists():
         pytest.skip("FlyWire edge table not built")
     fb.demo()
+
+
+def test_flywire_rate_model_is_trainable():
+    """The rate model runs, stays finite, and gradients reach every parameter."""
+    import core.flywire_rate as fr
+
+    if not Path("data/flywire/edges_783.npz").exists():
+        pytest.skip("FlyWire edge table not built")
+    fr.demo()

@@ -59,46 +59,48 @@ class BrainState:
     t_ms: float
 
 
+def load_connectome(min_synapses: int = 1, w_scale: float = 1.0):
+    """Ids, signed weight matrix and the annotation columns anything reads.
+
+    Shared by the spiking and the rate model so both see the same graph.
+    Row = source neuron, so one row holds that neuron's out-edges.
+    """
+    e = np.load(DATA / "edges_783.npz", allow_pickle=True)
+    ann = pd.read_csv(DATA / "neuron_annotations_783.tsv", sep="	",
+                      low_memory=False)
+    ann = ann[["root_id", "super_class", "cell_class", "cell_type",
+               "side", "top_nt"]]
+
+    keep = e["syn"] >= min_synapses
+    pre, post, syn = e["pre"][keep], e["post"][keep], e["syn"][keep]
+
+    ids = np.union1d(np.union1d(pre, post), ann["root_id"].to_numpy(np.int64))
+    idx = pd.Index(ids)
+    i_pre, i_post = idx.get_indexer(pre), idx.get_indexer(post)
+
+    # Sign per presynaptic NEURON, through a 139k float32 array rather than a
+    # 15M string Series -- the latter allocated hundreds of MB and swapped.
+    ann_i = ann.set_index("root_id").reindex(ids)
+    sign_by_neuron = (ann_i["top_nt"].map(_NT_SIGN)
+                      .fillna(0.0).to_numpy(np.float32))
+    sign = sign_by_neuron[i_pre]
+
+    w = (sign * syn * W_SYN_MV * w_scale).astype(np.float32)
+    out = sp.csr_matrix((w, (i_pre, i_post)), shape=(len(ids), len(ids)),
+                        dtype=np.float32)
+    out.sort_indices()
+    return ids, out, ann_i, int((sign == 0).sum())
+
+
 class FlyWireBrain:
     """LIF over the whole connectome.  Indices are positions in `self.ids`."""
 
     def __init__(self, min_synapses: int = 1, dt_ms: float = 0.1,
                  w_scale: float = 1.0):
-        e = np.load(DATA / "edges_783.npz", allow_pickle=True)
-        ann = pd.read_csv(DATA / "neuron_annotations_783.tsv", sep="\t",
-                          low_memory=False)
-
-        keep = e["syn"] >= min_synapses
-        pre, post, syn = e["pre"][keep], e["post"][keep], e["syn"][keep]
-
-        # only the columns actually used; the full table is 49 MB of which 40
-        # is never read
-        ann = ann[["root_id", "super_class", "cell_type", "side", "top_nt"]]
-
-        self.ids = np.union1d(np.union1d(pre, post),
-                              ann["root_id"].to_numpy(np.int64))
+        self.ids, self.out, self.ann, self.n_unsigned = load_connectome(
+            min_synapses, w_scale)
         self.n = len(self.ids)
-        idx = pd.Index(self.ids)
-        i_pre, i_post = idx.get_indexer(pre), idx.get_indexer(post)
-
-        # Sign per presynaptic NEURON, looked up through a 139k-element array
-        # rather than a 15M-element string Series -- mapping transmitter names
-        # edge by edge allocated hundreds of MB of Python strings and pushed
-        # this machine into swap, which showed up as a 20x slowdown.
-        ann_i = ann.set_index("root_id").reindex(self.ids)
-        sign_by_neuron = (ann_i["top_nt"].map(_NT_SIGN)
-                          .fillna(0.0).to_numpy(np.float32))
-        sign = sign_by_neuron[i_pre]
-        self.n_unsigned = int((sign == 0).sum())
-
-        w = (sign * syn * W_SYN_MV * w_scale).astype(np.float32)
-        # row = source, so one row holds that neuron's out-edges (event-driven)
-        self.out = sp.csr_matrix((w, (i_pre, i_post)), shape=(self.n, self.n),
-                                 dtype=np.float32)
-        self.out.sort_indices()
         self.n_edges = self.out.nnz
-
-        self.ann = ann_i
         self.w_scale = float(w_scale)
         self.dt_ms = float(dt_ms)
         self._decay_v = np.float32(np.exp(-dt_ms / TAU_MBR_MS))
