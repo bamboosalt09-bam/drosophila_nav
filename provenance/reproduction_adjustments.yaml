@@ -1388,3 +1388,64 @@ standing_asymmetry_investigation:
       Keeping [dL, dR] instead gives turning as dR-dL and forward speed as
       dL+dR, which is the standard interface and makes the body swap for
       NeuroMechFly a decoder change rather than a redesign.
+
+asymmetry_traced_and_corrected:
+  status: CAUSE FOUND AND FIXED -- the steering signal now crosses zero
+  method: >
+    Walked the anatomical path measuring the left/right activity ratio at each
+    stage, rather than guessing at the cause.
+
+  trace:
+    per_neuron_activity_ratio_right_over_left:
+      injected_columns: 1.0001
+      optic: 1.0778
+      visual_projection: 1.0890
+      central: 1.0998
+      descending: 1.1685
+    incoming_weight_ratio_right_over_left:
+      injected_columns: 1.3526
+      optic: 1.1572
+      visual_projection: 1.1335
+      central: 1.0636
+      descending: 1.0649
+    reading: >
+      Per NEURON the injected drive is exactly symmetric (1.0001), so our
+      injection is fine.  The imbalance appears in the optic lobe and grows
+      monotonically to 17% at the descending neurons.  Crucially the
+      reconstruction asymmetry is DIFFERENT AT EVERY STAGE -- 15.7% into optic
+      neurons, 6.4% into central, 6.5% into descending.
+
+  why_the_first_two_fixes_failed:
+    global_weight_rebalancing: >
+      One gain for the whole brain cannot express a stage-dependent
+      imbalance, so it overcorrected and merely flipped the output's sign.
+    matching_the_input_columns: >
+      The right eye does have more reconstructed columnar cells (5,117 against
+      4,841), and eye.load(matched_only=True) equalises them exactly at 4,558
+      per side.  Measured effect on the output: almost none (offset/range 2.61
+      -> 2.59).  Neuron COUNT at the input was not the cause; per-neuron drive
+      was already symmetric.
+
+  the_fix_that_works:
+    what: >
+      balance_hemispheres(group=super_class) equalises incoming weight between
+      hemispheres WITHIN each anatomical stage instead of across the brain.
+    measured: >
+      turn goes from never crossing zero (offset 2.59x the signal range) to
+      crossing it (0.47x).  Bar on the left gives +3.5e-4 to +4.6e-4, bar at
+      +90 deg gives -8.2e-5.  Correlation with sin(heading) is unchanged at
+      about -0.88, so what changed is the offset, not the modulation.
+    remaining_imperfection: >
+      The zero crossing sits near +35 deg rather than 0, and +120 turns
+      positive again.  So this is a usable steering signal, not a correct one.
+
+  bug_fixed_at_the_root: >
+    Label columns are now normalised once in load_connectome.  Both idioms in
+    use were wrong in different ways: Series.to_numpy(str) truncates to <U1
+    when the column holds NaN ("right" -> "r"), which silently broke every
+    side lookup, and astype(str).to_numpy() leaves NaN as a float in an object
+    array, which breaks np.unique.  fillna("").astype(str) once, at load.
+
+  what_this_does_not_settle: >
+    Whether the residual failure is the remaining asymmetry or the fact that
+    an unfitted connectome does not compute steering.  Both are still live.

@@ -99,9 +99,29 @@ class EyeLattice:
 
 
 def load(csv_path: str | Path = DEFAULT_CSV,
-         deg_per_column: float = DEG_PER_COLUMN) -> EyeLattice:
-    """Build per-neuron viewing directions from the published assignment."""
+         deg_per_column: float = DEG_PER_COLUMN,
+         matched_only: bool = False) -> EyeLattice:
+    """Build per-neuron viewing directions from the published assignment.
+
+    `matched_only` keeps only lattice positions reconstructed in BOTH eyes.
+    Without it the two eyes are injected unequally -- the right eye has 5,117
+    of the injected columnar cells against the left's 4,841, purely because
+    more of it was reconstructed -- and that 6.5% input difference was
+    measured to grow along the path (1.00 per neuron at the injection site,
+    1.08 in the optic lobe, 1.10 centrally, 1.17 at the descending neurons).
+    Matching the columns makes it exactly 4,558 per side.
+
+    This is where to fix the asymmetry, not in the connectome's weights: a
+    global per-side weight rebalancing overcorrected and merely flipped the
+    output's sign, because the cause is neuron COUNT at the input.
+    """
     df = pd.read_csv(csv_path)
+    if matched_only:
+        key = list(zip(df["type"], df["p"], df["q"]))
+        left = {k for k, h in zip(key, df["hemisphere"]) if h == "left"}
+        right = {k for k, h in zip(key, df["hemisphere"]) if h == "right"}
+        both = left & right
+        df = df[[k in both for k in key]].reset_index(drop=True)
     p = df["p"].to_numpy(float)
     q = df["q"].to_numpy(float)
 

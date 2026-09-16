@@ -59,7 +59,8 @@ class BrainState:
     t_ms: float
 
 
-def balance_hemispheres(out_csr: sp.csr_matrix, side: np.ndarray):
+def balance_hemispheres(out_csr: sp.csr_matrix, side: np.ndarray,
+                        group: Optional[np.ndarray] = None):
     """Scale each hemisphere's incoming weight so the two sides match.
 
     Measured on FAFB: neuron counts are symmetric (left/right 1.013) but the
@@ -76,12 +77,19 @@ def balance_hemispheres(out_csr: sp.csr_matrix, side: np.ndarray):
     left-right neuron mapping and an edge-by-edge average instead.
     """
     inc = np.asarray(abs(out_csr).sum(axis=0)).ravel()
-    tot = {s: inc[side == s].sum() for s in ("left", "right")}
-    target = 0.5 * (tot["left"] + tot["right"])
     gain = np.ones(out_csr.shape[0], dtype=np.float32)
-    for s in ("left", "right"):
-        if tot[s] > 0:
-            gain[side == s] = target / tot[s]
+    # One global gain overcorrects: the imbalance differs by stage -- measured
+    # 1.157 into optic neurons, 1.064 into central, 1.065 into descending --
+    # so balance WITHIN each group instead of across the whole brain.
+    groups = ([None] if group is None else np.unique(group))
+    for g in groups:
+        sel = np.ones(len(side), bool) if g is None else (group == g)
+        tot = {s: inc[sel & (side == s)].sum() for s in ("left", "right")}
+        if min(tot.values()) <= 0:
+            continue
+        target = 0.5 * (tot["left"] + tot["right"])
+        for s in ("left", "right"):
+            gain[sel & (side == s)] = target / tot[s]
     # scale by the TARGET's side, so each hemisphere receives the same budget
     m = out_csr.tocoo()
     return _rebuild(m.row, m.col, m.data * gain[m.col], out_csr.shape[0])
@@ -105,7 +113,13 @@ def load_connectome(min_synapses: int = 1, w_scale: float = 1.0,
     ann = pd.read_csv(DATA / "neuron_annotations_783.tsv", sep="	",
                       low_memory=False)
     ann = ann[["root_id", "super_class", "cell_class", "cell_type",
-               "side", "top_nt"]]
+               "side", "top_nt"]].copy()
+    # Normalise the label columns ONCE, here, so no consumer has to.
+    # Series.to_numpy(str) truncates to <U1 when the column holds NaN, and
+    # astype(str).to_numpy() leaves the NaN as a float in an object array --
+    # the first silently broke every side lookup, the second breaks np.unique.
+    for col in ("super_class", "cell_class", "cell_type", "side", "top_nt"):
+        ann[col] = ann[col].fillna("").astype(str)
 
     keep = e["syn"] >= min_synapses
     pre, post, syn = e["pre"][keep], e["post"][keep], e["syn"][keep]
@@ -126,7 +140,9 @@ def load_connectome(min_synapses: int = 1, w_scale: float = 1.0,
                         dtype=np.float32)
     out.sort_indices()
     if symmetrise:
-        out = balance_hemispheres(out, ann_i["side"].astype(str).to_numpy())
+        out = balance_hemispheres(
+            out, ann_i["side"].to_numpy(dtype="<U16"),
+            group=ann_i["super_class"].to_numpy(dtype="<U32"))
     return ids, out, ann_i, int((sign == 0).sum())
 
 
@@ -154,10 +170,8 @@ class FlyWireBrain:
         return np.flatnonzero(self.ann["cell_type"].isin(names).to_numpy())
 
     def side(self) -> np.ndarray:
-        # NOTE: Series.to_numpy(str) silently truncates to <U1 when the column
-        # holds NaN ("right" -> "r"), which made every side lookup match
-        # nothing.  astype(str) first.
-        return self.ann["side"].astype(str).to_numpy()
+        # already normalised in load_connectome
+        return self.ann["side"].to_numpy(dtype="<U16")
 
     # -- simulation -------------------------------------------------------
     def reset(self) -> None:
