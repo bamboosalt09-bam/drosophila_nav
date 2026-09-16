@@ -48,6 +48,9 @@ def main(argv=None) -> int:
     ap.add_argument("--duration", type=float, default=300.0, help="ms per heading")
     ap.add_argument("--headings", type=int, default=12)
     ap.add_argument("--bar-width", type=float, default=20.0)
+    ap.add_argument("--w-scale", type=float, default=1.0,
+                    help="global synaptic weight scale; 2.0 puts central "
+                         "neurons at ~33 Hz and wakes EPG, 1.0 leaves them silent")
     ap.add_argument("--drive", type=float, default=DRIVE_LIT,
                     help="mV per step for a fully lit column")
     ap.add_argument("--background", type=float, default=0.5,
@@ -60,7 +63,7 @@ def main(argv=None) -> int:
     outdir.mkdir(parents=True, exist_ok=True)
 
     print("=== does the connectome encode where the bar is? ===")
-    brain = FlyWireBrain()
+    brain = FlyWireBrain(w_scale=args.w_scale)
     lat = eye.load(REPO / "data" / "flywire" / "column_assignment.csv.gz")
     print("  brain %d neurons / %d edges" % (brain.n, brain.n_edges))
 

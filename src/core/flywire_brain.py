@@ -58,7 +58,8 @@ class BrainState:
 class FlyWireBrain:
     """LIF over the whole connectome.  Indices are positions in `self.ids`."""
 
-    def __init__(self, min_synapses: int = 1, dt_ms: float = 0.1):
+    def __init__(self, min_synapses: int = 1, dt_ms: float = 0.1,
+                 w_scale: float = 1.0):
         e = np.load(DATA / "edges_783.npz", allow_pickle=True)
         ann = pd.read_csv(DATA / "neuron_annotations_783.tsv", sep="\t",
                           low_memory=False)
@@ -74,7 +75,7 @@ class FlyWireBrain:
         idx = pd.Index(self.ids)
         i_pre, i_post = idx.get_indexer(pre), idx.get_indexer(post)
 
-        w = (sign * syn * W_SYN_MV).astype(np.float32)
+        w = (sign * syn * W_SYN_MV * w_scale).astype(np.float32)
         # row = source, so one row holds that neuron's out-edges (event-driven)
         self.out = sp.csr_matrix((w, (i_pre, i_post)), shape=(self.n, self.n),
                                  dtype=np.float32)
@@ -82,6 +83,7 @@ class FlyWireBrain:
         self.n_edges = self.out.nnz
 
         self.ann = ann.set_index("root_id").reindex(self.ids)
+        self.w_scale = float(w_scale)
         self.dt_ms = float(dt_ms)
         self._decay_v = np.float32(np.exp(-dt_ms / TAU_MBR_MS))
         self._decay_g = np.float32(np.exp(-dt_ms / TAU_SYN_MS))
@@ -157,7 +159,7 @@ class FlyWireBrain:
 
     def as_dict(self) -> Dict:
         return {"n_neurons": self.n, "n_edges": int(self.n_edges),
-                "dt_ms": self.dt_ms, "w_syn_mV": W_SYN_MV,
+                "dt_ms": self.dt_ms, "w_syn_mV": W_SYN_MV * self.w_scale,
                 "params": "Shiu et al. 2024 model.py",
                 "sign": "ACh/DA/OA/5-HT +, GABA/Glu -"}
 
