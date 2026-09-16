@@ -394,3 +394,18 @@ def test_noise_removes_the_ideal_body_failure_at_90_deg(core, decoder):
                                  task.n_cycles, task.T_core_s, s))
              for s in range(4)]
     assert all(mx.compute(r, crit).success for r in noisy)
+
+
+def test_flywire_eye_lattice_and_geometry():
+    """The measured eye lattice, its angular scale and the two eyes' geometry.
+
+    Runs the module's own verification: the (p, q) axes really are 120 deg
+    apart (a hexagonal lattice, not Zhao's 90 deg display approximation), the
+    interommatidial scale reproduces the ~150 deg monocular field, and the two
+    eyes point outward with a narrow frontal binocular region.
+    """
+    import sensors.flywire_eye as eye
+
+    if not Path("data/flywire/column_assignment.csv.gz").exists():
+        pytest.skip("FlyWire column assignment not downloaded")
+    eye.verify()
