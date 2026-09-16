@@ -1222,3 +1222,76 @@ flywire_whole_brain_first_results:
     - "heading -90 activates ~20,000 neurons against ~16,000 elsewhere at
        equal luminance"
     - "L1/L2 invert luminance; the probe drives them proportionally"
+
+training_pilot:
+  status: LOOP WORKS -- and the pilot found a design fault before any real run
+  purpose: >
+    User's framing, adopted: the question is not "is the connectome faster to
+    train than a standard AI" -- too many confounds -- but what optimisation
+    DOES to a connectome-wired network under identical training, against
+    matched null wirings.  Trajectory, not endpoint.
+
+  what_was_built_on_the_laptop:
+    rate_model: >
+      src/core/flywire_rate.py.  Rate, not spiking, because a hard threshold
+      is not differentiable; dynamics follow flyvis.  PyTorch, device-agnostic,
+      so the same code runs on a GPU without a rewrite.
+    nulls: >
+      src/core/null_wiring.py.  degree_preserving keeps each source's
+      out-edges, weights and sign and resamples only the targets from the
+      empirical in-degree (|w| sum and the 0.402 inhibitory fraction
+      unchanged, max out-degree 8895 vs 9783, 0.59% of edges land back on a
+      real partner).  random_sparse keeps only size and the weight multiset
+      (max degree 158 vs 9783).
+    pilot: experiments/flywire_train_pilot.py
+
+  what_is_trainable:
+    decision: "per-cell-type tau, bias and gain; wiring and synapse counts FIXED"
+    why: >
+      Training free per-synapse weights would leave the connectome as nothing
+      but a sparsity mask, and no result could then be about the connectome.
+    grouping: >
+      cell_type is far too fine -- 8,840 groups, 26,520 numbers.  cell_class is
+      the anatomical level above (49 values over 77% of neurons, super_class
+      for the rest): 58 groups, 174 parameters, the same order as flyvis's 64
+      cell types.  The self-check caught the first attempt.
+
+  measured_cost:
+    per_iteration: "60 s, dropping to 45 s with truncated backprop"
+    truncated_bptt: >
+      The readout is a steady-state rate, so backpropagating through the whole
+      200 ms transient cost 1.8 GB and ~250 s per iteration for little
+      gradient.  run(grad_ms=40) keeps only the last 40 ms: 4x faster.
+    projection: >
+      3 conditions x 5 seeds x 200 iterations is ~50 h on this laptop, so the
+      real run needs the GPU machine.  That is now a measured requirement
+      rather than a guess.
+
+  P1_training_does_not_descend_and_the_reason_is_structural:
+    observed: >
+      At lr 0.05 the loss bounces (1.13, 0.95, 1.48, 1.50) and at lr 0.01 over
+      12 iterations it does not move at all (1.131 -> 1.184), with the
+      correlation ending where it started (+0.856 -> +0.862).  Meanwhile the
+      steering span SHRINKS (4.7e-4 -> 3.5e-4) and EPG goes from 12 active
+      units to 0.
+    diagnosis: >
+      The residual error is the standing LEFT-RIGHT asymmetry, and the
+      parameters are shared per cell type ACROSS SIDES.  Measured: left and
+      right descending neurons have essentially the same type composition
+      (648 vs 645 in one label, 1 vs 1 in the other), so every one of the 174
+      parameters applies an identical tau/bias/gain to both sides.  No setting
+      of them can selectively adjust one side, so the part of the loss that
+      matters is outside the reach of the parameterisation.
+    fix_available: >
+      FlyWireRate(by_side=True) splits the labels by side: 118 groups, 354
+      parameters.  Not run yet.
+    caveat: >
+      A bilaterally symmetric animal makes side-specific parameters a
+      concession rather than biology.  It is measurable, though: if the
+      trained values come out nearly symmetric the asymmetry was in the input,
+      and if they do not, training is compensating for the wiring.
+
+  not_yet_done:
+    - "run the pilot with by_side=True and see whether the loss descends"
+    - "the two null conditions have never been trained, only built"
+    - "multi-seed trajectories, which is what the whole design is for"

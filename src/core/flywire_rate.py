@@ -48,7 +48,7 @@ def activity(v: torch.Tensor) -> torch.Tensor:
     return torch.tanh(torch.relu(v))
 
 
-def _type_labels(ann: pd.DataFrame) -> np.ndarray:
+def _type_labels(ann: pd.DataFrame, by_side: bool = False) -> np.ndarray:
     """One label per neuron: cell_type where known, else super_class.
 
     Parameters are shared within a label, so this is the axis training moves
@@ -66,7 +66,20 @@ def _type_labels(ann: pd.DataFrame) -> np.ndarray:
     cc = ann["cell_class"].astype(str).to_numpy(dtype="<U48")
     sc = ann["super_class"].astype(str).to_numpy(dtype="<U48")
     missing = (cc == "nan") | (cc == "")
-    return np.where(missing, np.char.add("sc:", sc), np.char.add("cc:", cc))
+    lab = np.where(missing, np.char.add("sc:", sc), np.char.add("cc:", cc))
+    if not by_side:
+        return lab
+    # Measured in the pilot: left and right descending neurons have the same
+    # type composition (648 vs 645 in one label), so side-blind parameters
+    # apply an IDENTICAL tau/bias/gain to both sides and cannot touch a
+    # left-right asymmetry -- which is exactly what the untrained network's
+    # standing offset is.  Splitting by side gives training purchase on it:
+    # 118 groups, 354 parameters.  A bilaterally symmetric animal makes this a
+    # concession, and it is measurable: if the trained values come out nearly
+    # symmetric the asymmetry was in the input, and if they do not, training
+    # is compensating for the wiring.
+    side = ann["side"].astype(str).to_numpy(dtype="<U8")
+    return np.char.add(lab.astype("<U60"), np.char.add("|", side))
 
 
 class FlyWireRate(nn.Module):
@@ -74,7 +87,7 @@ class FlyWireRate(nn.Module):
 
     def __init__(self, min_synapses: int = 1, w_scale: float = 1.0,
                  device: str | torch.device = "cpu",
-                 out_csr=None, ids=None, ann=None):
+                 out_csr=None, ids=None, ann=None, by_side: bool = False):
         super().__init__()
         if out_csr is None:
             ids, out_csr, ann, _ = load_connectome(min_synapses, w_scale)
@@ -92,7 +105,7 @@ class FlyWireRate(nn.Module):
             size=(self.n, self.n)).to(self.device_)
         self.n_edges = int(w_in.nnz)
 
-        labels = _type_labels(ann)
+        labels = _type_labels(ann, by_side=by_side)
         self.types, inv = np.unique(labels, return_inverse=True)
         self.type_index = torch.from_numpy(inv.astype(np.int64)).to(self.device_)
         n_types = len(self.types)

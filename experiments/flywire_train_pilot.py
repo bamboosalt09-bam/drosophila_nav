@@ -66,6 +66,9 @@ def main(argv=None) -> int:
     ap.add_argument("--lr", type=float, default=0.05)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--headings", type=int, default=8)
+    ap.add_argument("--by-side", action="store_true",
+                    help="separate parameters for left and right; without it "
+                         "training cannot address a left-right asymmetry")
     ap.add_argument("--tag", default=None)
     args = ap.parse_args(argv)
     tag = args.tag or "%s_seed%d" % (args.wiring, args.seed)
@@ -78,7 +81,7 @@ def main(argv=None) -> int:
         out = null_wiring.degree_preserving(out, seed=args.seed)
     elif args.wiring == "random_sparse":
         out = null_wiring.random_sparse(out, seed=args.seed)
-    net = FlyWireRate(out_csr=out, ids=ids, ann=ann)
+    net = FlyWireRate(out_csr=out, ids=ids, ann=ann, by_side=args.by_side)
     print("=== pilot: %s, seed %d ===" % (args.wiring, args.seed))
     print("  %d neurons, %d edges, %d types, %d trainable"
           % (net.n, net.n_edges, len(net.types), net.n_trainable()))
@@ -160,7 +163,7 @@ def main(argv=None) -> int:
 
     (outdir / "provenance.json").write_text(json.dumps({
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "wiring": args.wiring, "seed": args.seed, "iters": args.iters,
+        "wiring": args.wiring, "seed": args.seed, "by_side": args.by_side, "iters": args.iters,
         "lr": args.lr, "w_scale": W_SCALE, "dt_ms": DT_MS,
         "duration_ms": DURATION_MS, "grad_ms": GRAD_MS, "headings_deg": headings.tolist(),
         "net": net.as_dict(),
