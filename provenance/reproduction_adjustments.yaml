@@ -913,3 +913,129 @@ data_connectivity_condition:
     - "baseline condition A is now keyed by (goal, e0, seed)"
     - "regression: --quick with goal-step 0 and noise off reproduces the
        earlier run bit-identically (DataFrame.equals)"
+
+flywire_whole_brain_step:
+  status: DATA ACQUIRED -- retinotopy gate only PARTLY passed; decision pending
+  decision_context: >
+    User redirected the study back to its original question (section 1): put
+    the whole circuit in, give it real sensory input, read the motor output,
+    without designating which circuit computes navigation.  Input and output
+    are designated ANATOMICALLY (sensory / descending super_class), not
+    functionally, which is what keeps that non-circular.
+
+  data_sources:
+    connections:
+      file: data/flywire/proofread_connections_783.feather (852 MB)
+      from: "Zenodo 10.5281/zenodo.10676866, CC-BY-4.0, NO login required"
+      note: "Codex itself needs a Google sign-in; the Zenodo deposit does not,
+        so no API token was needed."
+    annotations:
+      file: data/flywire/neuron_annotations_783.tsv (31.7 MB)
+      from: "github.com/flyconnectome/flywire_annotations, public"
+      paper: "Schlegel et al., Nature 634, 139-152 (2024)"
+    aggregated: "data/flywire/edges_783.npz (built by summing the published
+      per-neuropil rows into neuron pairs)"
+
+  measured_graph:
+    raw_rows: 16847997          # split per neuropil
+    neuron_pair_edges: 15091983
+    edges_by_synapse_threshold:
+      ">=1": 15091983
+      ">=2": 7595967
+      ">=3": 4916231
+      ">=5": 2700513
+      ">=10": 1066822
+    synapses_per_edge: "median 2, mean 3.6, max 2405"
+    note: >
+      The threshold is simultaneously a modelling choice and the runtime
+      control (>=5 is 5.6x fewer edges than >=1).  It must be justified, not
+      picked for speed.
+    sign_assumption: >
+      ACh/DA/OA/5-HT excitatory, GABA/Glu inhibitory, taken from the
+      per-edge synapse-weighted transmitter prediction: 58.9% excitatory,
+      41.1% inhibitory.  This is an ASSUMPTION, not connectome data.
+
+  anatomical_designation:
+    sensory: "super_class sensory 16907 + sensory_ascending 612"
+    motor_output: "super_class descending 1303 (right 649 / left 646 / centre 8)"
+    other: "optic 77541, visual_projection 8038, central 32383, motor 110"
+    why_it_matters: >
+      The steering readout is the left-right difference over descending
+      neurons, which is anatomy ("axons leaving the brain for the nerve cord")
+      rather than a navigation hypothesis.  Nothing in between is designated.
+
+  R1_photoreceptors_are_not_in_the_volume:
+    measured: "R7 1342 and R8 1324 are present; R1-R6 are absent (0 matches)"
+    cause: "R1-R6 somata sit in the retina, outside the imaged brain volume"
+    consequence: >
+      Visual input cannot be injected at R1-R6.  Their direct targets, the
+      lamina monopolar cells L1-L5, ARE present (1378-1699 each), so the
+      injection point moves one synapse inward.  Still anatomically defined,
+      and a far smaller concession than injecting a heading into visual
+      projection neurons.
+
+  R2_retinotopy_gate_partly_passed:
+    status: OPEN -- this is what gates "give the fly its own view"
+    problem: >
+      To turn a rendered scene into per-neuron input we need each medulla
+      column's viewing direction.  The annotation has 3D positions but no
+      visual direction and no column index (Mi1 is labelled 'columnar' with
+      no identifier).
+    route_1_coordinates:
+      result: "sheet yes, lattice no"
+      measured: >
+        Mi1 counts 788 left / 796 right, matching the ~750-800 ommatidia per
+        eye.  Positions lie on a sheet (99.8% of variance in 2 axes) but are
+        not a clean lattice: nearest-neighbour spacing CV 0.60-0.75 and only
+        1.7-1.8 neighbours within 1.5x the median spacing, where a hexagonal
+        lattice needs ~6.  Soma coordinates are slightly better (2.2) but
+        still not a lattice.
+    route_2_connectivity:
+      result: "locality present, lattice still not clean"
+      measured: >
+        Shared-partner overlap between Mi1 cells decays with rank --
+        29 / 25 / 20 / 13 / 8 shared partners at the 1st / 3rd / 6th / 12th /
+        30th best match -- so retinotopic locality IS carried by the
+        connectome.  But the step at 6 neighbours is weak (6th/12th ratio
+        1.54-1.57) and a spectral embedding still gives 1.8 neighbours, not 6.
+    route_3_azimuth_only:
+      result: "WORKABLE, and probably sufficient"
+      reasoning: >
+        The standard heading cue is a vertical bar, which is constant in
+        elevation, so the task needs each column's AZIMUTH -- a 1D map --
+        not a full 2D lattice.
+      measured: >
+        The sheet's first principal axis carries 71-75% of the variance,
+        spans 58.0 um (left) and 60.5 um (right) -- near-perfect mirror
+        symmetry -- and covers that axis evenly (columns per bin over 20 bins
+        vary with CV 0.13-0.21).
+      caveat: >
+        That this axis IS azimuth is an anatomical expectation, not something
+        validated here: the medulla's anterior-posterior axis is expected to
+        carry azimuth.  The resulting map is OURS, not the connectome's, and
+        must be labelled that way.  Interommatidial angles are non-uniform
+        over a curved eye, so a linear map along this axis is an
+        approximation of unquantified error.
+
+  compute_feasibility_on_this_machine:
+    hardware: "Intel Core Ultra 5 125H, 14C/18T, 15.5 GB RAM, Intel Arc iGPU
+      (no CUDA)"
+    memory: "NOT the constraint -- the graph is ~30 MB at 3.7M edges"
+    measured_single_thread: >
+      Event-driven LIF at FlyWire scale: 2.0 s wall per 1 s biological at
+      dt = 1 ms, 34.6 s at dt = 0.1 ms.  dt is not a free speed knob -- the
+      spike rate changes with it (2231 vs 869 spikes/step), so it changes the
+      dynamics too.
+    measured_parallel: >
+      Trials are independent, and 14 workers give 5.6x (not 14x) -- memory
+      bandwidth bound.  333 full 15 s trials per hour, i.e. 1000 trials in
+      ~3 h and Stage 1's 36288 in ~4.5 days.
+    consequence: >
+      Steps 1-3 (does a bump form, does it track heading, does a steering
+      signal appear) are single runs and fit comfortably.  Only a
+      body-constraint sweep needs more, and that would need a batched GPU
+      implementation -- a rewrite, not a port.
+    caveat: >
+      The timing probe used RANDOM topology.  The real connectome is
+      heavy-tailed with hub neurons, so locality of memory access is worse
+      and the real figure is likely slower.
