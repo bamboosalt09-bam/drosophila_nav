@@ -81,3 +81,17 @@ def zero_noise(n_steps: int):
     """No noise.  The default for the body-constraint experiments, which need
     the body effect isolated (handoff doc section 24)."""
     return np.zeros(int(n_steps))
+
+
+def command_noise_rad_per_s(n_steps: int, T_core_s: float, seed: int,
+                            spec: Optional[SourceNoiseSpec] = None):
+    """One seeded realisation, already in the rate units the decoder speaks.
+
+    Seeding by an int alone (not by the cell) is deliberate: the same seed
+    yields the same noise for every body condition of the same length, so a
+    sweep run with N seeds is PAIRED across cells -- a cell-to-cell difference
+    cannot be a difference in the noise draw.
+    """
+    return deg_per_step_to_rad_per_s(
+        source_command_noise_deg(n_steps, np.random.default_rng(seed), spec),
+        T_core_s)

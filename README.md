@@ -3,7 +3,7 @@
 Closed-loop simulation study: a **fixed** Drosophila-derived steering circuit
 driven into bodies with different motion constraints.
 
-Current stage: **Stage 1 complete — body sweep, conditions B/C/D, 3D viewer.**
+Current stage: **Stage 1 complete — body sweep (noise off and on), conditions B/C/D, 3D viewer.**
 The core is verified against the authors' own notebook code: PFL population
 activity is bit-identical and the steering command agrees to 3.4e-14
 (`tests/test_source_agreement.py`, `results/stage0/default/fig6_source_overlay.png`).
@@ -11,11 +11,19 @@ The ideal closed loop reproduces the source's Figure 5 trend (heading
 consistency rho rises from 0.38 to 0.97 as the PFL scalar goes 0 -> 1), and our
 general scheduler agrees with the source's own loop to 0.04 in rho.
 
-No constrained body is attached yet.  Two baseline properties measured here
-must be carried into Stage 1: with the source gain k = 200 the **ideal** loop
-already falls into a period-2 limit cycle near +-100 deg from 26% of initial
-headings, and the anti-goal equilibrium escapes on floating-point rounding.
-Neither may be mistaken for a body-induced failure.
+Two baseline properties of the ideal loop must not be mistaken for
+body-induced failure: with the source gain k = 200 it falls into a period-2
+limit cycle near +-100 deg from 26% of initial headings (finding F1), and the
+anti-goal equilibrium escapes on floating-point rounding.
+
+**F1 exists only with noise off.**  With the source command noise on, the ideal
+body succeeds in 144/144 baseline trials, so `BASELINE_FAILURE` and
+`RESCUED_BY_BODY` both drop to zero — the "body limits rescue the core" result
+is an artifact of the deterministic protocol and is retracted as a general
+claim.  What survives noise is the opposite direction: body constraints still
+cause genuine failure, and a lagging body can *improve* navigation by
+low-passing the neural command noise (finding R3, optimum near tau = 16 T).
+See `provenance/reproduction_adjustments.yaml: noise_on_sweep`.
 
 ## Architecture (kept separable from the start, for the later 3D renderer)
 

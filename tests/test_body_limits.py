@@ -319,3 +319,57 @@ def test_lag_comp_still_respects_r_max():
                                tau_ratio=32.0)
     plug = LagCompPlugin(r_max=params.r_max, tau_r=params.tau_r)
     assert abs(plug.command(np.deg2rad(5000.0), 0.0)) <= params.r_max + 1e-12
+
+
+def test_body_lag_low_passes_the_command_noise():
+    """Finding R3: a lagging body filters neural noise, and that can help.
+
+    Noise-free these two conditions are both perfect, so this effect is
+    invisible in the deterministic protocol.  With the source noise on, the
+    body's first-order lag attenuates the command noise before it reaches the
+    heading, and success improves.  Pinned because it is the one Stage 1
+    result that REQUIRES noise instead of being destroyed by it.
+    """
+    import json
+    from pathlib import Path
+
+    from body.yaw_plant import YawPlant, from_neural_scale
+    from core.calibration import load
+    from core.westeinde2024 import CoreParams, WesteindeSteeringCore
+    from decoder.steering import SteeringDecoder
+    from environment.heading_task import HeadingTask
+    from eval import metrics as mx
+    from plugins.rate_clip import RateClipPlugin
+    from sensors.ideal_heading import IdealHeadingSensor
+    from sim.closed_loop import run_closed_loop
+    from sim.noise import command_noise_rad_per_s
+
+    repo = Path(__file__).resolve().parents[1]
+    norm = load(repo / "configs" / "norm_constants.json")
+    R = json.loads((repo / "configs" / "neural_command_scale.json")
+                   .read_text(encoding="utf-8"))["body_scale_rad_per_s"]
+    core, dec, crit = (WesteindeSteeringCore(CoreParams(), norm),
+                       SteeringDecoder(), mx.SuccessCriterion())
+
+    def run(tau_ratio):
+        p = from_neural_scale(R, 0.05, 0.005, tau_ratio, 0.1)
+        ok, attenuation = 0, []
+        for s in range(8):
+            t = HeadingTask(goal=0.0, initial_heading=np.deg2rad(90.0),
+                            duration_s=15.0)
+            pl, b = RateClipPlugin(r_max=p.r_max), YawPlant(p)
+            res = run_closed_loop(core, dec, pl, b, IdealHeadingSensor(), t,
+                                  command_noise=command_noise_rad_per_s(
+                                      t.n_cycles, t.T_core_s, s))
+            ok += mx.compute(res, crit, plugin=pl, body=b).success
+            attenuation.append(np.std(res.r) / np.std(res.r_cmd))
+        return ok / 8, float(np.mean(attenuation))
+
+    fast_ok, fast_att = run(1.0)
+    slow_ok, slow_att = run(16.0)
+
+    # the mechanism: the lagging body passes less of the injected noise
+    assert slow_att < fast_att, (slow_att, fast_att)
+    # and that buys real performance, not just a smoother trace
+    assert slow_ok > fast_ok, (slow_ok, fast_ok)
+    assert slow_ok == 1.0 and fast_ok < 0.6, (slow_ok, fast_ok)

@@ -1,6 +1,6 @@
 """Stage 1, step 3: analyse the sweep (handoff doc sections 29, 30, 47).
 
-Reads results/stage1_sweep/<tag>/sweep_trials.csv and produces the phase maps.
+Reads results/stage1_sweep/<tag>/sweep_trials.csv[.gz] and produces the phase maps.
 
 The one thing this script exists to get right
 ---------------------------------------------
@@ -40,6 +40,12 @@ import pandas as pd
 NOT_COMPARABLE = ("body_infeasible", "baseline_failure", "rescued_by_body")
 
 
+def trials_path(d: Path) -> Path:
+    """sweep_trials.csv, or the .gz the larger runs are stored as."""
+    plain = d / "sweep_trials.csv"
+    return plain if plain.exists() else d / "sweep_trials.csv.gz"
+
+
 def paired_subset(df: pd.DataFrame, axis: str, min_value: float | None = None):
     """Trials usable for a fair comparison along `axis`.
 
@@ -65,7 +71,7 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
 
     d = REPO / "results" / "stage1_sweep" / args.tag
-    df = pd.read_csv(d / "sweep_trials.csv")
+    df = pd.read_csv(trials_path(d))
     print("=== Stage 1 step 3: sweep analysis (tag: %s) ===" % args.tag)
     print("  %d trials" % len(df))
 
@@ -224,8 +230,8 @@ def main(argv=None) -> int:
     # ---- optional cell-by-cell comparison with another sweep ------------
     comparison = None
     if args.compare:
-        other = pd.read_csv(REPO / "results" / "stage1_sweep" / args.compare
-                            / "sweep_trials.csv")
+        other = pd.read_csv(trials_path(
+            REPO / "results" / "stage1_sweep" / args.compare))
         o_sub, _ = paired_subset(other, "r_max_ratio", args.r_min)
         keys = ["r_max_ratio", "alpha_ratio", "tau_ratio"]
         a = sub.groupby(keys)["success"].mean()
@@ -254,7 +260,7 @@ def main(argv=None) -> int:
 
     out = {
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "source": str((d / "sweep_trials.csv").relative_to(REPO)),
+        "source": str(trials_path(d).relative_to(REPO)),
         "paired_sample": {"r_min": args.r_min, "initial_headings_deg": common,
                           "n_trials": int(len(sub))},
         "axis_success_rates": summary,

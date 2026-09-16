@@ -39,8 +39,7 @@ from plugins.passthrough import PassthroughPlugin
 from plugins.rate_clip import RateClipPlugin
 from sensors.ideal_heading import IdealHeadingSensor
 from sim.closed_loop import run_closed_loop
-from sim.noise import (SourceNoiseSpec, deg_per_step_to_rad_per_s,
-                       source_command_noise_deg)
+from sim.noise import command_noise_rad_per_s
 
 SEEDS = range(8)
 ERRORS = list(CALIBRATION_ERRORS_DEG) + list(TEST_ERRORS_DEG)
@@ -49,9 +48,7 @@ DURATION = 15.0
 
 
 def noise_for(task, seed):
-    nd = source_command_noise_deg(task.n_cycles, np.random.default_rng(seed),
-                                  SourceNoiseSpec())
-    return deg_per_step_to_rad_per_s(nd, task.T_core_s)
+    return command_noise_rad_per_s(task.n_cycles, task.T_core_s, seed)
 
 
 def main() -> int:

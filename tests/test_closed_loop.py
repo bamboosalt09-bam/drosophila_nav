@@ -346,3 +346,51 @@ def test_calibration_and_test_initial_conditions_do_not_overlap():
     from environment.heading_task import (CALIBRATION_ERRORS_DEG,
                                           TEST_ERRORS_DEG)
     assert not set(CALIBRATION_ERRORS_DEG) & set(TEST_ERRORS_DEG)
+
+
+def test_seeded_noise_is_paired_across_cells():
+    """The sweep's noise draw depends on the seed ONLY.
+
+    If it depended on anything about the body condition, a cell-to-cell
+    difference in the noise-on sweep could be a difference in the draw rather
+    than a difference in the body, and every paired comparison would be void.
+    """
+    from sim.noise import command_noise_rad_per_s
+
+    a = command_noise_rad_per_s(150, 0.1, 3)
+    b = command_noise_rad_per_s(150, 0.1, 3)
+    c = command_noise_rad_per_s(150, 0.1, 4)
+    assert np.array_equal(a, b)
+    assert not np.array_equal(a, c)
+    assert len(a) == 150
+    # same recipe as the source path it replaced
+    expect = deg_per_step_to_rad_per_s(
+        source_command_noise_deg(150, np.random.default_rng(3),
+                                 SourceNoiseSpec()), 0.1)
+    assert np.array_equal(a, expect)
+
+
+def test_noise_removes_the_ideal_body_failure_at_90_deg(core, decoder):
+    """Finding F1 is noise-free-only, and the sweep's baseline must see that.
+
+    Noise-free, the ideal body limit-cycles at e0 = +-90 deg; that failure is
+    what BASELINE_FAILURE / RESCUED_BY_BODY are built on.  With the source
+    noise on it disappears, so a noise-on sweep must re-run the baseline per
+    seed instead of reusing the noise-free verdict.
+    """
+    from eval import metrics as mx
+    from sim.noise import command_noise_rad_per_s
+
+    crit = mx.SuccessCriterion()
+    task = HeadingTask(initial_heading=np.deg2rad(90.0), duration_s=15.0)
+
+    quiet = run_closed_loop(core, decoder, PassthroughPlugin(), IdealYawBody(),
+                            IdealHeadingSensor(), task)
+    assert not mx.compute(quiet, crit).success
+
+    noisy = [run_closed_loop(core, decoder, PassthroughPlugin(), IdealYawBody(),
+                             IdealHeadingSensor(), task,
+                             command_noise=command_noise_rad_per_s(
+                                 task.n_cycles, task.T_core_s, s))
+             for s in range(4)]
+    assert all(mx.compute(r, crit).success for r in noisy)

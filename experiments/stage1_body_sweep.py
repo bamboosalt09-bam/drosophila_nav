@@ -62,6 +62,7 @@ from plugins.lag_comp import LagCompPlugin
 from plugins.rate_clip import RateClipPlugin
 from sensors.ideal_heading import IdealHeadingSensor
 from sim.closed_loop import run_closed_loop
+from sim.noise import SourceNoiseSpec, command_noise_rad_per_s
 
 NORM_JSON = REPO / "configs" / "norm_constants.json"
 SCALE_JSON = REPO / "configs" / "neural_command_scale.json"
@@ -99,6 +100,10 @@ def build_parser():
                    help="'p' swaps the fly core for the condition-D baseline")
     p.add_argument("--plugin", choices=("rate_clip", "lag_comp"),
                    default="rate_clip", help="'lag_comp' is condition C")
+    p.add_argument("--noise-seeds", type=int, default=0,
+                   help="0 = noise off (doc section 24, isolates the body "
+                        "effect). N > 0 runs N source-noise realisations per "
+                        "trial, paired across cells by seed.")
     p.add_argument("--tag", default="default")
     return p
 
@@ -127,32 +132,49 @@ def main(argv=None) -> int:
         r_ratios, a_ratios, t_ratios = R_MAX_RATIOS, ALPHA_RATIOS, TAU_RATIOS
         errors = list(CALIBRATION_ERRORS_DEG) + list(TEST_ERRORS_DEG)
 
+    # One noise draw per seed, reused in every cell: pairs the sweep, so a
+    # cell-to-cell difference can never be a difference in the noise draw.
+    seeds = [None] if args.noise_seeds <= 0 else list(range(args.noise_seeds))
+    n_cycles = HeadingTask(duration_s=args.duration, T_core_s=T).n_cycles
+    noise_by_seed = {s: (None if s is None else
+                         command_noise_rad_per_s(n_cycles, T, s))
+                     for s in seeds}
+
     combos = list(itertools.product(r_ratios, a_ratios, t_ratios))
     print("=== Stage 1 step 2: body-constraint sweep (tag: %s) ===" % args.tag)
     print("  controller: %s   plugin: %s" % (args.controller, args.plugin))
     print("  body scale R_max = %.1f deg/s, T_core = %.2f s" % (np.rad2deg(R), T))
-    print("  %d body conditions x %d initial errors = %d trials"
-          % (len(combos), len(errors), len(combos) * len(errors)))
-    print("  success: |e| <= %.0f deg within %.0f s, held %.0f s; noise off"
-          % (args.tolerance_deg, args.timeout, args.hold))
+    print("  %d body conditions x %d initial errors x %d seed(s) = %d trials"
+          % (len(combos), len(errors), len(seeds),
+             len(combos) * len(errors) * len(seeds)))
+    print("  success: |e| <= %.0f deg within %.0f s, held %.0f s; noise %s"
+          % (args.tolerance_deg, args.timeout, args.hold,
+             "off" if seeds == [None] else "ON (%d seeds)" % len(seeds)))
 
     # ---- condition A baseline, per initial error -------------------------
+    # Keyed by (e0, seed): with noise on, the baseline has to be judged against
+    # the SAME noise realisation the constrained body sees, or "rescued by the
+    # body" would just be comparing two different draws.
     baseline = {}
     for e0 in errors:
-        task = HeadingTask(goal=0.0, initial_heading=np.deg2rad(e0),
-                           duration_s=args.duration)
-        res = run_closed_loop(core, decoder, PassthroughPlugin(), IdealYawBody(),
-                              IdealHeadingSensor(), task)
-        m = mx.compute(res, crit)
-        baseline[e0] = {"success": m.success, "settling_s": m.settling_time_s,
-                        "iae": m.iae_deg_s, "zero_crossings": m.zero_crossings}
+        for s in seeds:
+            task = HeadingTask(goal=0.0, initial_heading=np.deg2rad(e0),
+                               duration_s=args.duration)
+            res = run_closed_loop(core, decoder, PassthroughPlugin(),
+                                  IdealYawBody(), IdealHeadingSensor(), task,
+                                  command_noise=noise_by_seed[s])
+            m = mx.compute(res, crit)
+            baseline[(e0, s)] = {"success": m.success,
+                                 "settling_s": m.settling_time_s,
+                                 "iae": m.iae_deg_s,
+                                 "zero_crossings": m.zero_crossings}
     n_base_ok = sum(b["success"] for b in baseline.values())
-    print("  condition A (ideal body): %d / %d initial errors succeed"
-          % (n_base_ok, len(errors)))
-    failed_e0 = [e for e, b in baseline.items() if not b["success"]]
+    print("  condition A (ideal body): %d / %d baseline trials succeed"
+          % (n_base_ok, len(baseline)))
+    failed_e0 = sorted({e for (e, _), b in baseline.items() if not b["success"]})
     if failed_e0:
         print("    already failing with a perfect body (finding F1): %s"
-              % sorted(failed_e0))
+              % failed_e0)
 
     # ---- sweep -----------------------------------------------------------
     rows = []
@@ -161,42 +183,53 @@ def main(argv=None) -> int:
         params = from_neural_scale(R, r_max_ratio=rr, alpha_max_ratio=ar,
                                    tau_ratio=tr, T_core=T)
         for e0 in errors:
-            task = HeadingTask(goal=0.0, initial_heading=np.deg2rad(e0),
-                               duration_s=args.duration)
-            plugin = (LagCompPlugin(r_max=params.r_max, tau_r=params.tau_r,
-                                    T_core=T)
-                      if args.plugin == "lag_comp"
-                      else RateClipPlugin(r_max=params.r_max))
-            body = YawPlant(params)
-            res = run_closed_loop(core, decoder, plugin, body,
-                                  IdealHeadingSensor(), task)
-            m = mx.compute(res, crit, plugin=plugin, body=body)
+            # feasibility is a property of the plant, not of the noise draw
             feas = is_task_feasible(params, np.deg2rad(e0), args.timeout,
                                     crit.tolerance_rad)
-            outcome = cls.classify(m, feas, e0, baseline[e0]["success"],
-                                   settle_grace_s=args.duration)
+            for s in seeds:
+                task = HeadingTask(goal=0.0, initial_heading=np.deg2rad(e0),
+                                   duration_s=args.duration)
+                plugin = (LagCompPlugin(r_max=params.r_max, tau_r=params.tau_r,
+                                        T_core=T)
+                          if args.plugin == "lag_comp"
+                          else RateClipPlugin(r_max=params.r_max))
+                body = YawPlant(params)
+                res = run_closed_loop(core, decoder, plugin, body,
+                                      IdealHeadingSensor(), task,
+                                      command_noise=noise_by_seed[s])
+                m = mx.compute(res, crit, plugin=plugin, body=body)
+                base = baseline[(e0, s)]
+                outcome = cls.classify(m, feas, e0, base["success"],
+                                       settle_grace_s=args.duration)
 
-            row = {"r_max_ratio": rr, "alpha_ratio": ar, "tau_ratio": tr,
-                   "e0_deg": e0, "outcome": outcome.value,
-                   "feasible": feas.feasible, "feas_margin": feas.margin,
-                   "baseline_success": baseline[e0]["success"],
-                   "baseline_settling_s": baseline[e0]["settling_s"],
-                   **m.as_dict()}
-            # success at the other tolerances, from the same trajectory
-            for tol in (10.0, 20.0):
-                alt = mx.compute(res, mx.SuccessCriterion(
-                    tolerance_rad=np.deg2rad(tol), timeout_s=args.timeout,
-                    hold_s=args.hold))
-                row["success_tol%d" % int(tol)] = alt.success
-            rows.append(row)
+                row = {"r_max_ratio": rr, "alpha_ratio": ar, "tau_ratio": tr,
+                       "e0_deg": e0, "seed": -1 if s is None else s,
+                       "outcome": outcome.value,
+                       "feasible": feas.feasible, "feas_margin": feas.margin,
+                       "baseline_success": base["success"],
+                       "baseline_settling_s": base["settling_s"],
+                       **m.as_dict()}
+                # success at the other tolerances, from the same trajectory
+                for tol in (10.0, 20.0):
+                    alt = mx.compute(res, mx.SuccessCriterion(
+                        tolerance_rad=np.deg2rad(tol), timeout_s=args.timeout,
+                        hold_s=args.hold))
+                    row["success_tol%d" % int(tol)] = alt.success
+                rows.append(row)
 
         if (i + 1) % max(1, len(combos) // 10) == 0:
             el = time.perf_counter() - t0
+            # flush: a redirected run is block-buffered, and a sweep whose
+            # progress is invisible for half an hour is indistinguishable
+            # from a hung one.
             print("  ... %d/%d body conditions (%.0f s elapsed, ~%.0f s left)"
-                  % (i + 1, len(combos), el, el * (len(combos) - i - 1) / (i + 1)))
+                  % (i + 1, len(combos), el, el * (len(combos) - i - 1) / (i + 1)),
+                  flush=True)
 
     df = pd.DataFrame(rows)
-    df.to_csv(outdir / "sweep_trials.csv", index=False)
+    # gzip: a noise sweep is 36k rows / ~9 MB plain, and these land in git.
+    df.to_csv(outdir / "sweep_trials.csv.gz", index=False)
+    (outdir / "sweep_trials.csv").unlink(missing_ok=True)   # stale plain copy
     print("--- %d trials in %.0f s ---" % (len(df), time.perf_counter() - t0))
 
     # ---- outcome composition --------------------------------------------
@@ -242,7 +275,10 @@ def main(argv=None) -> int:
                           - grid.groupby(axis)["success_rate"].mean().min())
               for axis in ("r_max_ratio", "alpha_ratio", "tau_ratio")}
     worst = max(spread, key=spread.get)
-    print("  axis with the largest effect: %s (range %.2f)" % (worst, spread[worst]))
+    print("  largest MARGINAL effect: %s (range %.2f) -- marginal only; three"
+          % (worst, spread[worst]))
+    print("    apparent main effects in this project turned out to be"
+          " interactions. Use stage1_sweep_analysis.py, which pairs.")
 
     # ---- figures ---------------------------------------------------------
     def heat(ax, piv, title, xlabel, ylabel):
@@ -321,15 +357,27 @@ def main(argv=None) -> int:
         "initial_errors_deg": errors,
         "success_criterion": crit.as_dict(),
         "tolerance_sensitivity_deg": [10.0, 15.0, 20.0],
-        "noise": "none (doc section 24: isolate the body effect)",
+        "noise": ("none (doc section 24: isolate the body effect)"
+                  if seeds == [None] else
+                  {"spec": SourceNoiseSpec().as_dict(), "seeds": len(seeds),
+                   "paired": "same draw per seed in every cell",
+                   "baseline": "condition A re-run per (e0, seed)"}),
+        "noise_seeds": len(seeds) if seeds != [None] else 0,
         "classification_thresholds": cls.thresholds_as_dict(),
-        "baseline_condition_A": {str(k): v for k, v in baseline.items()},
+        "baseline_condition_A": {("%g" % e if sd is None else "%g|seed%d" % (e, sd)): v
+                                 for (e, sd), v in baseline.items()},
         "outcome_counts": {str(k): int(v) for k, v in counts.items()},
         "attributable_fraction": float(len(attributable) / len(df)),
         "n_rescued_by_body": n_rescued,
         "n_baseline_failures": n_baseline_fail,
-        "axis_effect_range": spread,
-        "largest_effect_axis": worst,
+        "axis_effect_range_MARGINAL": spread,
+        "largest_marginal_effect_axis": worst,
+        "axis_effect_caveat": (
+            "These are MARGINAL means over an unpaired grid. Three times in "
+            "this project such a marginal read as a main effect and was in "
+            "fact an interaction (r_max x tau, r_max x alpha, tau x plugin). "
+            "Do not quote them as main effects; stage1_sweep_analysis.py "
+            "pairs and splits."),
         "n_trials": int(len(df)),
     }
     (outdir / "provenance.json").write_text(json.dumps(prov, indent=2),

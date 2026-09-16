@@ -1,0 +1,995 @@
+{
+  "generated_utc": "2026-09-16T00:21:35+00:00",
+  "script": "experiments/stage1_body_sweep.py",
+  "git_commit": "69dd95b10b132f54f8dccab71a561db3e70d4f73",
+  "controller": "fly",
+  "plugin": "lag_comp",
+  "core_params": {
+    "n_units": 1000,
+    "phase_shift_pfl3_deg": 67.5,
+    "phase_shift_pfl2_deg": 180.0,
+    "offset_deg": 0.0,
+    "goal_amplitude": 1.0,
+    "pfl_scalar_S": 1.0,
+    "w_pfl3_dna03": 1.0,
+    "w_pfl2_dna03": 4.0,
+    "w_pfl3_dna02": 1.0,
+    "w_dna03_dna02": 12.0,
+    "dna02_tile_count": 1000,
+    "pfl3_inhibitory": false,
+    "pfl2_silenced": false,
+    "label": "westeinde2024_reduced_abstract_ELU1"
+  },
+  "decoder": {
+    "kappa_deg_per_step": 200.0,
+    "T_core_s": 0.1,
+    "name": "source_k200",
+    "max_yaw_rate_rad_s": 34.906585039886586,
+    "max_yaw_rate_deg_s": 1999.9999999999998
+  },
+  "body_scale_rad_per_s": 34.906585039886586,
+  "body_scale_deg_per_s": 1999.9999999999998,
+  "grid": {
+    "r_max_ratio": [
+      0.002,
+      0.005,
+      0.01,
+      0.02,
+      0.05,
+      0.25,
+      1.0
+    ],
+    "alpha_ratio": [
+      0.005,
+      0.01,
+      0.02,
+      0.05,
+      0.25,
+      4.0
+    ],
+    "tau_ratio": [
+      1.0,
+      2.0,
+      4.0,
+      8.0,
+      16.0,
+      32.0
+    ]
+  },
+  "initial_errors_deg": [
+    -135.0,
+    -90.0,
+    -60.0,
+    -30.0,
+    30.0,
+    60.0,
+    90.0,
+    135.0,
+    -170.0,
+    -150.0,
+    -120.0,
+    -75.0,
+    -45.0,
+    45.0,
+    75.0,
+    120.0,
+    150.0,
+    170.0
+  ],
+  "success_criterion": {
+    "tolerance_deg": 14.999999999999998,
+    "timeout_s": 10.0,
+    "hold_s": 1.0,
+    "note": "simulation analysis criterion, not a biological threshold"
+  },
+  "tolerance_sensitivity_deg": [
+    10.0,
+    15.0,
+    20.0
+  ],
+  "noise": {
+    "spec": {
+      "noise_level_deg_per_step": 10.0,
+      "fpass_hz": 2.0,
+      "fs_hz": 10.0,
+      "order": 5,
+      "name": "source_lowpass_gaussian",
+      "recipe": "gaussian -> butter lfilter -> zscore -> * level"
+    },
+    "seeds": 8,
+    "paired": "same draw per seed in every cell",
+    "baseline": "condition A re-run per (e0, seed)"
+  },
+  "noise_seeds": 8,
+  "classification_thresholds": {
+    "near_infeasible_margin": 1.5,
+    "saturation_fraction": 0.5,
+    "oscillation_crossings": 4,
+    "overshoot_ratio": 0.5
+  },
+  "baseline_condition_A": {
+    "-135|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 143.19555311506227,
+      "zero_crossings": 55
+    },
+    "-135|seed1": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 132.52536401634234,
+      "zero_crossings": 74
+    },
+    "-135|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 134.5431973015875,
+      "zero_crossings": 73
+    },
+    "-135|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 134.57606804731705,
+      "zero_crossings": 67
+    },
+    "-135|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 135.66572708836517,
+      "zero_crossings": 63
+    },
+    "-135|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 139.08630633621368,
+      "zero_crossings": 67
+    },
+    "-135|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 139.13279562473107,
+      "zero_crossings": 59
+    },
+    "-135|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 132.30085485831458,
+      "zero_crossings": 71
+    },
+    "-90|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 214.3678278043582,
+      "zero_crossings": 61
+    },
+    "-90|seed1": {
+      "success": true,
+      "settling_s": 3.9000000000000004,
+      "iae": 341.450013519207,
+      "zero_crossings": 88
+    },
+    "-90|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 170.92802003440102,
+      "zero_crossings": 75
+    },
+    "-90|seed3": {
+      "success": true,
+      "settling_s": 1.3,
+      "iae": 220.24831974803317,
+      "zero_crossings": 75
+    },
+    "-90|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 176.5321412946039,
+      "zero_crossings": 67
+    },
+    "-90|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 164.37549972566362,
+      "zero_crossings": 69
+    },
+    "-90|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 145.45379095098198,
+      "zero_crossings": 61
+    },
+    "-90|seed7": {
+      "success": true,
+      "settling_s": 2.8000000000000003,
+      "iae": 319.3928236921007,
+      "zero_crossings": 87
+    },
+    "-60|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 137.3760759802569,
+      "zero_crossings": 55
+    },
+    "-60|seed1": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 126.49215490522504,
+      "zero_crossings": 74
+    },
+    "-60|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 128.85245550780476,
+      "zero_crossings": 73
+    },
+    "-60|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 130.17271911109876,
+      "zero_crossings": 67
+    },
+    "-60|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 130.0162957831092,
+      "zero_crossings": 61
+    },
+    "-60|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 133.02758410954254,
+      "zero_crossings": 67
+    },
+    "-60|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 132.8373315241974,
+      "zero_crossings": 59
+    },
+    "-60|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 126.4304816734687,
+      "zero_crossings": 71
+    },
+    "-30|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 131.64043642860494,
+      "zero_crossings": 55
+    },
+    "-30|seed1": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 120.1542226356861,
+      "zero_crossings": 74
+    },
+    "-30|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 123.118883474943,
+      "zero_crossings": 71
+    },
+    "-30|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 122.43351887000283,
+      "zero_crossings": 67
+    },
+    "-30|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 125.80711854140633,
+      "zero_crossings": 61
+    },
+    "-30|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 129.53737549082393,
+      "zero_crossings": 65
+    },
+    "-30|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 126.92000702051719,
+      "zero_crossings": 59
+    },
+    "-30|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 120.0952896324642,
+      "zero_crossings": 71
+    },
+    "30|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 131.6767175865599,
+      "zero_crossings": 56
+    },
+    "30|seed1": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 120.84602233093662,
+      "zero_crossings": 73
+    },
+    "30|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 123.30093703083001,
+      "zero_crossings": 72
+    },
+    "30|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 122.9475848264211,
+      "zero_crossings": 66
+    },
+    "30|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 125.17189399446077,
+      "zero_crossings": 62
+    },
+    "30|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 128.8637765658451,
+      "zero_crossings": 66
+    },
+    "30|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 127.5652344452569,
+      "zero_crossings": 58
+    },
+    "30|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 120.57961505955369,
+      "zero_crossings": 70
+    },
+    "60|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 137.5234776077052,
+      "zero_crossings": 56
+    },
+    "60|seed1": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 124.96940377171386,
+      "zero_crossings": 75
+    },
+    "60|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 129.19682041990845,
+      "zero_crossings": 72
+    },
+    "60|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 125.46518839071761,
+      "zero_crossings": 66
+    },
+    "60|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 131.3776309879345,
+      "zero_crossings": 62
+    },
+    "60|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 134.96749780237172,
+      "zero_crossings": 66
+    },
+    "60|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 130.58930640387615,
+      "zero_crossings": 60
+    },
+    "60|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 125.6071843192632,
+      "zero_crossings": 72
+    },
+    "90|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 261.8498604451304,
+      "zero_crossings": 66
+    },
+    "90|seed1": {
+      "success": true,
+      "settling_s": 0.5,
+      "iae": 156.16379468742426,
+      "zero_crossings": 77
+    },
+    "90|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 161.39319930276133,
+      "zero_crossings": 76
+    },
+    "90|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 144.53023573061856,
+      "zero_crossings": 68
+    },
+    "90|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 186.0086766018361,
+      "zero_crossings": 68
+    },
+    "90|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 159.79657711274209,
+      "zero_crossings": 68
+    },
+    "90|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 193.43689699946555,
+      "zero_crossings": 66
+    },
+    "90|seed7": {
+      "success": true,
+      "settling_s": 2.8000000000000003,
+      "iae": 215.79473396502848,
+      "zero_crossings": 78
+    },
+    "135|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 143.2910528699452,
+      "zero_crossings": 56
+    },
+    "135|seed1": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 130.9497005614363,
+      "zero_crossings": 75
+    },
+    "135|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 134.8995441476741,
+      "zero_crossings": 72
+    },
+    "135|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 132.11205961072383,
+      "zero_crossings": 66
+    },
+    "135|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 137.40325971204334,
+      "zero_crossings": 62
+    },
+    "135|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 141.16324671905298,
+      "zero_crossings": 66
+    },
+    "135|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 136.63906179222514,
+      "zero_crossings": 60
+    },
+    "135|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 131.43823688781453,
+      "zero_crossings": 72
+    },
+    "-170|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 160.7509980798309,
+      "zero_crossings": 55
+    },
+    "-170|seed1": {
+      "success": true,
+      "settling_s": 0.30000000000000004,
+      "iae": 149.63366143262303,
+      "zero_crossings": 74
+    },
+    "-170|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 150.8190798798935,
+      "zero_crossings": 73
+    },
+    "-170|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 150.0635044117849,
+      "zero_crossings": 65
+    },
+    "-170|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 153.24923579793983,
+      "zero_crossings": 61
+    },
+    "-170|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 157.44754040424885,
+      "zero_crossings": 65
+    },
+    "-170|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 205.10721484064763,
+      "zero_crossings": 65
+    },
+    "-170|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 149.68695820130435,
+      "zero_crossings": 71
+    },
+    "-150|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 148.12376217340122,
+      "zero_crossings": 55
+    },
+    "-150|seed1": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 136.12591627117789,
+      "zero_crossings": 74
+    },
+    "-150|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 138.77750074284424,
+      "zero_crossings": 71
+    },
+    "-150|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 136.1035250592104,
+      "zero_crossings": 65
+    },
+    "-150|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 143.26313934800638,
+      "zero_crossings": 61
+    },
+    "-150|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 144.17171734819811,
+      "zero_crossings": 67
+    },
+    "-150|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 141.32382216264455,
+      "zero_crossings": 59
+    },
+    "-150|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 136.83003803388323,
+      "zero_crossings": 71
+    },
+    "-120|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 149.30566371170377,
+      "zero_crossings": 57
+    },
+    "-120|seed1": {
+      "success": true,
+      "settling_s": 0.30000000000000004,
+      "iae": 137.0636675678448,
+      "zero_crossings": 76
+    },
+    "-120|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 141.17388043858668,
+      "zero_crossings": 73
+    },
+    "-120|seed3": {
+      "success": true,
+      "settling_s": 1.3,
+      "iae": 221.65528948356138,
+      "zero_crossings": 75
+    },
+    "-120|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 140.20598288031405,
+      "zero_crossings": 63
+    },
+    "-120|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 143.85667216884517,
+      "zero_crossings": 67
+    },
+    "-120|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 144.39676126122944,
+      "zero_crossings": 59
+    },
+    "-120|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 138.03437439168425,
+      "zero_crossings": 71
+    },
+    "-75|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 160.17657176042698,
+      "zero_crossings": 57
+    },
+    "-75|seed1": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 150.7843679635129,
+      "zero_crossings": 76
+    },
+    "-75|seed2": {
+      "success": true,
+      "settling_s": 0.8,
+      "iae": 174.7941953847824,
+      "zero_crossings": 75
+    },
+    "-75|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 150.0760876085841,
+      "zero_crossings": 67
+    },
+    "-75|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 141.42431021801724,
+      "zero_crossings": 63
+    },
+    "-75|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 145.91429502949723,
+      "zero_crossings": 67
+    },
+    "-75|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 148.1377605041343,
+      "zero_crossings": 61
+    },
+    "-75|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 144.01190928073146,
+      "zero_crossings": 73
+    },
+    "-45|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 133.42774562245086,
+      "zero_crossings": 57
+    },
+    "-45|seed1": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 122.71629065955887,
+      "zero_crossings": 74
+    },
+    "-45|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 125.01312763625226,
+      "zero_crossings": 73
+    },
+    "-45|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 124.7579904015553,
+      "zero_crossings": 67
+    },
+    "-45|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 126.31791301564678,
+      "zero_crossings": 61
+    },
+    "-45|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 129.98431414342357,
+      "zero_crossings": 65
+    },
+    "-45|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 129.40567377187122,
+      "zero_crossings": 59
+    },
+    "-45|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 122.4588694547303,
+      "zero_crossings": 71
+    },
+    "45|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 133.49213431734984,
+      "zero_crossings": 56
+    },
+    "45|seed1": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 121.4433070475342,
+      "zero_crossings": 75
+    },
+    "45|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 125.01277023397203,
+      "zero_crossings": 72
+    },
+    "45|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 123.67276268311184,
+      "zero_crossings": 66
+    },
+    "45|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 127.64863158179085,
+      "zero_crossings": 62
+    },
+    "45|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 131.39415801613168,
+      "zero_crossings": 66
+    },
+    "45|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 128.05566847145658,
+      "zero_crossings": 58
+    },
+    "45|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 121.84553360982673,
+      "zero_crossings": 72
+    },
+    "75|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 151.80822208598505,
+      "zero_crossings": 56
+    },
+    "75|seed1": {
+      "success": true,
+      "settling_s": 0.5,
+      "iae": 139.13267359217303,
+      "zero_crossings": 75
+    },
+    "75|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 141.79453233177549,
+      "zero_crossings": 74
+    },
+    "75|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 129.40910851324156,
+      "zero_crossings": 66
+    },
+    "75|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 180.6559334111948,
+      "zero_crossings": 68
+    },
+    "75|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 168.48353670629277,
+      "zero_crossings": 70
+    },
+    "75|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 142.37639266776495,
+      "zero_crossings": 60
+    },
+    "75|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 141.5934677446055,
+      "zero_crossings": 74
+    },
+    "120|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 149.10691171476265,
+      "zero_crossings": 56
+    },
+    "120|seed1": {
+      "success": true,
+      "settling_s": 0.30000000000000004,
+      "iae": 136.30726516600578,
+      "zero_crossings": 75
+    },
+    "120|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 138.54364330198004,
+      "zero_crossings": 74
+    },
+    "120|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 133.98157302469733,
+      "zero_crossings": 66
+    },
+    "120|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 144.03778217920046,
+      "zero_crossings": 62
+    },
+    "120|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 146.0404768225074,
+      "zero_crossings": 68
+    },
+    "120|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 140.95293406715948,
+      "zero_crossings": 60
+    },
+    "120|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 137.39179195939363,
+      "zero_crossings": 72
+    },
+    "150|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 148.45865519202448,
+      "zero_crossings": 56
+    },
+    "150|seed1": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 135.7704104095466,
+      "zero_crossings": 75
+    },
+    "150|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 140.65694493558038,
+      "zero_crossings": 72
+    },
+    "150|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 149.2576555203475,
+      "zero_crossings": 66
+    },
+    "150|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 140.55940939871223,
+      "zero_crossings": 62
+    },
+    "150|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 143.97478671277474,
+      "zero_crossings": 66
+    },
+    "150|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 142.45167657736027,
+      "zero_crossings": 58
+    },
+    "150|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 136.71106750240838,
+      "zero_crossings": 70
+    },
+    "170|seed0": {
+      "success": true,
+      "settling_s": 1.6,
+      "iae": 160.0246409412187,
+      "zero_crossings": 56
+    },
+    "170|seed1": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 147.66608682081468,
+      "zero_crossings": 73
+    },
+    "170|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 151.94246370522708,
+      "zero_crossings": 72
+    },
+    "170|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 151.58968267429591,
+      "zero_crossings": 64
+    },
+    "170|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 155.80888543406599,
+      "zero_crossings": 62
+    },
+    "170|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 161.31153466696205,
+      "zero_crossings": 66
+    },
+    "170|seed6": {
+      "success": true,
+      "settling_s": 2.7,
+      "iae": 156.90292367819907,
+      "zero_crossings": 58
+    },
+    "170|seed7": {
+      "success": true,
+      "settling_s": 0.9,
+      "iae": 148.03876727192255,
+      "zero_crossings": 70
+    }
+  },
+  "outcome_counts": {
+    "success": 24974,
+    "body_infeasible": 6624,
+    "success_near_infeasible": 2496,
+    "saturation_dominated": 1360,
+    "slow_but_stable": 830,
+    "overshoot_dominant": 4
+  },
+  "attributable_fraction": 0.8174603174603174,
+  "n_rescued_by_body": 0,
+  "n_baseline_failures": 0,
+  "n_trials": 36288,
+  "axis_effect_range_MARGINAL": {
+    "r_max_ratio": 0.203125,
+    "alpha_ratio": 0.22106481481481477,
+    "tau_ratio": 0.01157407407407407
+  },
+  "largest_marginal_effect_axis": "alpha_ratio",
+  "axis_effect_caveat": "These are MARGINAL means over an unpaired grid. Three times in this project such a marginal read as a main effect and was in fact an interaction (r_max x tau, r_max x alpha, tau x plugin). Do not quote them as main effects; stage1_sweep_analysis.py pairs and splits."
+}

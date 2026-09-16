@@ -367,9 +367,10 @@ stage1_body_parameter_scale:
     brain ever requests".
 
 stage1_components_added:
-  - src/body/yaw_plant.py      # rate limit, acceleration cap, first-order lag
-  - src/plugins/rate_clip.py   # plugin B, goal-blind
-  - tests/test_body_limits.py  # doc section 44 items 7, 8, 9
+  files:
+    - src/body/yaw_plant.py      # rate limit, acceleration cap, first-order lag
+    - src/plugins/rate_clip.py   # plugin B, goal-blind
+    - tests/test_body_limits.py  # doc section 44 items 7, 8, 9
   notes:
     tau_r_vs_alpha_max: >
       Kept as separate mechanisms and pinned by a test (doc section 11): a
@@ -551,3 +552,128 @@ section_29_phase_map:
     Dominant OUTCOME per (r_max, tau_r) cell rather than a success rate, which
     is what section 29 actually asks for: the map says what happened, not just
     how often it worked.  Generated for every sweep tag.
+
+noise_on_sweep:
+  status: DONE -- full grid re-run with the source noise, both plugins
+  motivation: >
+    Every Stage 1 number before this ran noise-free (doc section 24).  The
+    noise control had already shown that the ideal body's +-90 deg limit
+    cycle (finding F1) does not survive noise, and F1 is what every
+    BASELINE_FAILURE / RESCUED_BY_BODY trial is built on.  Only 12 cells had
+    been checked, and the sweep script had no noise path at all: "noise" was
+    a hardcoded provenance string, not a switch.
+  implementation:
+    - "src/sim/noise.py: command_noise_rad_per_s(n_steps, T, seed) -- seeded
+       by an int alone, so the same draw is reused in every cell and the
+       sweep is PAIRED across cells."
+    - "experiments/stage1_body_sweep.py: --noise-seeds N."
+    - "Condition A baseline re-run per (e0, seed).  Judging a noisy
+       constrained trial against a noise-free baseline verdict would make
+       RESCUED_BY_BODY a comparison of two different draws."
+    - "is_task_feasible hoisted out of the seed loop: it is a property of the
+       plant, not of the draw."
+  regression_check: >
+    --quick with noise off reproduces the previous run bit-identically
+    (pandas DataFrame.equals -> True, 216 trials).
+  runs:
+    - "tag 'noise'          : plugin rate_clip, 36288 trials, 2460 s"
+    - "tag 'noise_lagcomp'  : plugin lag_comp,  36288 trials, 2514 s"
+    - "8 seeds x 18 headings x 252 cells"
+
+  R1_rescue_result_is_a_noise_free_artifact:
+    status: CONFIRMED at full scale -- the retraction stands
+    measured: "condition A succeeds 144/144 baseline trials with noise on"
+    consequence: >
+      n_baseline_failures = 0 and n_rescued_by_body = 0 in both noise runs,
+      against 504 and 364 noise-free.  Every trial in those two categories
+      was an e0 = +-90 deg trial, i.e. F1.  The "body limits rescue the core"
+      claim exists ONLY in the deterministic protocol and must never be
+      reported without that qualifier.
+    side_effect: "attributable fraction rises 0.725 -> 0.817"
+
+  R2_body_attributable_failure_survives_noise:
+    status: CONFIRMED
+    measured: >
+      Genuine failure modes persist with noise on: saturation_dominated 4.1%,
+      slow_but_stable 4.0%, overshoot_dominant 2.5%, persistent_oscillation
+      1.7%.  Paired axis directions are unchanged in sign from the noise-free
+      sweep (r_max hurts, alpha helps, tau hurts).
+    note: >
+      This is the half of the Stage 1 result that is real.  Noise makes the
+      constrained-body failures modestly WORSE, not better.
+
+  R3_body_lag_low_passes_neural_noise:
+    status: NEW FINDING -- visible only with noise on
+    observation: >
+      At r_max = 0.05 R_max, alpha = 0.005, success is NON-MONOTONIC in tau:
+      0.66 (tau=T), 0.65, 0.75, 0.94, 1.00 (tau=16T), 0.75 (tau=32T).
+      Noise-free the same cells are all 1.000 except tau=32 (0.875), so the
+      effect is invisible without noise.
+    consistency: "all 8 seeds show it independently (tau=16 -> 1.000 in every seed)"
+    mechanism_measured: >
+      std(r_commanded) is flat at ~1.5 rad/s across tau (same injected
+      noise), while std(r_actual)/std(r_commanded) falls monotonically
+      0.510 -> 0.276 as tau goes T -> 32T.  The plant is low-passing the
+      command noise; success tracks that attenuation until the lag's own
+      phase cost takes over, giving an optimum near tau = 16 T.
+    interpretation: >
+      A body constraint can IMPROVE navigation by filtering neural noise.
+      This is an embodiment result in the opposite direction from the
+      retracted rescue claim, and unlike that one it requires noise rather
+      than being destroyed by it.
+    related: "the rate clip does the same job at the other end of the grid --
+      plugin_intervention_fraction 0.996 at r_max=0.002 falling to 0.022 at
+      r_max=1.0, while accel_saturation_fraction rises 0.000 -> 0.336.  The
+      constraint does not disappear as r_max grows, it moves from the rate
+      limit to the acceleration limit."
+
+  R4_prediction_that_failed:
+    status: PREDICTION MADE BEFORE THE RUN, THEN FALSIFIED -- recorded as such
+    prediction: >
+      If body lag helps by low-passing noise (R3), then plugin C, which
+      inverts one cycle of that lag, should REMOVE the filter and lose
+      performance in exactly those cells.
+    measured: >
+      It does not.  At r_max=0.05, alpha=0.005 the deltas C-B are
+      +0.01 +0.07 +0.00 +0.06 +0.00 +0.22 across tau = 1..32; C is equal or
+      better everywhere in that slice and +0.22 at tau=32.
+    why_the_prediction_was_wrong: >
+      C amplifies the command by 1/(1-a) and the plant attenuates it by the
+      same factor, so the noise reaches the body at roughly its unfiltered
+      level while the intended signal is restored in phase.  C trades the
+      filter for the removal of the phase lag, and under these conditions
+      that trade is favourable.
+    kept_because: >
+      Section 31: a falsified prediction that was stated in advance is worth
+      more than one quietly dropped.
+
+  R5_condition_C_under_noise:
+    paired_B_vs_C: "0.825 -> 0.912 (55 cells better, 20 worse, 105 equal)"
+    tau_axis_after_C: "0.907 0.910 0.912 0.920 0.923 0.898 -- flat, as noise-free"
+    by_tau_delta: "tau=1 -0.006, tau=8 +0.059, tau=16 +0.164, tau=32 +0.303"
+    the_20_worse_cells: >
+      All at alpha <= 0.05 and mostly tau <= 8, max harm -0.062.  Same
+      mechanism as noise-free: the inversion commands more acceleration than
+      the cap can deliver.  Not a new failure mode.
+    conclusion: >
+      Condition C's result is unchanged by noise in both direction and shape.
+
+  caveats:
+    feasibility_is_still_noise_free: >
+      is_task_feasible uses noiseless max-effort reachability, so a trial that
+      is only marginally feasible may be counted as a genuine failure when
+      noise pushed it over.  The check is deliberately generous to the body,
+      so this inflates apparent body-attributable failure rather than hiding
+      it.  Not corrected; recorded.
+    marginal_axis_numbers: >
+      provenance.json's axis_effect_range_MARGINAL / largest_marginal_effect_axis
+      are unpaired marginals and are NOT main effects.  Renamed from
+      axis_effect_range / largest_effect_axis for exactly that reason; the two
+      noise runs' files were relabelled in place after the fact (same numbers).
+    runtime: >
+      ~41 min per full noise sweep, 1.54x the estimate extrapolated from a
+      1728-trial run.  Per-trial cost is uniform across the grid (40.9-42.8 ms
+      measured at three corners), so the overshoot is most likely GC pressure
+      from the 36288-row results list, which a 21x smaller benchmark does not
+      show.  Progress prints now flush; a redirected run was block-buffered
+      and therefore indistinguishable from a hung one for 40 minutes.

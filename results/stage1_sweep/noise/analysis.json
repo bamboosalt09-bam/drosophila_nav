@@ -1,0 +1,81 @@
+{
+  "generated_utc": "2026-09-16T00:25:34+00:00",
+  "source": "results\\stage1_sweep\\noise\\sweep_trials.csv.gz",
+  "paired_sample": {
+    "r_min": 0.01,
+    "initial_headings_deg": [
+      -170.0,
+      -150.0,
+      -135.0,
+      -120.0,
+      -90.0,
+      -75.0,
+      -60.0,
+      -45.0,
+      -30.0,
+      30.0,
+      45.0,
+      60.0,
+      75.0,
+      90.0,
+      120.0,
+      135.0,
+      150.0,
+      170.0
+    ],
+    "n_trials": 25920
+  },
+  "axis_success_rates": {
+    "r_max_ratio": {
+      "0.01": 0.9814814814814815,
+      "0.02": 0.9907407407407407,
+      "0.05": 0.9297839506172839,
+      "0.25": 0.6466049382716049,
+      "1.0": 0.5758101851851852
+    },
+    "alpha_ratio": {
+      "0.005": 0.6733796296296296,
+      "0.01": 0.7800925925925926,
+      "0.02": 0.86875,
+      "0.05": 0.8828703703703704,
+      "0.25": 0.8719907407407408,
+      "4.0": 0.8722222222222222
+    },
+    "tau_ratio": {
+      "1.0": 0.912962962962963,
+      "2.0": 0.9120370370370371,
+      "4.0": 0.9085648148148148,
+      "8.0": 0.8611111111111112,
+      "16.0": 0.7594907407407407,
+      "32.0": 0.5951388888888889
+    }
+  },
+  "axis_direction": {
+    "r_max_ratio": {
+      "low": 0.9814814814814815,
+      "high": 0.5758101851851852,
+      "more_capability": "hurts"
+    },
+    "alpha_ratio": {
+      "low": 0.6733796296296296,
+      "high": 0.8722222222222222,
+      "more_capability": "helps"
+    },
+    "tau_ratio": {
+      "low": 0.912962962962963,
+      "high": 0.5951388888888889,
+      "more_capability": "hurts"
+    }
+  },
+  "rescue_rate_where_baseline_failed": NaN,
+  "comparison": {
+    "tag": "noise",
+    "other": "noise_lagcomp",
+    "mean_self": 0.8248842592592593,
+    "mean_other": 0.9116512345679013,
+    "cells_better": 55,
+    "cells_worse": 20,
+    "cells_equal": 105
+  },
+  "selection_effect_note": "Unpaired averages along r_max are misleading: at r_max = 0.002 only |e0| = 30 and 45 deg remain feasible, versus 8 distinct magnitudes at r_max >= 0.01. All numbers above are paired."
+}
