@@ -29,7 +29,9 @@ two sit (e.g. the acceleration cap does nothing at r_max <= 0.02 and is the
 dominant axis at r_max = 0.25), so no marginal mean over this grid is a
 valid summary.  `results/stage1_sweep/<tag>/interaction_split.csv` holds the
 conditional tables any such claim must be checked against.
-See `provenance/reproduction_adjustments.yaml: noise_on_sweep`.
+**Stage 1's conclusions are written up in [`docs/stage1_conclusions.md`](docs/stage1_conclusions.md)**, with the
+record of how each number was obtained (and what was retracted) in
+`provenance/reproduction_adjustments.yaml`.
 
 ## Architecture (kept separable from the start, for the later 3D renderer)
 
