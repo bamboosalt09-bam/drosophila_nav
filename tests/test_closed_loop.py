@@ -427,3 +427,12 @@ def test_flywire_rate_model_is_trainable():
     if not Path("data/flywire/edges_783.npz").exists():
         pytest.skip("FlyWire edge table not built")
     fr.demo()
+
+
+def test_null_wirings_keep_and_break_the_right_things():
+    """The degree-preserving null keeps weights and hubs, but rewires."""
+    import core.null_wiring as nw
+
+    if not Path("data/flywire/edges_783.npz").exists():
+        pytest.skip("FlyWire edge table not built")
+    nw.demo()

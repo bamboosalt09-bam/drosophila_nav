@@ -130,12 +130,30 @@ class FlyWireRate(nn.Module):
         return v + dv * (dt_ms / self.tau()[:, None])
 
     def run(self, drive: torch.Tensor, duration_ms: float, dt_ms: float,
-            record_rows: Optional[torch.Tensor] = None):
-        """Run with a constant drive; return the final rates and any trace."""
+            record_rows: Optional[torch.Tensor] = None,
+            grad_ms: Optional[float] = None):
+        """Run with a constant drive; return the final rates and any trace.
+
+        `grad_ms` truncates backpropagation to the last that many ms.  The
+        readout is a steady-state rate, so carrying gradients through the whole
+        transient costs memory and time for very little signal; running the
+        early part under no_grad cuts both roughly in proportion.
+        ponytail: truncated BPTT, drop grad_ms if a result ever depends on the
+        transient.
+        """
         v = self.init_state(drive.shape[1])
         n_steps = int(round(duration_ms / dt_ms))
+        n_grad = (n_steps if grad_ms is None
+                  else min(n_steps, max(1, int(round(grad_ms / dt_ms)))))
         trace = [] if record_rows is not None else None
-        for _ in range(n_steps):
+
+        with torch.no_grad():
+            for _ in range(n_steps - n_grad):
+                v = self.step(v, drive, dt_ms)
+                if trace is not None:
+                    trace.append(activity(v)[record_rows])
+        v = v.detach()
+        for _ in range(n_grad):
             v = self.step(v, drive, dt_ms)
             if trace is not None:
                 trace.append(activity(v)[record_rows])
