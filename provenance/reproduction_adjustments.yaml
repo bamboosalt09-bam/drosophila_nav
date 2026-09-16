@@ -824,3 +824,92 @@ connectivity_data_audit:
       difference shows up as behaviour.
     recommendation: "share R_max, taken from the abstract condition"
     status: NOT YET DECIDED -- to be settled with the user before any sweep
+
+data_connectivity_condition:
+  status: IMPLEMENTED and VERIFIED -- but the planned comparison cannot be run
+    as designed; see D1
+  core: "src/core/westeinde2024_data.py (WesteindeDataCore), satisfies the
+    same SteeringCore protocol as the abstract core"
+  agreement_with_source: >
+    Our core reproduces the repaired source arrays to 1.665e-15 max absolute
+    difference over 925 (goal, HD) points at S = 1.  For comparison the
+    abstract core agrees to 3.4e-14.
+  norm_constants: configs/norm_constants_data.json (steering_max 0.5188658127)
+  shared_R_max:
+    decision: "user, 2026-09-16: share R_max from the abstract condition"
+    how_it_holds: >
+      Each core divides by its OWN steering_max, exactly as the source does,
+      so both commands span [-1, 1] and R_max = kappa*max|steering| is the
+      same 2000 deg/s.  The bodies are therefore literally identical between
+      conditions.  What the normalisation removes is the arbitrary magnitude
+      of the raw weights (0.3151 abstract vs 0.5189 data); what survives is
+      the response SHAPE and the goal dependence, which is what is being
+      compared.
+
+  D1_data_connectivity_does_not_steer_to_the_commanded_goal:
+    status: NEW FINDING -- and it blocks the planned sweep
+    measured_in_the_sources_own_arrays: >
+      Stable zero of the open-loop steering function, minus the commanded
+      goal, at S = 1.  Abstract: 0.0 deg at every goal.  Data: 0.0 at goal 0,
+      +7.2 at 30, +31.6 at 60, +36.4 at 150, and NO stable zero at all near
+      goal = +-90 or +-120 deg.  The bias is odd-symmetric (-7.2 at -30,
+      -31.6 at -60).
+    confirmed_in_closed_loop: >
+      With an ideal body and no noise the data core settles to the same
+      offset headings (37.2 at goal 30, 91.6 at goal 60, -173.6 at goal 150),
+      independent of initial error, i.e. a genuine fixed-point offset rather
+      than a transient.  At goal = 120 the settled heading also depends on
+      the initial condition (56-82 deg of bias), so the attractor structure
+      there is more complex.
+    not_an_artifact_of_our_code: >
+      Read directly out of the authors' arrays with no closed loop and none of
+      our core.  Pinned by
+      tests/test_core_symmetry.py::test_data_connectivity_does_not_steer_to_the_commanded_goal
+    mechanism: >
+      A PFL cell's goal input is assigned by CELL INDEX.  In the abstract
+      condition the PFL and goal populations share one hd_prefs array, so
+      every cell has the SAME mismatch between its own HD preference and its
+      goal cell's -- that mismatch IS the fixed phase shift (67.5 / 180 deg).
+      In the data condition the goal population is uniformly spaced at 30 deg
+      while the PFL3 preferences come from PB glomeruli spanning L7..R2, so
+      the per-cell mismatch is irregular: PFL3R gives
+      [-75,-90,-105,-75,-90,-105,-75,-90,-105,-75,-45,-60] instead of a
+      constant.  That irregularity breaks the rotational symmetry that makes
+      the abstract core's fixed point exact.  PFL2's mismatch IS regular
+      ([-165,-180,165] repeating), and PFL3L is an exact mirror of PFL3R, so
+      goal = 0 remains exact.
+    interpretation_limits: >
+      Whether the irregular tiling is biology (PFL3R really does innervate
+      mostly left PB glomeruli) or an indexing choice cannot be settled from
+      the published code.  The bias is therefore NOT yet evidence that the
+      real connectome fails to steer -- it is evidence that this reduced
+      model, wired this way and with the goal input assigned by index, does.
+      The left = mirror-of-right assumption is also the source's, not a
+      measurement, and the bias being odd-symmetric is exactly what that
+      assumption would produce.
+
+  consequence_for_the_planned_comparison:
+    problem: >
+      The question was how differently the idealised and measured wirings
+      fail under BODY constraints.  With a perfect body and no noise the data
+      core already fails the task at every initial error for goals 60-150 deg,
+      so half of goal space is a baseline failure before any body limit is
+      applied.  A sweep over the full goal range would spend half its trials
+      in BASELINE_FAILURE and measure nothing about the body.
+    options_not_yet_chosen:
+      A: "restrict the sweep to the goal range where the data core does hold
+          heading (|goal| <= ~45 deg) and run the body comparison there"
+      B: "additionally test a corrected variant that pairs each PFL cell's
+          goal input with its OWN HD preference -- this would be OUR
+          modelling intervention, not the source's, and must be labelled so"
+      C: "report D1 as the result and drop the body comparison for this core"
+    recommendation: "A, with B as a clearly-labelled second condition"
+
+  sweep_support_added:
+    - "experiments/stage1_body_sweep.py --controller data"
+    - "experiments/stage1_body_sweep.py --goal-step N (0 = the Stage 1
+       behaviour, goal fixed at 0). Required for any data-core sweep, since
+       that core's restoring gain varies 12x with goal direction."
+    - "baseline condition A is now keyed by (goal, e0, seed)"
+    - "regression: --quick with goal-step 0 and noise off reproduces the
+       earlier run bit-identically (DataFrame.equals)"

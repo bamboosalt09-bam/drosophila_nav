@@ -50,6 +50,8 @@ from body.ideal_yaw import IdealYawBody
 from body.yaw_plant import YawPlant, from_neural_scale
 from core.calibration import calibrate, load
 from core.p_controller import PController
+from core.westeinde2024_data import WesteindeDataCore
+from core.westeinde2024_data import calibrate as calibrate_data
 from core.westeinde2024 import CoreParams, WesteindeSteeringCore
 from decoder.steering import SteeringDecoder
 from environment.heading_task import (CALIBRATION_ERRORS_DEG, HeadingTask,
@@ -96,8 +98,14 @@ def build_parser():
     p.add_argument("--hold", type=float, default=1.0)
     p.add_argument("--quick", action="store_true",
                    help="3x3x3 grid and calibration errors only")
-    p.add_argument("--controller", choices=("fly", "p"), default="fly",
-                   help="'p' swaps the fly core for the condition-D baseline")
+    p.add_argument("--controller", choices=("fly", "p", "data"), default="fly",
+                   help="'p' is the condition-D baseline; 'data' is the same "
+                        "circuit wired with hemibrain synapse counts")
+    p.add_argument("--goal-step", type=int, default=0,
+                   help="0 = goal fixed at 0 deg (every Stage 1 run). N > 0 "
+                        "sweeps goals 0:N:179 as well. The data core's gain "
+                        "varies 12x with goal direction (period 180 deg), so "
+                        "a data sweep MUST set this.")
     p.add_argument("--plugin", choices=("rate_clip", "lag_comp"),
                    default="rate_clip", help="'lag_comp' is condition C")
     p.add_argument("--noise-seeds", type=int, default=0,
@@ -118,8 +126,14 @@ def main(argv=None) -> int:
     scale = json.loads(SCALE_JSON.read_text(encoding="utf-8"))
     R = float(scale["body_scale_rad_per_s"])
 
-    core = (PController() if args.controller == "p"
-            else WesteindeSteeringCore(CoreParams(), norm))
+    if args.controller == "p":
+        core = PController()
+    elif args.controller == "data":
+        # R_max stays the ABSTRACT condition's (read from SCALE_JSON below),
+        # so both connectivity conditions drive the same bodies.
+        core = WesteindeDataCore(norm=calibrate_data(verbose=False))
+    else:
+        core = WesteindeSteeringCore(CoreParams(), norm)
     decoder = SteeringDecoder()
     T = decoder.T_core_s
     crit = mx.SuccessCriterion(tolerance_rad=np.deg2rad(args.tolerance_deg),
@@ -140,13 +154,16 @@ def main(argv=None) -> int:
                          command_noise_rad_per_s(n_cycles, T, s))
                      for s in seeds}
 
+    goals = ([0.0] if args.goal_step <= 0
+             else [float(g) for g in range(0, 180, args.goal_step)])
+
     combos = list(itertools.product(r_ratios, a_ratios, t_ratios))
     print("=== Stage 1 step 2: body-constraint sweep (tag: %s) ===" % args.tag)
     print("  controller: %s   plugin: %s" % (args.controller, args.plugin))
     print("  body scale R_max = %.1f deg/s, T_core = %.2f s" % (np.rad2deg(R), T))
-    print("  %d body conditions x %d initial errors x %d seed(s) = %d trials"
-          % (len(combos), len(errors), len(seeds),
-             len(combos) * len(errors) * len(seeds)))
+    print("  %d bodies x %d errors x %d goal(s) x %d seed(s) = %d trials"
+          % (len(combos), len(errors), len(goals), len(seeds),
+             len(combos) * len(errors) * len(goals) * len(seeds)))
     print("  success: |e| <= %.0f deg within %.0f s, held %.0f s; noise %s"
           % (args.tolerance_deg, args.timeout, args.hold,
              "off" if seeds == [None] else "ON (%d seeds)" % len(seeds)))
@@ -156,22 +173,25 @@ def main(argv=None) -> int:
     # the SAME noise realisation the constrained body sees, or "rescued by the
     # body" would just be comparing two different draws.
     baseline = {}
-    for e0 in errors:
-        for s in seeds:
-            task = HeadingTask(goal=0.0, initial_heading=np.deg2rad(e0),
-                               duration_s=args.duration)
-            res = run_closed_loop(core, decoder, PassthroughPlugin(),
-                                  IdealYawBody(), IdealHeadingSensor(), task,
-                                  command_noise=noise_by_seed[s])
-            m = mx.compute(res, crit)
-            baseline[(e0, s)] = {"success": m.success,
-                                 "settling_s": m.settling_time_s,
-                                 "iae": m.iae_deg_s,
-                                 "zero_crossings": m.zero_crossings}
+    for gl in goals:
+        for e0 in errors:
+            for s in seeds:
+                task = HeadingTask(goal=np.deg2rad(gl),
+                                   initial_heading=np.deg2rad(gl + e0),
+                                   duration_s=args.duration)
+                res = run_closed_loop(core, decoder, PassthroughPlugin(),
+                                      IdealYawBody(), IdealHeadingSensor(),
+                                      task, command_noise=noise_by_seed[s])
+                m = mx.compute(res, crit)
+                baseline[(gl, e0, s)] = {"success": m.success,
+                                         "settling_s": m.settling_time_s,
+                                         "iae": m.iae_deg_s,
+                                         "zero_crossings": m.zero_crossings}
     n_base_ok = sum(b["success"] for b in baseline.values())
     print("  condition A (ideal body): %d / %d baseline trials succeed"
           % (n_base_ok, len(baseline)))
-    failed_e0 = sorted({e for (e, _), b in baseline.items() if not b["success"]})
+    failed_e0 = sorted({e for (_, e, _), b in baseline.items()
+                        if not b["success"]})
     if failed_e0:
         print("    already failing with a perfect body (finding F1): %s"
               % failed_e0)
@@ -183,11 +203,13 @@ def main(argv=None) -> int:
         params = from_neural_scale(R, r_max_ratio=rr, alpha_max_ratio=ar,
                                    tau_ratio=tr, T_core=T)
         for e0 in errors:
-            # feasibility is a property of the plant, not of the noise draw
+            # feasibility depends on the plant and the error, not on the goal
+            # direction or the noise draw
             feas = is_task_feasible(params, np.deg2rad(e0), args.timeout,
                                     crit.tolerance_rad)
-            for s in seeds:
-                task = HeadingTask(goal=0.0, initial_heading=np.deg2rad(e0),
+            for gl, s in itertools.product(goals, seeds):
+                task = HeadingTask(goal=np.deg2rad(gl),
+                                   initial_heading=np.deg2rad(gl + e0),
                                    duration_s=args.duration)
                 plugin = (LagCompPlugin(r_max=params.r_max, tau_r=params.tau_r,
                                         T_core=T)
@@ -198,12 +220,13 @@ def main(argv=None) -> int:
                                       IdealHeadingSensor(), task,
                                       command_noise=noise_by_seed[s])
                 m = mx.compute(res, crit, plugin=plugin, body=body)
-                base = baseline[(e0, s)]
+                base = baseline[(gl, e0, s)]
                 outcome = cls.classify(m, feas, e0, base["success"],
                                        settle_grace_s=args.duration)
 
                 row = {"r_max_ratio": rr, "alpha_ratio": ar, "tau_ratio": tr,
-                       "e0_deg": e0, "seed": -1 if s is None else s,
+                       "e0_deg": e0, "goal_deg": gl,
+                       "seed": -1 if s is None else s,
                        "outcome": outcome.value,
                        "feasible": feas.feasible, "feas_margin": feas.margin,
                        "baseline_success": base["success"],
@@ -347,14 +370,15 @@ def main(argv=None) -> int:
         "git_commit": git_commit(),
         "controller": args.controller,
         "plugin": args.plugin,
-        "core_params": (core.as_dict() if args.controller == "p"
-                        else CoreParams().as_dict()),
+        "core_params": (CoreParams().as_dict()
+                        if args.controller == "fly" else core.as_dict()),
         "decoder": decoder.as_dict(),
         "body_scale_rad_per_s": R,
         "body_scale_deg_per_s": float(np.rad2deg(R)),
         "grid": {"r_max_ratio": list(r_ratios), "alpha_ratio": list(a_ratios),
                  "tau_ratio": list(t_ratios)},
         "initial_errors_deg": errors,
+        "goal_directions_deg": goals,
         "success_criterion": crit.as_dict(),
         "tolerance_sensitivity_deg": [10.0, 15.0, 20.0],
         "noise": ("none (doc section 24: isolate the body effect)"
@@ -364,8 +388,9 @@ def main(argv=None) -> int:
                    "baseline": "condition A re-run per (e0, seed)"}),
         "noise_seeds": len(seeds) if seeds != [None] else 0,
         "classification_thresholds": cls.thresholds_as_dict(),
-        "baseline_condition_A": {("%g" % e if sd is None else "%g|seed%d" % (e, sd)): v
-                                 for (e, sd), v in baseline.items()},
+        "baseline_condition_A": {
+            "goal%g|e%g%s" % (gl, e, "" if sd is None else "|seed%d" % sd): v
+            for (gl, e, sd), v in baseline.items()},
         "outcome_counts": {str(k): int(v) for k, v in counts.items()},
         "attributable_fraction": float(len(attributable) / len(df)),
         "n_rescued_by_body": n_rescued,

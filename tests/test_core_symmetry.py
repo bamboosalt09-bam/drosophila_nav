@@ -227,3 +227,49 @@ def test_elu1_matches_the_source_formula():
     post_lo, post_hi = expected_raw.min(), expected_raw.max()
     expected = np.interp(expected_raw, (post_lo, post_hi), (0.0, 1.0))
     assert np.allclose(elu1(x, lo, hi, post_lo, post_hi), expected, atol=1e-15)
+
+
+def test_data_connectivity_does_not_steer_to_the_commanded_goal():
+    """Finding D1: the hemibrain-wired core has a goal-dependent steering bias.
+
+    The abstract core's stable heading equals the commanded goal exactly, at
+    every goal.  Wired with hemibrain synapse counts instead, the same circuit
+    settles up to ~36 deg away, and near goal = +-90 deg it has no stable
+    heading at all.  Verified against the authors' own arrays, not just ours
+    (reference/check_connectivity_data.py), so this is a property of the
+    source's connectivity_option = 'data', not of this implementation.
+
+    Pinned because the whole comparison of idealised against measured
+    connectivity rests on it.
+    """
+    from core.westeinde2024_data import WesteindeDataCore
+    from core.westeinde2024_data import calibrate as calibrate_data
+
+    core = WesteindeDataCore(norm=calibrate_data(verbose=False))
+    hd = np.arange(-180.0, 180.0, 0.5)
+
+    def stable_zero(goal_deg):
+        s = np.array([core.steering_deg(float(h), goal_deg) for h in hd])
+        cross = [hd[i] - s[i] * (hd[i + 1] - hd[i]) / (s[i + 1] - s[i])
+                 for i in range(len(hd) - 1) if s[i] > 0 >= s[i + 1]]
+        if not cross:
+            return None
+        return min(cross, key=lambda z: abs((z - goal_deg + 180) % 360 - 180))
+
+    def bias(goal_deg):
+        z = stable_zero(goal_deg)
+        return None if z is None else (z - goal_deg + 180) % 360 - 180
+
+    # goal = 0 is exact: the assumed left-right mirror symmetry makes it so
+    assert abs(bias(0.0)) < 0.5
+
+    # away from that symmetry axis the bias is real and odd-symmetric
+    b30, b60 = bias(30.0), bias(60.0)
+    assert 5.0 < b30 < 10.0, b30
+    assert 28.0 < b60 < 35.0, b60
+    assert abs(bias(-30.0) + b30) < 0.5
+    assert abs(bias(-60.0) + b60) < 0.5
+
+    # and near +-90 deg there is no stable heading near the goal at all
+    assert stable_zero(90.0) is None
+    assert stable_zero(-90.0) is None
