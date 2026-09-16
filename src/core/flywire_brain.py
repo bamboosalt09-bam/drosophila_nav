@@ -42,9 +42,13 @@ REFRACTORY_MS = 2.2
 DELAY_MS = 1.8
 W_SYN_MV = 0.275
 
-# ACh / DA / OA / 5-HT excitatory, GABA / Glu inhibitory
-_NT_SIGN = {"ach": 1.0, "da": 1.0, "oct": 1.0, "ser": 1.0,
-            "gaba": -1.0, "glut": -1.0}
+# ACh / DA / OA / 5-HT excitatory, GABA / Glu inhibitory -- the same rule as
+# Shiu et al. 2024.  Sign is a property of the PRESYNAPTIC NEURON (one cell,
+# one transmitter), not of the individual edge: the connection table's
+# per-edge transmitter averages disagree with the neuron's own call on 20.5%
+# of edges and flip the sign on 9.6% of them.
+_NT_SIGN = {"acetylcholine": 1.0, "dopamine": 1.0, "octopamine": 1.0,
+            "serotonin": 1.0, "gaba": -1.0, "glutamate": -1.0}
 
 
 @dataclass
@@ -66,8 +70,10 @@ class FlyWireBrain:
 
         keep = e["syn"] >= min_synapses
         pre, post, syn = e["pre"][keep], e["post"][keep], e["syn"][keep]
-        nt_names = [str(x) for x in e["nt_names"]]
-        sign = np.array([_NT_SIGN[n] for n in nt_names])[e["top_nt"][keep]]
+        nt = pd.Series(pre).map(
+            ann.set_index("root_id")["top_nt"].to_dict())
+        sign = nt.map(_NT_SIGN).fillna(0.0).to_numpy()
+        self.n_unsigned = int((sign == 0).sum())
 
         self.ids = np.union1d(np.union1d(pre, post),
                               ann["root_id"].to_numpy(np.int64))
@@ -161,7 +167,8 @@ class FlyWireBrain:
         return {"n_neurons": self.n, "n_edges": int(self.n_edges),
                 "dt_ms": self.dt_ms, "w_syn_mV": W_SYN_MV * self.w_scale,
                 "params": "Shiu et al. 2024 model.py",
-                "sign": "ACh/DA/OA/5-HT +, GABA/Glu -"}
+                "sign": "ACh/DA/OA/5-HT +, GABA/Glu -, per presynaptic neuron",
+                "n_unsigned_edges": self.n_unsigned}
 
 
 def demo() -> None:
