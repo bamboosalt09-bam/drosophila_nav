@@ -1039,3 +1039,92 @@ flywire_whole_brain_step:
       The timing probe used RANDOM topology.  The real connectome is
       heavy-tailed with hub neurons, so locality of memory access is worse
       and the real figure is likely slower.
+
+retinotopy_resolved:
+  status: RESOLVED -- the published column assignment exists and is public
+  supersedes: "flywire_whole_brain_step.R2_retinotopy_gate_partly_passed, where
+    this was recorded as an open gate with only an azimuth approximation"
+
+  how_it_was_found: >
+    User asked to look for prior work rather than build it.  Matsliah et al.
+    2024 ("Neuronal parts list and wiring diagram for a visual system",
+    Nature) had already done exactly the assignment attempted here by probe:
+    all Mi1 cells were semi-automatically assigned to hexagonal lattice
+    points, and the other columnar cells were matched to Mi1 one-to-one with
+    the Hungarian algorithm on the connectivity matrix.
+
+  public_source:
+    url: "https://storage.googleapis.com/flywire-data/codex/data/fafb/783/column_assignment.csv.gz"
+    found_via: "hsseung/OpticLobe.jl src/codexdependencies.jl, which registers
+      the Codex files as DataDeps -- the bucket is public even though the
+      Codex web app requires a Google sign-in"
+    other_files_in_the_same_bucket:
+      - visual_neuron_types.csv.gz
+      - classification.csv.gz
+      - neurons.csv.gz
+      - cell_stats.csv.gz
+      - consolidated_cell_types.csv.gz
+      - connections_princeton_no_threshold.csv.gz  # 263 MB
+      - connections_buhmann_no_threshold.csv.gz    # 202 MB
+
+  what_it_contains:
+    rows: 45528
+    columns: "root_id, hemisphere, type, column_id, x, y, p, q"
+    coordinate_system: >
+      (p, q) hexagonal lattice, the eye coordinate system defined in Figure 2
+      of Arthur Zhao et al. 2022.
+    coverage: >
+      BOTH hemispheres: left 785 columns / 22595 neurons, right 796 columns /
+      22933 neurons.  31 columnar cell types.
+    joins_cleanly: >
+      45518 / 45528 root_ids match our annotation table (100.0%), and the
+      file's `hemisphere` agrees with the annotation's `side` for every row.
+    injection_targets_have_coordinates: >
+      L1 1572, L2 1557, L3 1412, L4 1332, L5 1556 neurons -- the direct
+      targets of the missing R1-R6 -- all carry (p, q), as do R7 (1253) and
+      R8 (1276).
+
+  what_this_replaces: >
+    The azimuth-only approximation derived from Mi1 positions (first principal
+    axis, 71-75% of variance) is no longer needed.  It was OUR construct with
+    unquantified error; this is the published assignment, and it gives a full
+    2D lattice rather than one axis.
+
+  what_is_still_ours:
+    mapping_pq_to_viewing_direction: >
+      (p, q) is a lattice INDEX, not a direction.  Turning it into azimuth and
+      elevation still needs a convention, and that convention is ours.  It is
+      now a clean parametric map over a regular lattice rather than a fit to a
+      messy point cloud, but the error it carries is still unquantified --
+      interommatidial angles are not uniform over a curved eye.
+    eye_model_parameters: >
+      Taken from TuragaLab/flyvis (Lappalainen et al. 2024,
+      flyvis/datasets/rendering/eye.py): ommatidial acceptance angle 5.8 deg,
+      hexagonal sampling of a rendered image.  Their model tiles a SYNTHETIC
+      lattice of 721 columns (extent 15) built from FIB25/FIB19 rather than
+      recovering one from FlyWire, so the eye geometry transfers but the
+      lattice does not -- we use the measured FlyWire assignment instead.
+
+  prior_art_notes:
+    shiu_et_al_2024:
+      repo: github.com/philshiu/Drosophila_brain_model
+      simulator: "Brian 2, Python"
+      inputs: "Completeness_783.csv + Connectivity_783.parquet"
+      how_sensory_input_is_applied: >
+        Neurons are activated at a fixed frequency by FlyWire ID, to model
+        optogenetic activation.  OPEN LOOP -- stimulate and record spikes.
+        There is no body, no sensor and no feedback, so the closed loop is the
+        part this project adds rather than reuses.
+    lappalainen_et_al_2024:
+      repo: github.com/TuragaLab/flyvis
+      approach: >
+        Connectome-constrained deep mechanistic network in PyTorch, 64 cell
+        types over 721 synthetic columns (~45k neurons), optic lobe only, with
+        single-neuron and single-synapse parameters LEARNED by optimisation
+        against a motion task.
+      relevance: >
+        Shows the standard answer to "how do you feed a rendered scene to a
+        columnar visual system": impose a regular hex lattice and build the
+        eye model on it, rather than recovering retinotopy from coordinates.
+        Also a warning -- their parameters are fitted, so their success does
+        not imply an unfitted connectome model will work.
