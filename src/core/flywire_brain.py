@@ -59,7 +59,43 @@ class BrainState:
     t_ms: float
 
 
-def load_connectome(min_synapses: int = 1, w_scale: float = 1.0):
+def balance_hemispheres(out_csr: sp.csr_matrix, side: np.ndarray):
+    """Scale each hemisphere's incoming weight so the two sides match.
+
+    Measured on FAFB: neuron counts are symmetric (left/right 1.013) but the
+    reconstructed incoming synaptic weight is not (0.902).  The animal is
+    bilaterally symmetric, so a 10% difference is proofreading completeness,
+    not biology -- and it produces a standing left-right output asymmetry that
+    swamps any steering signal, whichever descending neurons are read.
+
+    Westeinde et al. make the same move in their 'data' condition, where the
+    left hemisphere's weights are simply the right's mirrored.
+
+    ponytail: a global per-side gain, which only fixes a GLOBAL imbalance.  If
+    the asymmetry turns out to be structured by pathway, this needs a real
+    left-right neuron mapping and an edge-by-edge average instead.
+    """
+    inc = np.asarray(abs(out_csr).sum(axis=0)).ravel()
+    tot = {s: inc[side == s].sum() for s in ("left", "right")}
+    target = 0.5 * (tot["left"] + tot["right"])
+    gain = np.ones(out_csr.shape[0], dtype=np.float32)
+    for s in ("left", "right"):
+        if tot[s] > 0:
+            gain[side == s] = target / tot[s]
+    # scale by the TARGET's side, so each hemisphere receives the same budget
+    m = out_csr.tocoo()
+    return _rebuild(m.row, m.col, m.data * gain[m.col], out_csr.shape[0])
+
+
+def _rebuild(rows, cols, data, n) -> sp.csr_matrix:
+    m = sp.csr_matrix((data.astype(np.float32), (rows, cols)), shape=(n, n),
+                      dtype=np.float32)
+    m.sort_indices()
+    return m
+
+
+def load_connectome(min_synapses: int = 1, w_scale: float = 1.0,
+                    symmetrise: bool = False):
     """Ids, signed weight matrix and the annotation columns anything reads.
 
     Shared by the spiking and the rate model so both see the same graph.
@@ -89,6 +125,8 @@ def load_connectome(min_synapses: int = 1, w_scale: float = 1.0):
     out = sp.csr_matrix((w, (i_pre, i_post)), shape=(len(ids), len(ids)),
                         dtype=np.float32)
     out.sort_indices()
+    if symmetrise:
+        out = balance_hemispheres(out, ann_i["side"].astype(str).to_numpy())
     return ids, out, ann_i, int((sign == 0).sum())
 
 

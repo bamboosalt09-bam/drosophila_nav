@@ -1295,3 +1295,96 @@ training_pilot:
     - "run the pilot with by_side=True and see whether the loss descends"
     - "the two null conditions have never been trained, only built"
     - "multi-seed trajectories, which is what the whole design is for"
+
+standing_asymmetry_investigation:
+  status: CAUSE NARROWED, FIX NOT YET FOUND
+  prompted_by: >
+    User's objection: no species-wide innate turning bias is reported in
+    Drosophila, so a large standing left-right output difference is more
+    likely ours than the fly's.  And: what does the descending readout
+    physically correspond to -- legs, wings, what?
+
+  Q1_where_does_the_output_go:
+    answer: "neither legs nor wings, and neither is in our data"
+    detail: >
+      Descending neurons project from the brain to the ventral nerve cord.
+      The leg and wing motor circuits are IN the nerve cord, and FAFB is a
+      brain-only volume, so the readout is the brain's command to the body,
+      not a muscle command.
+    the_readout_was_conceptually_wrong: >
+      The 1,303 descending neurons span 473 distinct cell types carrying
+      walking, flight, grooming and feeding commands.  DNa02 -- the pair the
+      Westeinde model this project reproduced in Stage 0/1 actually reads --
+      is 2 cells of those 1,303.  Summing all of them drowns it.
+    but_narrowing_it_does_not_help: >
+      Measured.  Normalised steering across bar positions at -120/-60/0/60/120
+      deg: all descending gives 0.950 1.000 0.920 0.771 0.834, DNa02 alone
+      gives 1.000 0.988 0.743 0.530 0.741.  Neither crosses zero, so both are
+      a standing offset with a ripple on it.  The cause is upstream of the
+      readout.
+    incidental: >
+      DNa01 and DNa03 are exactly silent -- reading DNa01+02+03 gives values
+      bit-identical to DNa02 alone.
+
+  Q2_the_asymmetry_is_a_reconstruction_artifact:
+    measured: >
+      Neuron counts are symmetric (left/right 1.013 overall, 0.995 for
+      descending) but reconstructed incoming synaptic weight is not: 0.902
+      overall, 0.939 into descending neurons.  So one hemisphere is ~10% more
+      completely proofread, with equal cell counts.
+    not_a_few_cells: >
+      The five largest descending neurons carry 5.9% (left) and 5.6% (right)
+      of their side's input, so the imbalance is spread across the population
+      rather than concentrated -- consistent with a global reconstruction
+      bias, not with biology.
+    consequence: >
+      A single-animal connectome carries its own measurement asymmetry into
+      any laterally symmetric computation.  This is a limitation of the data,
+      not of the simulation.
+
+  F1_global_rebalancing_does_not_fix_it:
+    what_was_tried: >
+      load_connectome(symmetrise=True) scales each hemisphere's incoming
+      weight so both sides receive the same budget.  It does what it says --
+      left/right goes from 0.9023 to 1.0000.
+    result: FAILED -- it moved the offset rather than removing it
+    measured: >
+      The steering curve flips sign and still never crosses zero: all
+      descending goes from 0.950 1.000 0.920 0.771 0.834 to -0.510 -0.342
+      -0.576 -1.000 -0.791.  Overcorrected.
+    conclusion: >
+      The asymmetry is STRUCTURED by pathway, not global, so a per-side gain
+      cannot express it.  The ponytail note on that function anticipated this
+      and it turned out to be the case.
+
+  what_a_real_fix_needs:
+    a_left_right_neuron_mapping: >
+      Average each edge with its mirror image, which needs to know which left
+      neuron corresponds to which right one.  Availability, measured:
+        - 99% of neurons carry a cell_type
+        - only 6,721 types are exactly balanced left/right (24,896 neurons),
+          and 8,270 types are within +-1 (39,213 neurons), so most neurons sit
+          in types whose two sides differ by more than one cell
+        - matching_notes is populated for 374 neurons, hemibrain_type and
+          supertype for 24%
+      For the 45,528 columnar optic neurons we already have an exact mirror:
+      the published (p, q) column assignment, so Mi1 at (p,q) left pairs with
+      Mi1 at (p,q) right.  Outside the optic lobe there is no exact map and
+      pairing within a cell type is arbitrary.
+    not_attempted_yet: true
+
+  prior_art_for_the_motor_interface:
+    source: "NeuroMechFly 2.0 / FlyGym (Ramdya lab)"
+    what_they_do: >
+      Nobody wires motor neurons one by one.  The descending command is TWO
+      numbers, [dL, dR], which modulate the left and right leg CPGs: the
+      magnitude sets stepping amplitude and the sign sets direction.  Odour
+      taxis, visual taxis and navigation all reduce to that 2D action space,
+      and the CPG plus hybrid correction rules produce the joint angles and
+      adhesion commands.
+    consequence_for_this_project: >
+      Our architecture already matches -- core -> decoder -> plugin -> body --
+      but we collapse the two sides to a single R-L scalar immediately.
+      Keeping [dL, dR] instead gives turning as dR-dL and forward speed as
+      dL+dR, which is the standard interface and makes the body swap for
+      NeuroMechFly a decoder change rather than a redesign.
