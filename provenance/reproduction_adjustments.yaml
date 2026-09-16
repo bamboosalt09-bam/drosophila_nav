@@ -1128,3 +1128,97 @@ retinotopy_resolved:
         eye model on it, rather than recovering retinotopy from coordinates.
         Also a warning -- their parameters are fitted, so their success does
         not imply an unfitted connectome model will work.
+
+flywire_whole_brain_first_results:
+  status: RUNS END TO END -- but does not yet compute navigation
+  what_is_designated: >
+    Input at super_class sensory / the columnar cells carrying the fly's own
+    view; output read as the left-right difference over super_class
+    descending.  Both anatomical.  Nothing between them is chosen.
+
+  parameters:
+    source: "Shiu et al. 2024 model.py, checked rather than assumed"
+    values: "rest/reset -52 mV, threshold -45 mV, membrane 20 ms, synaptic
+      5 ms, refractory 2.2 ms, delay 1.8 ms, w = sign * synapses * 0.275 mV,
+      no synapse threshold"
+    sign_rule: >
+      ACh/DA/OA/5-HT excitatory, GABA/Glu inhibitory -- confirmed to be the
+      same rule Shiu et al. use.  Applied per PRESYNAPTIC NEURON, not per
+      edge: the connection table's per-edge transmitter averages disagree with
+      the neuron's own call on 20.5% of edges and flip the sign on 9.6%.
+    w_scale: >
+      The one free parameter, and it was mis-set.  At 1.0 the central brain
+      sits at 0.2 Hz, i.e. silent; at 2.0 it sits at 33 Hz, which is
+      physiological, and EPG starts firing.  2.0 is now the working point.
+    drive: >
+      0.20 mV/step for a lit column.  Measured: 0.06 clears threshold but not
+      the optic lobe (0 descending active), 0.20 gives 124, 0.50 gives 213 but
+      pins the input at its 455 Hz refractory ceiling.
+
+  R1_visual_drive_reaches_the_output: >
+    Descending neurons are 2-3 synapses from the injected columnar cells (450
+    reached at hop 2, 1293 at hop 3).  The early failure to propagate was
+    drive strength, not wiring.
+
+  R2_heading_dependence_is_real_but_not_a_steering_signal:
+    measured: >
+      The descending left-right difference depends on bar position and the
+      dependence is reproducible across durations (every heading keeps its
+      sign at 300 and 500 ms).  Correlation with sin(heading) is -0.80 at the
+      corrected weight scale and per-neuron signs.
+    why_it_is_not_a_steering_signal: >
+      A bar straight ahead should require no turn but does not give zero, the
+      curve is not odd-symmetric, and the correlation is carried largely by a
+      standing offset (below).
+
+  R3_the_standing_offset_is_dynamic_not_an_input_artifact:
+    measured: >
+      With no input at all the difference is exactly 0.0 Hz, so there is no
+      intrinsic bias.  With a uniform grey surround and NO bar it is -820 Hz,
+      the same value the bar-out-of-view headings give.  With a deliberately
+      left-right symmetric frontal drive it is still -700 Hz.
+    wiring_is_nearly_symmetric: >
+      Summed incoming weight to descending neurons is +80,718 mV on the right
+      against +82,947 on the left, a 2.7% difference -- too small to explain a
+      700-820 Hz output asymmetry.
+    conclusion: >
+      The asymmetry is produced by the network's dynamics under almost any
+      drive, not by the stimulus or by our eye model.  Unexplained.
+
+  R4_EPG_does_not_form_a_bump:
+    status: RETRACTION of an earlier claim in this session
+    what_was_claimed: >
+      That EPG's peak unit took 5 distinct values across 12 bar positions,
+      "moving the right way".
+    what_is_true: >
+      EPG emits isolated spikes, not a bump.  Peak rates are 3.3-10 Hz with
+      means of 0.2-1.5 Hz and only 3-20 of 47 units active; almost every
+      "peak" is exactly 3.0 Hz, which at 300 ms is a SINGLE spike.  The
+      distinct-peak count was argmax over near-zero, mostly one-spike
+      histograms -- noise, not a moving representation.
+    why_it_matters: >
+      EPG carrying a heading bump is the single clearest sign that the model
+      computes heading.  It does not.
+
+  earlier_retraction: >
+    Also withdrawn: that every EPG has non-positive summed input weight and
+    "can never fire".  The summed weight is indeed non-positive for all 47
+    (median -192 mV), but that assumes every input fires at once, which is not
+    how a ring attractor works, and EPG does fire once the weight scale is
+    right.  EPG receiving mostly inhibition is biology -- ring neurons are
+    GABAergic, Delta7 glutamatergic -- not a bug.
+
+  performance_note: >
+    A 20x slowdown (688 s for a sweep that takes 51 s) was traced to a
+    transient allocation, not to the model: mapping transmitter names edge by
+    edge built a 15M-element object Series of Python strings and pushed this
+    machine into swap.  The resident model is only 170 MB.  Fixed by looking
+    the sign up through a 139k float32 array; output bit-identical.
+
+  open:
+    - "the standing left-right offset under symmetric input"
+    - "why EPG barely fires at a weight scale that puts the rest of the
+       central brain at 33 Hz"
+    - "heading -90 activates ~20,000 neurons against ~16,000 elsewhere at
+       equal luminance"
+    - "L1/L2 invert luminance; the probe drives them proportionally"
