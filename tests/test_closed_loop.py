@@ -14,6 +14,7 @@ import inspect
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from body.ideal_yaw import IdealYawBody
@@ -480,3 +481,46 @@ def test_malecns_symmetrisation_balances_every_stage():
     for g, floor in (("descending_neuron", 0.8), ("vnc_motor", 0.7),
                      ("vnc_intrinsic", 0.7)):
         assert (mirror[sc == g] >= 0).mean() > floor, g
+
+
+def test_malecns_pipeline_runs_end_to_end():
+    """Scene -> lamina -> 166,700 neurons -> leg motor neurons, nothing designated."""
+    import torch
+
+    import sensors.flywire_eye as eye
+    from core.malecns import load_malecns
+    from core.flywire_rate import FlyWireRate
+    from decoder.steering import read_motor
+
+    if not Path("data/malecns/connectome-weights-male-cns-v1.0-minconf-0.5.feather").exists():
+        pytest.skip("MaleCNS connectivity not downloaded")
+
+    ids, out, ann, _ = load_malecns(w_scale=0.005, symmetrise=True)
+    net = FlyWireRate(out_csr=out, ids=ids, ann=ann)
+    lat = eye.load_malecns_eye(ann)
+
+    idx = pd.Index(ids).get_indexer(lat.root_id)
+    sel = lat.of_type(*eye.MALECNS_INJECT_TYPES) & (idx >= 0)
+    rows = idx[sel]
+    assert len(rows) > 5000
+
+    scene = eye.bar_scene(0.0, 20.0, contrast=1.0, background=0.5)
+    drive = torch.zeros(net.n, 2)
+    for k, h in enumerate((-60.0, 60.0)):
+        lum = np.zeros(sel.sum())
+        for da in np.linspace(-0.5, 0.5, 5) * eye.ACCEPTANCE_DEG:
+            lum += scene(lat.azimuth_deg[sel] + h + da, lat.elevation_deg[sel])
+        drive[rows, k] = torch.from_numpy((lum / 5.0 * 0.20).astype(np.float32))
+
+    with torch.no_grad():
+        r, _ = net.run(drive, 200.0, 5.0)
+    r = r.numpy()
+
+    # the leg motor neurons must actually respond, and per segment
+    for k in range(2):
+        m = read_motor(r[:, k], ann)
+        assert set(m.segments) == {"T1", "T2", "T3"}
+        assert m.forward > 0, "leg motor neurons are silent"
+    # and the two bar positions must not give the same command
+    a, b = read_motor(r[:, 0], ann), read_motor(r[:, 1], ann)
+    assert a.turn != b.turn

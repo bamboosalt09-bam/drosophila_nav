@@ -21,7 +21,7 @@ that is a new experiment and it goes in provenance.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Dict
+from typing import Dict, Optional
 
 import numpy as np
 
@@ -107,3 +107,75 @@ class DescendingPair:
     def as_dict(self) -> Dict:
         return {"left": self.left, "right": self.right, "turn": self.turn,
                 "forward": self.forward, "balance": self.balance}
+
+
+@dataclass(frozen=True)
+class MotorReadout:
+    """Leg motor activity, read from the connectome rather than invented.
+
+    On FAFB there were no motor neurons, so a steering command had to be
+    constructed from 1,303 descending neurons spanning 473 cell types --
+    walking, flight, grooming and feeding lumped together, with DNa02, the
+    pair the Westeinde model actually reads, just 2 of them.  MaleCNS contains
+    the nerve cord, so the readout is simply what the leg motor neurons do.
+
+    The shape matches how fly simulators drive a body: NeuroMechFly takes a
+    two-number descending command [dL, dR] into left and right leg CPGs.  Here
+    the same two numbers come out of the motor neurons themselves, per leg
+    pair, so the turn is the left-right difference and forward drive is the
+    sum -- and the per-segment detail is available if it is ever wanted.
+    """
+
+    left: Dict[str, float]      # neuromere (T1/T2/T3) -> mean rate
+    right: Dict[str, float]
+
+    @property
+    def segments(self):
+        return sorted(set(self.left) | set(self.right))
+
+    def pair(self, segment: Optional[str] = None) -> DescendingPair:
+        """[dL, dR] for one leg pair, or summed over all three."""
+        if segment is not None:
+            return DescendingPair(self.left.get(segment, 0.0),
+                                  self.right.get(segment, 0.0))
+        return DescendingPair(sum(self.left.values()),
+                              sum(self.right.values()))
+
+    @property
+    def turn(self) -> float:
+        return self.pair().turn
+
+    @property
+    def forward(self) -> float:
+        return self.pair().forward
+
+    def as_dict(self) -> Dict:
+        d = {"turn": self.turn, "forward": self.forward,
+             "balance": self.pair().balance}
+        for s in self.segments:
+            p = self.pair(s)
+            d["turn_%s" % s] = p.turn
+            d["forward_%s" % s] = p.forward
+        return d
+
+
+def read_motor(rates, ann, segments=("T1", "T2", "T3")) -> MotorReadout:
+    """Mean motor-neuron rate per leg segment and side.
+
+    `rates` is one value per neuron, aligned to `ann`.  Selection is
+    anatomical throughout: superclass says which cells are motor neurons,
+    somaNeuromere says which leg they drive, somaSide which side.
+    """
+    import numpy as np
+
+    sc = ann["super_class"].to_numpy(dtype="<U32")
+    nm = ann["neuromere"].to_numpy(dtype="<U16")
+    side = ann["side"].to_numpy(dtype="<U16")
+    motor = np.isin(sc, ("vnc_motor", "cb_motor", "vnc_efferent"))
+
+    out = {"left": {}, "right": {}}
+    for s in segments:
+        for lr in ("left", "right"):
+            m = motor & (nm == s) & (side == lr)
+            out[lr][s] = float(np.asarray(rates)[m].mean()) if m.any() else 0.0
+    return MotorReadout(left=out["left"], right=out["right"])

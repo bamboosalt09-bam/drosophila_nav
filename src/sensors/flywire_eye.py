@@ -259,3 +259,88 @@ def verify(csv_path: str | Path = DEFAULT_CSV) -> None:
 
 if __name__ == "__main__":
     verify()
+
+
+# --- MaleCNS -----------------------------------------------------------
+# The same construction on a different dataset.  MaleCNS carries the lattice
+# in the annotation itself as assignedOlHex1 / assignedOlHex2, where FAFB
+# needed Matsliah et al.'s separate column-assignment file.  Measured here the
+# axes are again 120 degrees apart (nearest-neighbour CV 0.000-0.048 with 5.7
+# neighbours per column, against 7.6 at 90 degrees), so the same dorsal and
+# posterior components apply.  The indices are 1-based rather than centred,
+# so they are centred here.
+#
+# Injection targets differ: L1, L2, L3 and L5 carry hex, while L4, R7 and R8
+# do not.
+MALECNS_INJECT_TYPES = ("L1", "L2", "L3", "L5")
+
+
+def load_malecns_eye(ann, deg_per_column: float = DEG_PER_COLUMN,
+                     matched_only: bool = False) -> EyeLattice:
+    """Viewing directions from MaleCNS's built-in hex assignment."""
+    h = ann[ann["hex1"].notna() & ann["hex2"].notna()].copy()
+    h = h[h["side"].isin(["left", "right"])]
+    if matched_only:
+        key = list(zip(h["cell_type"], h["hex1"], h["hex2"]))
+        left = {k for k, s in zip(key, h["side"]) if s == "left"}
+        right = {k for k, s in zip(key, h["side"]) if s == "right"}
+        both = left & right
+        h = h[[k in both for k in key]]
+
+    p = h["hex1"].to_numpy(float)
+    q = h["hex2"].to_numpy(float)
+    # 1-based indices; centre them so the eye's axis sits at 0
+    p = p - (p.min() + p.max()) / 2.0
+    q = q - (q.min() + q.max()) / 2.0
+
+    dorsal = (p + q) / 2.0
+    posterior = (q - p) * (np.sqrt(3.0) / 2.0)
+    sign = h["side"].map(_AZIMUTH_SIGN).to_numpy(float)
+
+    return EyeLattice(
+        root_id=h.index.to_numpy(np.int64),
+        cell_type=h["cell_type"].to_numpy(dtype="<U48"),
+        eye=h["side"].to_numpy(dtype="<U8"),
+        azimuth_deg=sign * (EYE_CENTRE_AZIMUTH_DEG
+                            + posterior * deg_per_column),
+        elevation_deg=dorsal * deg_per_column,
+    )
+
+
+def verify_malecns() -> None:
+    """Same field-of-view check that validated the FAFB scale."""
+    import sys
+    sys.path.insert(0, "src")
+    from core.malecns import _load_annotations
+
+    ann = _load_annotations().set_index("root_id")
+    lat = load_malecns_eye(ann)
+    right = lat.eye == "right"
+    left = ~right
+    print("malecns eye: %d neurons, %d types"
+          % (len(lat.root_id), len(np.unique(lat.cell_type))))
+    for name, sel in (("right", right), ("left", left)):
+        fov_az = np.ptp(lat.azimuth_deg[sel])
+        fov_el = np.ptp(lat.elevation_deg[sel])
+        print("  %-5s eye FOV: %.0f deg azimuth x %.0f deg elevation"
+              % (name, fov_az, fov_el))
+        assert 120.0 < fov_az < 190.0, (name, fov_az)
+        assert 120.0 < fov_el < 190.0, (name, fov_el)
+
+    assert lat.azimuth_deg[right].mean() > 40.0
+    assert lat.azimuth_deg[left].mean() < -40.0
+
+    scene = bar_scene(0.0, bar_width_deg=20.0)
+    front = sample(lat, scene, heading_deg=0.0)
+    side_on = sample(lat, scene, heading_deg=90.0)
+    assert front[right].sum() > 0 and front[left].sum() > 0
+    assert side_on[left].sum() > 3.0 * side_on[right].sum()
+    print("  bar ahead lights %d (L %d / R %d); after a 90 deg turn %d (L %d / R %d)"
+          % ((front > 0).sum(), (front[left] > 0).sum(),
+             (front[right] > 0).sum(), (side_on > 0).sum(),
+             (side_on[left] > 0).sum(), (side_on[right] > 0).sum()))
+    n_inj = lat.of_type(*MALECNS_INJECT_TYPES).sum()
+    print("  injection targets (%s): %d"
+          % ("/".join(MALECNS_INJECT_TYPES), n_inj))
+    assert n_inj > 5000
+    print("malecns eye ok")

@@ -1643,3 +1643,76 @@ laterality_how_it_was_solved_before:
       1.0962 -> 1.0000.  Edges 6,242,118 -> 6,771,460, since averaging with a
       mirror creates the counterpart edges that were missing.
     pinned_by: tests/test_closed_loop.py::test_malecns_symmetrisation_balances_every_stage
+
+malecns_pipeline_and_flygym:
+  status: PIPELINE RUNS END TO END; body simulator installed and specs match
+
+  eye_on_malecns:
+    built: "sensors.flywire_eye.load_malecns_eye, returning the same EyeLattice
+      the FAFB path uses so nothing downstream changes"
+    lattice: >
+      MaleCNS carries assignedOlHex1/2 in the annotation itself.  Measured the
+      axes are again 120 degrees apart (nearest-neighbour CV 0.000-0.048,
+      5.7 neighbours per column, against 7.6 at 90 degrees), 875 and 887 Mi1
+      per eye against the ~800 ommatidia expected.
+    field_of_view: "147-152 deg azimuth by 160-162 deg elevation, so the
+      5.0 deg per column scale carries over from FAFB unchanged"
+    injection_targets: "L1, L2, L3, L5 -- 6,199 neurons.  L4, R7 and R8 carry
+      no hex, unlike FAFB where R7/R8 did."
+
+  motor_readout:
+    built: "decoder.steering.MotorReadout / read_motor"
+    what_changed: >
+      On FAFB the steering command had to be INVENTED from 1,303 descending
+      neurons spanning 473 types.  Here it is read from the leg motor neurons
+      directly, per leg pair, selected anatomically: superclass says motor,
+      somaNeuromere says which leg, somaSide says which side.
+    first_result: >
+      T1 and T3 come out positive while T2 is consistently negative across
+      every bar position.  Front and hind legs stepping out of phase with the
+      middle pair is the real animal's tripod pattern, and it was invisible
+      when 1,303 descending neurons were pooled into one scalar.
+
+  end_to_end: >
+    Scene -> lamina (6,199 cells) -> 166,700 neurons -> leg motor neurons, in
+    26 s, with nothing between input and output designated.  Turn correlates
+    with sin(bar azimuth) at -0.67 but does NOT cross zero: offset/range 0.48.
+    Matching the injected columns across eyes (L 2,624 / R 2,630) barely moves
+    it, 0.48 -> 0.43, and the wiring is already balanced to 1.0000 at every
+    stage, so the residual offset is neither the wiring nor the input count.
+    Unexplained.
+
+  flygym:
+    installed: "flygym 2.1.0 with mujoco 3.9.0"
+    why_it_is_the_right_body: >
+      NeuroMechFly v2's actual implementation.  get_ommatidia_readouts() and
+      get_joint_angles() come out, set_actuator_inputs() and
+      set_leg_adhesion_states() go in, which is exactly the closed loop this
+      project has been building toward.
+    specs_match:
+      vision: >
+        721 ommatidia per eye at 157 deg field of view.  721 is the same
+        number flyvis uses, and 157 deg independently confirms the 5.0 deg per
+        column scale we derived from the hex coordinates (147-162 deg).
+      body: >
+        69 rigged segments, 48 of them legs -- 6 legs x 8 segments (coxa,
+        trochanterfemur, tibia, tarsus1-5) -- plus head, abdomen, halteres.
+    the_mapping_is_available_not_invented: >
+      Motor neuron TYPE names the muscle, and the muscles pair as antagonists:
+      Ti flexor MN (37) against Ti extensor MN (12) for the tibia joint, Tr
+      flexor / Acc. tr flexor / Fe reductor for the femur, sternal and pleural
+      rotators for the coxa.  349 of the 909 motor neurons name a leg muscle
+      this way; the rest are abdominal, neck and haltere, for which flygym
+      also has segments.
+    still_to_do:
+      - "map 875 hex columns onto 721 ommatidia by nearest viewing direction"
+      - "aggregate motor neurons to joint commands via the flexor/extensor pairs"
+      - "reconcile timescales: our rate model runs at dt 5 ms, flygym's
+         mechanics at 600 Hz"
+
+  comparison_with_desktop_fly: >
+    DenisSergeevitch/desktop-fly uses the same two datasets but selects 1,045
+    MaleCNS neurons and hand-assigns function to them -- DNa01/02 for
+    steering, DNg11 for grooming, Giant Fiber for escape.  That is the
+    approach this project is deliberately avoiding: we keep all 166,700 and
+    designate only anatomical input and output.
