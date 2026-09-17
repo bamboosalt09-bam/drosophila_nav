@@ -3,6 +3,11 @@
 Closed-loop simulation study: a **fixed** Drosophila-derived steering circuit
 driven into bodies with different motion constraints.
 
+**If you are picking this up cold, read [`docs/HANDOFF.md`](docs/HANDOFF.md) first.**
+It says where the work stands, what is settled with the number that settled it,
+and what is still open.  Stage 2 (the whole MaleCNS connectome) is the live
+work; Stage 1 below is the closed baseline.
+
 Current stage: **Stage 1 complete — body sweep (noise off and on), conditions B/C/D, 3D viewer.**
 The core is verified against the authors' own notebook code: PFL population
 activity is bit-identical and the steering command agrees to 3.4e-14
