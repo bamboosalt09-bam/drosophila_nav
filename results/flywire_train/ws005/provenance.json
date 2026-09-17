@@ -1,0 +1,36 @@
+{
+  "generated_utc": "2026-09-17T07:41:25+00:00",
+  "wiring": "connectome",
+  "seed": 0,
+  "by_side": false,
+  "iters": 15,
+  "lr": 0.02,
+  "bias_lr_ratio": 0.01,
+  "w_scale": 0.005,
+  "symmetrise": true,
+  "dt_ms": 5.0,
+  "duration_ms": 200.0,
+  "grad_ms": 40.0,
+  "headings_deg": [
+    -150.0,
+    -107.14285714285714,
+    -64.28571428571429,
+    -21.428571428571445,
+    21.428571428571416,
+    64.28571428571428,
+    107.14285714285711,
+    150.0
+  ],
+  "net": {
+    "n_neurons": 139262,
+    "n_edges": 15091983,
+    "n_types": 58,
+    "n_trainable": 174,
+    "trains": "per-cell-type tau, bias, gain; weights FIXED",
+    "device": "cpu"
+  },
+  "loss_first": 0.3686450719833374,
+  "loss_last": 0.17065337300300598,
+  "param_distance": 1.4997957944869995,
+  "seconds_per_iter": 31.07029626000003
+}

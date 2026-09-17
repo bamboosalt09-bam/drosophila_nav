@@ -36,7 +36,11 @@ from core.flywire_brain import load_connectome
 from core.flywire_rate import FlyWireRate
 from core import null_wiring
 
-W_SCALE = 0.01      # measured responsive regime; see flywire_rate.demo
+W_SCALE = 0.005     # NOT 0.01.  Calibrating on the whole networks mean activity
+                    # is dominated by the optic lobes 77k neurons and hides that the
+                    # CENTRAL brain goes non-responsive: measured heading variation
+                    # there is 44.8% at 0.005 and 0.9% at 0.01, and only the lower
+                    # value lets the turn signal cross zero.
 DT_MS = 5.0         # 1.1% deviation from dt = 0.1 ms, 39x fewer steps
 DURATION_MS = 200.0
 GRAD_MS = 40.0      # backprop only through the last 40 ms; the readout is a

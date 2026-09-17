@@ -1500,3 +1500,86 @@ training_retry_after_symmetrisation:
       - "longer runs, since the loss had not flattened"
       - "a loss that penalises silencing, or a shape-only objective"
       - "the two null wirings, which have still never been trained"
+
+dataset_switch_to_malecns:
+  status: DATA ACQUIRED -- switching from FAFB (brain only) to MaleCNS (brain + nerve cord)
+  why_this_happened: >
+    User asked repeatedly how existing fly simulations port a brain onto a
+    body, pointing out that nobody wires motor neurons one by one.  Chasing
+    that down showed the answer is not a clever interface: the project that
+    put a whole fly in Minecraft uses a connectome that CONTAINS the motor
+    neurons, drives real sensory neurons and decodes real motor neurons.
+
+  my_error: >
+    I chose FAFB, which is brain-only, when datasets covering the whole
+    central nervous system were listed on the same Codex page at the very
+    start of this work -- BANC v888 (158,262) and MCNS v1.0 (166,700).  When
+    the user then asked whether the output went to legs or wings I answered
+    "neither is in our data", which was true of my choice rather than of the
+    data that existed.  Everything spent on inventing a steering readout from
+    1,303 mixed descending neurons followed from that choice.
+
+  source:
+    bucket: "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/"
+    login: "NOT required -- the neuPrint web app needs an account, the bucket
+      does not, the same pattern FlyWire had"
+    licence: CC-BY
+    files_taken:
+      - "body-annotations-male-cns-v1.0-minconf-0.5.feather (14.5 MB)"
+      - "body-neurotransmitters-male-cns-v1.0.feather (43.3 MB)"
+      - "connectome-weights-male-cns-v1.0-minconf-0.5.feather (1.1 GB)"
+    files_skipped: "syn-points (12.7 GB), syn-partners (6.8 GB), body-stats
+      (780 MB) -- synapse-level detail we do not need"
+
+  what_this_dataset_has_that_FAFB_did_not:
+    motor_neurons: >
+      909 of them (vnc_motor 708, cb_motor 107, vnc_efferent 94), balanced
+      L 423 / R 422 / M 63.  They carry somaNeuromere (T1 182, T2 186, T3 156
+      -- the three leg pairs), exitNerve (MetaLN, MesoLN, ProLN, AbN...) and
+      muscle-level types: "Ti flexor MN", "Tr flexor MN", "Fe reductor MN",
+      "Sternal posterior rotator MN".  The question "legs or wings" is now
+      answerable from the data.
+    the_nerve_cord_circuitry: >
+      vnc_intrinsic 13,161 neurons.  NeuroMechFly's central pattern generator
+      is hand-written; here that circuitry is DATA.  Nothing needs wiring.
+    photoreceptors: >
+      R1-R6 present with 3,377 neurons.  In FAFB they were absent -- somata
+      sit in the retina, outside the imaged volume -- which forced injection
+      one synapse inward at L1-L5.
+    optic_lattice_built_in: >
+      assignedOlHex1 / assignedOlHex2 on 23,720 neurons across 15 types (L1
+      892 distinct hex cells, Mi1 891).  For FAFB this took finding Matsliah
+      et al.'s separate column_assignment file.
+    laterality_CORRECTION: >
+      I claimed this dataset was laterally balanced.  That is true of somaSide
+      COUNTS (L 75,215 / R 75,119 / M 392) but NOT of incoming weight, which
+      measures R/L = 1.0962 -- essentially the same 10% asymmetry FAFB had.
+      The dataset switch does NOT fix the laterality problem; the per-stage
+      hemisphere balancing built for FAFB is still needed here.
+
+  built:
+    loader: "src/core/malecns.py, returning the same tuple as
+      core.flywire_brain.load_connectome so the rate model, null wirings and
+      training loop work unchanged"
+    measured: >
+      166,700 neurons and 6,242,118 edges at >= 5 synapses, built in 4.2 s.
+      The neuron count matches the release exactly.  Two filters were needed
+      and both were caught by the self-check: the connectivity table names
+      1.48M bodies including unproofread fragments, so only edges with both
+      ends annotated are kept; and the annotation itself has 211,577 rows of
+      which only 166,700 carry a superclass -- the other 44,877 are Orphan,
+      Glia, Unimportant and Out-of-scope bodies.
+    edge_count_is_a_gain: >
+      7.6M edges at >= 5 synapses before the annotation filter, 6.2M after,
+      against FAFB's 15.1M.  The bigger dataset simulates FASTER.
+
+  caveats:
+    - "cell_class is only 12.5% populated here against FAFB's 77%, so the rate
+       model's per-type parameter grouping will fall back to super_class"
+    - "male, where FAFB is female, and the Westeinde model reproduced in
+       Stage 0/1 is hemibrain-derived"
+    - "R1-R6 exist but carry no hex coordinates, so injection may still be at
+       the lamina -- now a choice rather than a forced compromise"
+    - "the optic hex assignment is itself lopsided, R 13,267 / L 10,453"
+    - "none of the FAFB-specific work (eye lattice, per-stage balancing,
+       trained parameters) transfers unchanged"

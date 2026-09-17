@@ -436,3 +436,12 @@ def test_null_wirings_keep_and_break_the_right_things():
     if not Path("data/flywire/edges_783.npz").exists():
         pytest.skip("FlyWire edge table not built")
     nw.demo()
+
+
+def test_malecns_has_the_motor_side():
+    """The reason for switching datasets: motor neurons and the nerve cord."""
+    import core.malecns as mc
+
+    if not Path("data/malecns/connectome-weights-male-cns-v1.0-minconf-0.5.feather").exists():
+        pytest.skip("MaleCNS connectivity not downloaded")
+    mc.demo()
