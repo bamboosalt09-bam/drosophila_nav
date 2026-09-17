@@ -445,3 +445,38 @@ def test_malecns_has_the_motor_side():
     if not Path("data/malecns/connectome-weights-male-cns-v1.0-minconf-0.5.feather").exists():
         pytest.skip("MaleCNS connectivity not downloaded")
     mc.demo()
+
+
+def test_malecns_symmetrisation_balances_every_stage():
+    """Mirror-average where the data pairs cells, rescale only the residue."""
+    import core.malecns as mc
+
+    if not Path("data/malecns/connectome-weights-male-cns-v1.0-minconf-0.5.feather").exists():
+        pytest.skip("MaleCNS connectivity not downloaded")
+
+    ids, raw, ann, _ = mc.load_malecns()
+    _, sym, _, _ = mc.load_malecns(symmetrise=True)
+    side = ann["side"].to_numpy(dtype="<U16")
+    sc = ann["super_class"].to_numpy(dtype="<U32")
+
+    def ratio(m, mask):
+        v = np.asarray(abs(m).sum(axis=0)).ravel()
+        return v[mask & (side == "right")].sum() / max(
+            v[mask & (side == "left")].sum(), 1e-12)
+
+    # the raw data is lopsided, worst in the optic lobe
+    allm = np.ones(len(side), bool)
+    assert ratio(raw, allm) > 1.05
+    assert ratio(raw, sc == "ol_intrinsic") > 1.2
+
+    # and symmetrisation balances every anatomical stage, not just the total
+    for g in ("ol_intrinsic", "cb_intrinsic", "vnc_intrinsic", "vnc_motor",
+              "descending_neuron"):
+        assert abs(ratio(sym, sc == g) - 1.0) < 1e-3, g
+    assert abs(ratio(sym, allm) - 1.0) < 1e-3
+
+    # mirror pairing must cover the populations the readout uses
+    mirror = mc.mirror_map(ann)
+    for g, floor in (("descending_neuron", 0.8), ("vnc_motor", 0.7),
+                     ("vnc_intrinsic", 0.7)):
+        assert (mirror[sc == g] >= 0).mean() > floor, g

@@ -1583,3 +1583,63 @@ dataset_switch_to_malecns:
     - "the optic hex assignment is itself lopsided, R 13,267 / L 10,453"
     - "none of the FAFB-specific work (eye lattice, per-stage balancing,
        trained parameters) transfers unchanged"
+
+laterality_how_it_was_solved_before:
+  status: RESOLVED on MaleCNS -- every stage balances to 1.0000
+  question: "the user asked how prior work handled the left-right asymmetry"
+
+  prior_art:
+    paper: >
+      Pedigo et al., eLife, "Generative network modeling reveals quantitative
+      definitions of bilateral symmetry exhibited by a whole insect brain
+      connectome".  They find the left and right hemispheres differ
+      significantly in connection probability, and offer two ways to recover
+      symmetry: rescale connection probabilities, or drop edges by weight.
+    also: >
+      Westeinde et al.'s own 'data' condition simply mirrors the right
+      hemisphere's weights onto the left rather than measuring both.
+    caution: >
+      Not every asymmetry is an artifact.  The fly's asymmetrical body is a
+      real structure, 1679 um^3 on the right against 526 on the left, so a
+      correction has to be reported as applied rather than assumed harmless.
+
+  method_2_thresholding_FAILS_here:
+    measured: >
+      R/L incoming weight over synapse thresholds 1, 3, 5, 10, 20, 50:
+      1.0865, 1.0921, 1.0962, 1.0957, 1.0849, 1.0537.  It does not move, and
+      is slightly WORSE at 5-10 than at 1.  Only at a threshold of 50, which
+      discards 99% of edges, does it reach 1.05.
+    conclusion: >
+      The imbalance is spread across the whole weight spectrum, not hiding in
+      weak edges, so dropping weak edges cannot fix it.
+
+  method_3_the_data_ships_the_pairing:
+    what: >
+      MaleCNS has a `group` column FAFB lacked: 13,603 groups, of which 11,762
+      hold equal left and right counts and 9,404 are a single unambiguous
+      pair.  The optic lobe is barely grouped, but carries assignedOlHex1/2,
+      so it pairs by cell type and hex cell instead -- the same move the FAFB
+      (p, q) assignment allowed.
+    coverage_measured: >
+      33.3% of all neurons, concentrated where it matters: descending 87.5%,
+      vnc_intrinsic 74.9%, vnc_motor 74.6%, cb_intrinsic 50.5%, ol_intrinsic
+      26.9% (its ceiling, since only 23,720 optic neurons have hex at all).
+    effect_alone: >
+      vnc_motor 0.9456 -> 0.9810, descending 1.0181 -> 0.9957, vnc_intrinsic
+      0.9104 -> 0.9729.  But the optic lobe barely moves, 1.2390 -> 1.2235,
+      and it is where the global asymmetry lives, so the total stays at 1.09.
+
+  the_composition_that_works:
+    order: "mirror-average first, then rescale the residue per stage"
+    why_that_order: >
+      Mirror averaging uses the data's own statement of which cell pairs with
+      which and makes the two sides literally equal.  Rescaling only hides a
+      difference behind a gain.  Doing the gain first would cover everything
+      and throw the pairing information away.
+    result: >
+      ol_intrinsic 1.2390 -> 1.0000, visual_projection 1.2644 -> 1.0000,
+      cb_intrinsic 1.0806 -> 1.0000, vnc_intrinsic 0.9104 -> 1.0000,
+      vnc_motor 0.9456 -> 1.0000, descending 1.0181 -> 1.0000, overall
+      1.0962 -> 1.0000.  Edges 6,242,118 -> 6,771,460, since averaging with a
+      mirror creates the counterpart edges that were missing.
+    pinned_by: tests/test_closed_loop.py::test_malecns_symmetrisation_balances_every_stage
