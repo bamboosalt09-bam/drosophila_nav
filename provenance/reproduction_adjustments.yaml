@@ -1449,3 +1449,54 @@ asymmetry_traced_and_corrected:
   what_this_does_not_settle: >
     Whether the residual failure is the remaining asymmetry or the fact that
     an unfitted connectome does not compute steering.  Both are still live.
+
+training_retry_after_symmetrisation:
+  status: IN PROGRESS -- symmetrisation helped the starting point, the optimiser
+    then destroyed it, and the reason has been identified
+  starting_loss: >
+    Removing the per-stage hemisphere imbalance more than halved the untrained
+    network's loss, 1.131 -> 0.508, with the correlation unchanged at +0.856.
+    So over half of what training previously had to fix was a reconstruction
+    artifact rather than anything the network was doing wrong.
+  what_still_fails: >
+    One Adam step at lr 0.02 takes the loss from 0.508 to 1.287, after which
+    it plateaus near 1.45 while the parameter distance keeps growing.
+  P2_the_parameters_live_on_different_scales:
+    measured: >
+      Gradient norms at initialisation: bias 1.27e-1 against log_tau 9.6e-3
+      and log_gain 1.07e-2, so bias is 13x the others.
+    reason: >
+      log_tau and log_gain are exponents -- a step of 0.02 is a 2% change.
+      bias is in the same units as the activity, which sits around 0.01, so
+      the same 0.02 step is TWICE the entire activity scale.  Adam normalises
+      per parameter and therefore moves them at the same absolute rate, which
+      is exactly the wrong thing here.
+    fix: >
+      Separate parameter groups, with bias at lr * 0.01 by default.  This is
+      not a hyperparameter search: the ratio comes from the measured scale
+      difference.
+    result: WORKED -- the loss descends for the first time
+
+  P3_the_descent_finds_a_degenerate_solution:
+    measured: >
+      With the scales separated the loss falls 0.508 -> 0.130 over 15
+      iterations, monotonically after the third, at 65 s per iteration.  That
+      is the first time training has moved at all.
+    but: >
+      The correlation with the target barely improves, +0.856 -> +0.873, so
+      almost all of the loss reduction is scale and offset rather than SHAPE.
+      And EPG collapses: peak-to-mean rises 15.7 -> 47.0 not by forming a
+      bump but by silencing the population, from 13 active units of 47 down
+      to 1.
+    reading: >
+      Training is mechanically working and finding a degenerate optimum.  A
+      single surviving unit is not a heading representation, and a loss that
+      falls without the shape improving is a warning, not a result.
+    caveat: >
+      15 iterations is very few and the loss was still falling at the last
+      one, so this is not yet evidence that the optimum IS degenerate -- only
+      that the trajectory is heading somewhere degenerate so far.
+    not_yet_tried:
+      - "longer runs, since the loss had not flattened"
+      - "a loss that penalises silencing, or a shape-only objective"
+      - "the two null wirings, which have still never been trained"

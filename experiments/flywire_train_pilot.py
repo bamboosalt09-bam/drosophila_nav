@@ -66,6 +66,9 @@ def main(argv=None) -> int:
     ap.add_argument("--lr", type=float, default=0.05)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--headings", type=int, default=8)
+    ap.add_argument("--bias-lr-ratio", type=float, default=0.01,
+                    help="bias shares the activity scale (~0.01) while the log "
+                         "parameters are exponents, so it needs a far smaller step")
     ap.add_argument("--by-side", action="store_true",
                     help="separate parameters for left and right; without it "
                          "training cannot address a left-right asymmetry")
@@ -76,7 +79,9 @@ def main(argv=None) -> int:
     outdir.mkdir(parents=True, exist_ok=True)
 
     torch.manual_seed(args.seed)
-    ids, out, ann, _ = load_connectome(w_scale=W_SCALE)
+    # symmetrise: the per-stage hemisphere balancing, without which the
+    # standing offset is 2.6x the signal and training has nothing to grip
+    ids, out, ann, _ = load_connectome(w_scale=W_SCALE, symmetrise=True)
     if args.wiring == "degree_preserving":
         out = null_wiring.degree_preserving(out, seed=args.seed)
     elif args.wiring == "random_sparse":
@@ -90,7 +95,7 @@ def main(argv=None) -> int:
     headings = np.linspace(-150, 150, args.headings)
     drive = build_drive(net, lat, headings, background=0.5, drive_lit=0.20)
 
-    side = ann["side"].astype(str).to_numpy()
+    side = ann["side"].to_numpy(dtype="<U16")
     desc = np.flatnonzero(ann["super_class"].eq("descending").to_numpy())
     dr = torch.from_numpy(desc[side[desc] == "right"])
     dl = torch.from_numpy(desc[side[desc] == "left"])
@@ -106,6 +111,8 @@ def main(argv=None) -> int:
 
     def steering(net):
         r, _ = net.run(drive, DURATION_MS, DT_MS, grad_ms=GRAD_MS)
+        # [dL, dR] kept apart until the last moment, as NeuroMechFly drives a
+        # body; turn is the difference, forward the sum
         return r[dr].mean(0) - r[dl].mean(0)
 
     def epg_profile(net):
@@ -117,7 +124,18 @@ def main(argv=None) -> int:
                         for p in net.parameters()])
     epg_before = epg_profile(net)
 
-    opt = torch.optim.Adam(net.parameters(), lr=args.lr)
+    # Separate learning rates, because the parameters live on different
+    # scales.  log_tau and log_gain are exponents, where a step of 0.02 is a
+    # 2% change; bias is in the same units as the activity, which sits around
+    # 0.01, so the SAME step is twice the entire activity scale.  Adam
+    # normalises per parameter and so moves them at the same absolute rate,
+    # which is why one step at lr 0.02 took the loss from 0.51 to 1.29.
+    # Measured gradient norms at init: bias 1.27e-1 against log_tau 9.6e-3 and
+    # log_gain 1.07e-2 -- 13x apart.
+    opt = torch.optim.Adam([
+        {"params": [net.log_tau, net.log_gain], "lr": args.lr},
+        {"params": [net.bias], "lr": args.lr * args.bias_lr_ratio},
+    ])
     hist = []
     t0 = time.perf_counter()
     for it in range(args.iters):
@@ -164,7 +182,7 @@ def main(argv=None) -> int:
     (outdir / "provenance.json").write_text(json.dumps({
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "wiring": args.wiring, "seed": args.seed, "by_side": args.by_side, "iters": args.iters,
-        "lr": args.lr, "w_scale": W_SCALE, "dt_ms": DT_MS,
+        "lr": args.lr, "bias_lr_ratio": args.bias_lr_ratio, "w_scale": W_SCALE, "symmetrise": True, "dt_ms": DT_MS,
         "duration_ms": DURATION_MS, "grad_ms": GRAD_MS, "headings_deg": headings.tolist(),
         "net": net.as_dict(),
         "loss_first": hist[0]["loss"], "loss_last": hist[-1]["loss"],
