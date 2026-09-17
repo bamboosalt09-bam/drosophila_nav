@@ -93,17 +93,26 @@ two interfaces already match:
     get_ommatidia_readouts()  ->  our lamina injection     721/eye, 157 deg FOV
     set_actuator_inputs()     <-  our motor readout        48 leg segments
 
-Three mappings remain:
+Mapping 1 — vision — DONE.  `src/sensors/flygym_bridge.py`.  flygym's
+ommatidia centroids form a clean hex lattice (spacing CV 0.001, 5.7
+neighbours), so the join needs no fisheye inversion: normalise both lattices
+to the same field of view and take the nearest direction.  All 23,720 columns
+join, angular error median 2.04 deg against a 5 deg interommatidial angle,
+and 706 of 721 ommatidia are read.  Our lattice is denser, so ~27 columns
+share an ommatidium -- duplicating a reading rather than inventing one.
 
-1. **875 hex columns -> 721 ommatidia**, by nearest viewing direction.  Both
-   are hex lattices with known directions, so this is a nearest-neighbour join.
-2. **909 motor neurons -> joint commands.**  Available, not invented: motor
-   types name their muscles and the muscles are antagonists.  `Ti flexor MN`
-   (37) against `Ti extensor MN` (12) is the tibia joint; `Tr flexor` /
-   `Acc. tr flexor` / `Fe reductor` the femur; sternal and pleural rotators the
-   coxa.  349 of 909 name a leg muscle; the rest are abdominal, neck, haltere.
-3. **Timescales.**  Our rate model runs at dt 5 ms; flygym's mechanics at
-   600 Hz.
+Mapping 2 — motor — DONE.  `decoder.steering.joint_commands`.  Derived, not
+assigned: Drosophila leg muscles are antagonist pairs and the type names say
+so.  `Ti extensor` against `Ti flexor`/`Acc. ti flexor` is the tibia;
+`Tr extensor` against `Tr flexor`/`Acc. tr flexor`/`Fe reductor` the femur;
+`Ta levator` against `Ta depressor` the tarsus; promotor against remotor and
+anterior against posterior rotator the coxa.  254 leg motor neurons become 24
+commands (6 legs x 4 joints), keyed the way flygym names its segments
+(`lf_tibia`, `rh_coxa`).  Left/right counts come out near-equal per joint,
+which is a symmetry check as well.
+
+Mapping 3 — timescales — REMAINS.  Our rate model runs at dt 5 ms; flygym's
+mechanics at 600 Hz.  After that the loop closes.
 
 ## The habit this project runs on
 

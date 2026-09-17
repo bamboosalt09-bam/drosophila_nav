@@ -179,3 +179,53 @@ def read_motor(rates, ann, segments=("T1", "T2", "T3")) -> MotorReadout:
             m = motor & (nm == s) & (side == lr)
             out[lr][s] = float(np.asarray(rates)[m].mean()) if m.any() else 0.0
     return MotorReadout(left=out["left"], right=out["right"])
+
+
+# Antagonist muscle pairs, read off the motor neuron type names rather than
+# assigned.  Drosophila leg muscles come in opposing pairs and the connectome
+# says so: flexor against extensor, depressor against levator, remotor against
+# promotor, anterior against posterior rotator.  Each entry maps a flygym leg
+# segment to (positive types, negative types); the command for that joint is
+# the difference, which is what an agonist-antagonist pair computes.
+#
+# ponytail: substring matching on type names.  It is what makes the mapping
+# derivable instead of invented, and it breaks if the dataset renames a muscle
+# -- the self-check asserts every group is non-empty for that reason.
+JOINT_MUSCLES = {
+    "tibia": (("Ti extensor",), ("Ti flexor", "Acc. ti flexor")),
+    "trochanterfemur": (("Tr extensor",),
+                        ("Tr flexor", "Acc. tr flexor", "Fe reductor")),
+    "tarsus1": (("Ta levator",), ("Ta depressor",)),
+    "coxa": (("Tergopleural/Pleural promotor", "Sternal anterior rotator"),
+             ("Pleural remotor/abductor", "Sternal posterior rotator")),
+}
+
+
+def joint_commands(rates, ann, segments=("T1", "T2", "T3")) -> Dict[str, float]:
+    """Per-joint agonist-minus-antagonist drive, keyed '<side>_<leg>_<joint>'.
+
+    Keys are shaped for flygym, whose leg segments are named lf/lm/lh and
+    rf/rm/rh followed by the segment: 'lf_tibia', 'rh_coxa' and so on.
+    """
+    import numpy as np
+
+    sc = ann["super_class"].to_numpy(dtype="<U32")
+    nm = ann["neuromere"].to_numpy(dtype="<U16")
+    side = ann["side"].to_numpy(dtype="<U16")
+    ctype = ann["cell_type"].to_numpy(dtype="<U48")
+    motor = np.isin(sc, ("vnc_motor", "cb_motor", "vnc_efferent"))
+    rates = np.asarray(rates)
+
+    leg_letter = {"T1": "f", "T2": "m", "T3": "h"}
+    out = {}
+    for seg in segments:
+        for lr, pfx in (("left", "l"), ("right", "r")):
+            base = motor & (nm == seg) & (side == lr)
+            for joint, (plus, minus) in JOINT_MUSCLES.items():
+                def grp(keys):
+                    m = base & np.array([any(k in t for k in keys)
+                                         for t in ctype])
+                    return float(rates[m].mean()) if m.any() else 0.0
+                key = "%s%s_%s" % (pfx, leg_letter[seg], joint)
+                out[key] = grp(plus) - grp(minus)
+    return out

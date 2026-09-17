@@ -524,3 +524,35 @@ def test_malecns_pipeline_runs_end_to_end():
     # and the two bar positions must not give the same command
     a, b = read_motor(r[:, 0], ann), read_motor(r[:, 1], ann)
     assert a.turn != b.turn
+
+
+def test_flygym_bridge_and_joint_commands():
+    """The two mappings that close the loop: eye join and muscle antagonists."""
+    from flygym.vision.retina import Retina
+
+    import sensors.flywire_eye as eye
+    import sensors.flygym_bridge as bridge
+    from core.malecns import _load_annotations
+    from decoder.steering import joint_commands, JOINT_MUSCLES
+
+    if not Path("data/malecns/body-annotations-male-cns-v1.0-minconf-0.5.feather").exists():
+        pytest.skip("MaleCNS annotations not downloaded")
+
+    ann = _load_annotations()
+    bridge.demo()
+
+    # every joint must find BOTH sides of its antagonist pair, or the mapping
+    # stopped being derivable from the muscle names
+    sc = ann["super_class"].to_numpy(dtype="<U32")
+    ct = ann["cell_type"].to_numpy(dtype="<U48")
+    nm = ann["neuromere"].to_numpy(dtype="<U16")
+    motor = np.isin(sc, ("vnc_motor", "cb_motor", "vnc_efferent"))
+    legs = motor & np.isin(nm, ["T1", "T2", "T3"])
+    for joint, (plus, minus) in JOINT_MUSCLES.items():
+        a = legs & np.array([any(k in t for k in plus) for t in ct])
+        b = legs & np.array([any(k in t for k in minus) for t in ct])
+        assert a.sum() > 0 and b.sum() > 0, joint
+
+    cmds = joint_commands(np.random.rand(len(ann)), ann)
+    assert len(cmds) == 24, len(cmds)          # 6 legs x 4 joints
+    assert "lf_tibia" in cmds and "rh_coxa" in cmds
