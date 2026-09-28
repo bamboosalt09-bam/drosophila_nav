@@ -19,7 +19,7 @@ it — none of which is on the research axis.  The goal below is quoted, not
 paraphrased, for that reason.
 
 Source of truth: the user's own `drosophila_navigation_handoff_master.md`
-(60 sections, in Downloads) plus the user's messages, dated.
+(60 sections; a copy is in this repo as `docs/master_handoff.md`) plus the user's messages, dated.
 
 ## The target, in the user's words
 
@@ -544,9 +544,8 @@ copied here so a new chat does not lose them.
   the next one overwrites it.
 * Answer in Korean; the user addresses decisions directly and expects a
   recommendation, not a survey.
-* The master design document is
-  `C:\Users\최성준\Downloads\drosophila_navigation_handoff_master.md` (not in
-  this repo).  Its decisions are settled.
+* The master design document is `docs/master_handoff.md` (copied into the
+  repo 2026-09-28 from the user's Downloads).  Its decisions are settled.
 
 ### Reproduce the current numbers
 

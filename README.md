@@ -60,32 +60,46 @@ Hard rules: the plugin never sees the goal or the heading error; actual body
 motion (never the neural command) is fed back through the sensor; the core is
 never re-tuned per body.
 
-## Setup (Windows, already done in this repo)
+## Start from a fresh clone (Windows, Python 3.13)
 
 ```bash
-python -m venv .venv
+git clone https://github.com/bamboosalt09-bam/drosophila_nav.git
+cd drosophila_nav
+py -3.13 -m venv .venv
+.venv/Scripts/python.exe -m pip install torch==2.14.0 --index-url https://download.pytorch.org/whl/cpu
 .venv/Scripts/python.exe -m pip install -r requirements.txt
+set PYTHONPATH=src
+.venv/Scripts/python.exe -m sim.drone_layer
+.venv/Scripts/python.exe -m sensors.vp_input
+.venv/Scripts/python.exe experiments/cx_vp_room.py --room 6
 ```
 
-## Data (not in git, ~2 GB)
+That is enough for the live experiment: the repo carries the fisheye
+extension built for CPython 3.13 / win_amd64
+(`src/sensors/_fisheye_cpp/_fisheye.cp313-win_amd64.pyd`) and the
+34,125-neuron subnet (`results/subnet/vp_h4_rho0.50_ol_intrinsic.pkl`), so
+neither MSVC nor the 2 GB connectome is needed.  Watch a flight with
+`experiments/live_view.py` and `--live` (see `CLAUDE.md`).
 
-`data/` is ignored.  Put the connectome files there before running:
+Where the work stands and how to resume: `docs/HANDOFF.md` (start with
+"INPUTS" and "DRONE LAYER" in the 2026-09-28 section), `CLAUDE.md` for a
+new Claude session, and the settled research design in
+`docs/master_handoff.md`.
 
-* `data/malecns/` — from `storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/` (CC-BY, no account):
-  `body-annotations-male-cns-v1.0-minconf-0.5.feather`,
-  `body-neurotransmitters-male-cns-v1.0.feather`,
-  `connectome-weights-male-cns-v1.0-minconf-0.5.feather`
+## Data (not in git, ~2 GB) — only to rebuild the subnet or query the connectome
+
+* `data/malecns/` — `python scripts/get_malecns.py` downloads it (1.1 GB,
+  public FlyEM bucket, CC-BY, no account).
 * `data/flywire/` — FlyWire v783 (`proofread_connections_783.feather`,
   `proofread_root_ids_783.npy`, `neuron_annotations_783.tsv`, `edges_783.npz`,
-  `column_assignment.csv.gz`, `visual_neuron_types.csv.gz`)
+  `column_assignment.csv.gz`, `visual_neuron_types.csv.gz`); only the
+  Stage 0/1 FlyWire code uses it.
 
-Also ignored and rebuilt on demand: the fisheye extension (`build_cpp.bat`,
-needs MSVC), subnet pickles in `results/subnet/`, training clips in
-`results/clips/`, and result images (`*.png`) except the sweep figures
-`results/sweep_*.png`.
-
-Where the work stands and how to resume: `docs/HANDOFF.md`, section
-"2026-09-28 — Structure B" (and `CLAUDE.md` for a new Claude session).
+Other Python versions or platforms: rebuild the extension with
+`src/sensors/_fisheye_cpp/build.py build_ext --inplace` (`build_cpp.bat` on
+Windows with MSVC).  Ignored and regenerated on demand: training clips
+`results/clips/`, most images (the sweep figures `results/sweep_*.png` are
+kept).
 
 ## Run
 
