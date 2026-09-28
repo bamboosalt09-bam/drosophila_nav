@@ -312,7 +312,29 @@ never visible from the corridor.  Nothing pulls; there is nothing to adapt
 to.  The loop is what the circuit does **with no cue at all** — a standing
 turn bias under vision + threat alone.  Next step proposed to the user:
 log the intended turn during the loop (is it a constant offset?) before
-choosing a fix.  After that, finish 2D with
+choosing a fix.
+
+**Observed (geometry only, `diag/diag_loop.py`, `plot_loop.py`):** the loop
+is a clockwise orbit around the pillar column at x ≈ −13.5, not a corridor
+bounce.  Speed 2 m/s throughout, nothing ever within 2 m ahead, so the drone
+layer never stopped or saccaded — every turn is the circuit's.  96% of turns
+are RIGHT; mean −22 °/s in the open, −46 °/s with a wall 2–4 m ahead.  v9
+24 beams: 79% right.  Non-looping v11 3 beams: 48/52, mean ≈ 0.
+
+**Code reading, candidate causes of the right bias (`diag/diag_lr.py`):**
+1. Threat input is lopsided: LC4+LPLC2 with a receptive direction are
+   165 left / 146 right (LC4 71 / 55; within ±30° of ahead 17 / 14).  Left
+   cells see only the left half-field, and left threat turns the drone
+   right (away).  Threat is injected per cell, not normalised per side, so a
+   wall dead ahead drives the left side harder → turns right.  Every other
+   lateral input (ORN 71/131, JO 14/5) IS normalised per side.
+2. `calibrate()` takes `zero` at odour bearing 0 with a beacon 25 m ahead.
+   With no beacon in view the ORN drive drops to 0 on both sides, so any
+   part of `zero` that came from the ORN drive becomes a standing turn.  Size
+   and sign unknown.  `calibrate_alt` already computes exactly this no-cue
+   turn (`u0`) at run start but never prints it.
+Neither is measured yet.  Probes proposed: u0 (no cue), and u with equal
+threat on every LC4/LPLC2 cell; both static, no flight.  After that, finish 2D with
 the proper evaluation: rooms 0/5/6/7 × 4 start headings × beams 1/6/24 ×
 alternation on/off, then path efficiency (path length / shortest path).
 
