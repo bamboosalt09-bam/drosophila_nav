@@ -197,6 +197,19 @@ class VPInput:
         # 0, i.e. at -145 deg; they now read nothing instead.
         self._az_ok = np.isfinite(az) & np.isfinite(el)
         self._vp_w = mirror_weights(az)
+        # the MIRROR TWIN reads each cell's pixel at -az: the mirror image
+        # of the scene, exactly, because the camera's azimuth grid is
+        # symmetric about 0
+        self._px_m = self.cam.bind(-np.nan_to_num(az), np.nan_to_num(el))
+        # MIRROR TWIN.  When True, drive() also builds `d_mirror`, the drive
+        # this circuit would receive in the mirror-image world, and the
+        # runner steers on (turn - mirror turn) / 2.  The circuit is not
+        # mirror-symmetric even with equal input per side: a corridor with a
+        # wall 1.5 m on each side turned it -34 deg/s and in room 6 that made
+        # a clockwise orbit at every beam count, 0 beams included.  A real
+        # fly is bilaterally symmetric; the residue is the reconstruction's.
+        self.twin = False
+        self.d_mirror = None
 
         ct = ann["cell_type"].astype(str).to_numpy(dtype="<U48")
         side = ann["side"].to_numpy(dtype="<U16")
@@ -235,58 +248,71 @@ class VPInput:
 
     def reset(self) -> None:
         self._prev_val = None
+        self._prev_val_m = None
 
     def drive(self, world, position, heading_rad):
-        # One compiled sweep returns the unlit scene, the lamp channel, the
-        # per-azimuth range and both centroids.  In Python these were a
-        # render plus three more passes over 36,864 pixels; together they
-        # were 33 ms of the 43 ms control cycle.
+        # One compiled sweep returns the unlit scene, the per-azimuth range
+        # and both centroids.
         r = self.cam.sense(world, position, heading_rad)
         beams_m = r["beams"]
-        scene = r["unlit"]          # the lamp is NEVER in the steering image
-        lum = scene.ravel()[self._px]
+        scene = r["unlit"].ravel()  # the lamp is NEVER in the steering image
+        cen = self.cam.rangefinder.centres
+        a_l, a_r = threat_level(beams_m, cen, self.speed)
+        # THE ODOUR CHANNEL IS NOT THE VISION CHANNEL.  ORN gets the bearing
+        # of the strongest bright blob only -- "where is the goal"; "what is
+        # in the way" is left to the visual injection.  Feeding ORN the
+        # signed centroid once handed the circuit a finished steering command
+        # through a second modality.
+        scent, scent_mass = r["scent"], r["scent_mass"]
+        frac = float(np.clip(scent / (self.cam.az_span / 2), -1.0, 1.0))
+        s = (scent_mass if self.fixed_strength is None
+             else self.fixed_strength)
+        # gyro: opposing push-pull on JO; + yaw is a LEFT turn
+        g = float(np.clip(-self.yaw_rate / GYRO_FULL, -1.0, 1.0))
+        d = self._build(scene[self._px], self.thr_az, frac, g, s, beams_m,
+                        cen, "_prev_val")
+        if self.twin:
+            # the mirror world: every azimuth negated, left and right swapped
+            self.d_mirror = self._build(scene[self._px_m], -self.thr_az,
+                                        -frac, -g, s, beams_m, cen,
+                                        "_prev_val_m")
+        return d, {"bearing": r["bearing"], "scent": scent,
+                   "scent_mass": scent_mass,
+                   "blocked": r["blocked"], "weight": r["weight"],
+                   "rear": r["rear"], "threat_in": (a_l, a_r),
+                   "beams": beams_m}
+
+    def _build(self, lum, thr_az, frac, g, s, beams_m, cen, prev_attr):
+        """The drive for one view of the world (as seen, or its mirror)."""
         # contrast, as the lamina transmits it: a uniform scene has no
         # direction in it and must not drive anything
         lum = lum - lum.mean()
-        bearing, blocked, weight = r["bearing"], r["blocked"], r["weight"]
-
         # Replay prev -> cur across the sub-steps, so the drive is a SEQUENCE
         # rather than one column held for the whole cycle.  Holding it was
         # feeding the connectome a photograph: at tau 20 ms and rho 0.50 the
         # effective time constant is 40 ms, so 100 ms settles to 92% and
-        # every frame started from a state washed clean.  A fly's visual
-        # system is a motion system end to end; a still image run to steady
-        # state gives it nothing to act on.
-        #
-        # Deliberately NOT a designed feature -- no looming detector, no
-        # optic flow.  It is the time axis not being thrown away; the
+        # every frame started from a state washed clean.  Deliberately NOT a
+        # designed feature -- no looming detector, no optic flow; the
         # differentiation is left to the circuit's own dynamics.  Costs one
-        # frame of delay, which every real camera pipeline has, and no extra
-        # render.  Verified: the standing sweep resets between headings so
-        # the sequence is constant there and calibration is unchanged, while
-        # the same pose reached by closing versus opening now reads
-        # differently, which it could not before.
+        # frame of delay, which every real camera pipeline has.
         val = lum * self.drive_gain * self._az_ok * self._vp_w
-
-        prev = self._prev_val if self._prev_val is not None else val
-        self._prev_val = val
+        prev = getattr(self, prev_attr, None)
+        prev = prev if prev is not None else val
+        setattr(self, prev_attr, val)
         ramp = np.linspace(1.0 / self.n_sub, 1.0, self.n_sub)
         seq = prev[:, None] * (1.0 - ramp) + val[:, None] * ramp
 
         d = torch.zeros(self.net.n, self.n_sub)
         d[self.vp_rows] = torch.from_numpy(seq.astype(np.float32))
-        cen = self.cam.rangefinder.centres
-        a_l, a_r = threat_level(beams_m, cen, self.speed)
         # Each cell takes the NEAREST beam, so every cell gets an input and
         # the same wall drives the circuit equally hard whatever the beam
         # count.  Reading only beams whose cone covered the cell's direction
-        # left 176 of 311 cells with nothing at 12 beams (30 deg spacing,
-        # 15 deg cones) and none at 24, so the same wall arrived about twice
-        # as strong at 24: threat read 0.25-0.29 against 0.12-0.16 at the
-        # same moment in room 6, and the two flights split 3.4 s in.  Fewer
-        # beams now means coarser angular resolution, not weaker threat.
+        # left 176 of 311 cells with nothing at 12 beams, so the same wall
+        # arrived about twice as strong at 24 and room-6 flights split 3.4 s
+        # in.  Fewer beams now means coarser angular resolution, not weaker
+        # threat.
         if len(cen):
-            gap = np.abs((self.thr_az[:, None] - cen[None, :] + 180.0)
+            gap = np.abs((thr_az[:, None] - cen[None, :] + 180.0)
                          % 360.0 - 180.0)
             nb = np.argmin(gap, axis=1)
             s_cell = looming(beams_m[nb], cen[nb], self.speed)
@@ -294,39 +320,13 @@ class VPInput:
             s_cell = np.zeros(len(self.thr_rows))
         d[self.thr_rows] += torch.from_numpy(
             (THREAT_GAIN * self._thr_w * s_cell).astype(np.float32))[:, None]
-
-        # THE ODOUR CHANNEL IS NOT THE VISION CHANNEL.
-        #
-        # `bearing` above is the signed centroid: walls push, beacons pull,
-        # obstacles folded in.  Feeding that to ORN handed the circuit a
-        # finished steering command through a second modality, so vision had
-        # nothing left to contribute and the readout could only ever track
-        # the baseline it was being fed.
-        #
-        # ORN now gets the rectified centroid, which is what this module's
-        # docstring has always said it gets: bright things only, walls
-        # contributing exactly zero.  It answers "where is the goal", and
-        # "what is in the way" is left to the visual injection, where it
-        # belongs.  Neither needs a target's world position.
-        scent, scent_mass = r["scent"], r["scent_mass"]
-        frac = float(np.clip(scent / (self.cam.az_span / 2), -1.0, 1.0))
-        s = (scent_mass if self.fixed_strength is None
-             else self.fixed_strength)
         base = self.orn_gain * s
-        od_l, od_r = base * (1 + frac), base * (1 - frac)
         # odour does not flicker within a control cycle
-        d[self.orn_l, :] = od_l * self.orn_scale_l
-        d[self.orn_r, :] = od_r * self.orn_scale_r
-        # gyro: opposing push-pull on JO; + yaw is a LEFT turn
-        g = -self.yaw_rate / GYRO_FULL
-        g = float(np.clip(g, -1.0, 1.0))
+        d[self.orn_l, :] = base * (1 + frac) * self.orn_scale_l
+        d[self.orn_r, :] = base * (1 - frac) * self.orn_scale_r
         d[self.jo_l, :] = self.gyro_base * (1 + g) * self.jo_scale_l
         d[self.jo_r, :] = self.gyro_base * (1 - g) * self.jo_scale_r
-        return d, {"bearing": bearing, "scent": scent,
-                   "scent_mass": scent_mass,
-                   "blocked": blocked, "weight": weight,
-                   "rear": r["rear"], "threat_in": (a_l, a_r),
-                   "beams": beams_m}
+        return d
 
 
 def demo() -> None:

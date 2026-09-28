@@ -47,14 +47,13 @@ x0, y0 = p0[0], p0[1]
 
 def u_of(world, yaw=0.0):
     inp.yaw_rate = yaw
-    v = net.init_state(1)
+    v = net.init_state(2 if inp.twin else 1)
     inp.reset()
     for _ in range(3):
         d, tr = inp.drive(world, p0, 0.0)
-        v, r = C.step_circuit(net, v, d)
+        v, r = C.step_circuit(net, v, C.twin(inp, d))
     inp.yaw_rate = 0.0
-    return math.degrees(gain * (float(r[inp.steer_r].mean()
-                                      - r[inp.steer_l].mean()) - zero))
+    return math.degrees(gain * (C.steer(inp, r) - zero))
 
 
 def beacon(deg, d=25.0):
@@ -96,3 +95,8 @@ def report(tag):
 report("as flown")
 print("\ngyro, turning right at 90 deg/s: change %+.1f deg/s"
       % (u_of(world([]), yaw=-math.radians(90)) - u_of(world([]))))
+
+inp.twin = True
+gain, cc, zero = C.calibrate(net, inp, info, w, p0)
+print("\nmirror twin: recalibrated gain %.3g, zero %.2g" % (gain, zero))
+report("mirror twin")

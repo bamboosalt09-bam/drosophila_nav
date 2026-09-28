@@ -57,9 +57,21 @@ def step_circuit(net, v, d):
     how the readout was scaled.
     """
     with torch.no_grad():
-        for k in range(d.shape[1]):
-            v = net.step(v, d[:, k:k + 1], 5.0)
-        return v, activity(v).numpy().ravel()
+        for k in range(d.shape[-1]):
+            v = net.step(v, d[..., k] if d.dim() == 3 else d[:, k:k + 1], 5.0)
+        a = activity(v).numpy()
+        return v, (a[:, 0] if a.shape[1] == 1 else a)
+
+
+def twin(inp, d):
+    """The drive for one step: (n, sub), or (n, 2, sub) with the mirror."""
+    return torch.stack([d, inp.d_mirror], dim=1) if inp.twin else d
+
+
+def steer(inp, r):
+    """DNa01/02 right minus left; with the twin, (seen - mirror) / 2."""
+    x = r[inp.steer_r].mean(axis=0) - r[inp.steer_l].mean(axis=0)
+    return float(x) if np.ndim(x) == 0 else float(x[0] - x[1]) / 2.0
 
 
 def calibrate_threat(net, inp, p0):
@@ -139,13 +151,12 @@ def calibrate(net, inp, info, w, p0):
         tgt = np.array([p0[0] + 25.0 * math.cos(a),
                         p0[1] + 25.0 * math.sin(a), 2.0])
         beacon = TargetWorld(target=tgt, obstacles=[])
-        v = net.init_state(1)
+        v = net.init_state(2 if inp.twin else 1)
         inp.reset()
         for _ in range(3):
             d, tr = inp.drive(beacon, p0, 0.0)
-            v, r = step_circuit(net, v, d)
-        vals.append((tr["scent"],
-                     float(r[inp.steer_r].mean() - r[inp.steer_l].mean())))
+            v, r = step_circuit(net, v, twin(inp, d))
+        vals.append((tr["scent"], steer(inp, r)))
     g = np.array(vals)
     cc = float(np.corrcoef(g[:, 0], g[:, 1])[0, 1])
     rng = g[:, 1].max() - g[:, 1].min()
@@ -189,7 +200,7 @@ def _row(ag, found, first, k, seen, stopped, corr, w):
 
 
 def fly(net, inp, info, w, heading, gain, zero, base, peak):
-    v = net.init_state(1)
+    v = net.init_state(2 if inp.twin else 1)
     inp.reset()
     ag = Agent(world=w, start=START, heading=heading)
     rem = list(w.all_targets())
@@ -199,14 +210,14 @@ def fly(net, inp, info, w, heading, gain, zero, base, peak):
     for k in range(MAX_STEPS):
         inp.yaw_rate = ag.plant.r          # the gyro reads the real plant
         d, tr = inp.drive(ag.world, ag.p, ag.heading)
-        v, r = step_circuit(net, v, d)
+        v, r = step_circuit(net, v, twin(inp, d))
         # the INTENDED turn, not clipped: the drone layer decides what of it
         # the airframe can fly
-        u = gain * (float(r[inp.steer_r].mean() - r[inp.steer_l].mean())
-                    - zero)
+        u = gain * (steer(inp, r) - zero)
         # the escape readout is RECORDED, not used for control: the fly
         # avoids through its own steering; this shows how alarmed it was
-        thr_l, thr_r = threat_from(r, inp, base, peak)
+        thr_l, thr_r = threat_from(r if r.ndim == 1 else r[:, 0], inp,
+                                   base, peak)
         thr_sum += max(thr_l, thr_r)
         # a beacon in view = odour present.  `weight` was used here: the
         # signed centroid's, which walls feed too, so cue_frac read 1.0 in
@@ -282,6 +293,7 @@ def main(argv=None) -> int:
     t0 = time.perf_counter()
     net, ann, sub, info = build_vp_subnet()
     inp = VPInput(net, ann, info)
+    inp.twin = True             # steer on the mirror-symmetrised turn
     # Nothing trains during a flight: expand per-type parameters once.
     net.freeze_params(5.0)
     print("%d neurons, %d edges (%.0f s); threat in: %d LC4/LPLC2 cells by "

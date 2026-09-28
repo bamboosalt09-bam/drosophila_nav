@@ -385,7 +385,23 @@ orbit is driven by VISION's asymmetric response to walls (corridor −34
 °/s), not by threat.  Input distribution cannot fix it; the mirror twin
 (below) would.
 
-**Decision for the user:** a *mirror twin* — run a second copy of the
+**v14 = MIRROR TWIN, implemented and flown (user: "시각도 거울 쌍둥이로").**
+`VPInput.twin = True` (set in `cx_vp_room.main`): `drive()` also builds
+`d_mirror` — each vision cell reads the pixel at −az (the camera grid is
+symmetric), threat cells take the beam nearest −az, odour frac and gyro
+flip sign.  The runner steps both as batch 2 (`twin()`), steers on
+`(seen − mirror)/2` (`steer()`), so `zero` is 0 by construction.  Static
+check (`diag_bias.py`): symmetric scenes −1.8…+1.5 °/s (were −16…−34),
+beacon ±60° exactly ±68.8; with twin off every number is unchanged.
+Room 6 (`sweep_v14_*`), connectome 0c/3/5/5/5/**6** for 0/1/3/6/12/24
+beams, no collisions from 1 beam up.  **The orbit is gone at every beam
+count**; left share of turns after 70 s 24–55% (was 0–11%).  24 beams:
+all 6 in 79 s over 100 m — the best flight so far.  1 beam dropped to 3
+(roamed the top corridor); 0 beams collided at 3 s (no sensor, as in v4).
+Room-6 sweep now ~9 min (connectome ~2× per step).  Single flights: the
+next step is the multi-room, multi-heading evaluation.
+
+(Superseded proposal, kept for the record:) a *mirror twin* — run a second copy of the
 circuit on the mirror image of every input (camera flipped, beams flipped,
 odour and gyro sign-flipped) and steer on `(u − u_mirror)/2`.  Exact
 mirror symmetry for any scene by construction; the real fly is bilaterally
