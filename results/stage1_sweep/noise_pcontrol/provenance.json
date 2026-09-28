@@ -1,0 +1,989 @@
+{
+  "generated_utc": "2026-09-17T12:23:34+00:00",
+  "script": "experiments/stage1_body_sweep.py",
+  "git_commit": "bd342d8667730c1e8b6e0ad3e35a4dd2f5c66802",
+  "controller": "p",
+  "plugin": "rate_clip",
+  "core_params": {
+    "name": "p_controller",
+    "K_per_rad": 0.35,
+    "law": "steering = clip(-K*wrap(heading-goal), -1, 1)"
+  },
+  "decoder": {
+    "kappa_deg_per_step": 200.0,
+    "T_core_s": 0.1,
+    "name": "source_k200",
+    "max_yaw_rate_rad_s": 34.906585039886586,
+    "max_yaw_rate_deg_s": 1999.9999999999998
+  },
+  "body_scale_rad_per_s": 34.906585039886586,
+  "body_scale_deg_per_s": 1999.9999999999998,
+  "grid": {
+    "r_max_ratio": [
+      0.002,
+      0.005,
+      0.01,
+      0.02,
+      0.05,
+      0.25,
+      1.0
+    ],
+    "alpha_ratio": [
+      0.005,
+      0.01,
+      0.02,
+      0.05,
+      0.25,
+      4.0
+    ],
+    "tau_ratio": [
+      1.0,
+      2.0,
+      4.0,
+      8.0,
+      16.0,
+      32.0
+    ]
+  },
+  "initial_errors_deg": [
+    -135.0,
+    -90.0,
+    -60.0,
+    -30.0,
+    30.0,
+    60.0,
+    90.0,
+    135.0,
+    -170.0,
+    -150.0,
+    -120.0,
+    -75.0,
+    -45.0,
+    45.0,
+    75.0,
+    120.0,
+    150.0,
+    170.0
+  ],
+  "goal_directions_deg": [
+    0.0
+  ],
+  "success_criterion": {
+    "tolerance_deg": 14.999999999999998,
+    "timeout_s": 10.0,
+    "hold_s": 1.0,
+    "note": "simulation analysis criterion, not a biological threshold"
+  },
+  "tolerance_sensitivity_deg": [
+    10.0,
+    15.0,
+    20.0
+  ],
+  "noise": {
+    "spec": {
+      "noise_level_deg_per_step": 10.0,
+      "fpass_hz": 2.0,
+      "fs_hz": 10.0,
+      "order": 5,
+      "name": "source_lowpass_gaussian",
+      "recipe": "gaussian -> butter lfilter -> zscore -> * level"
+    },
+    "seeds": 8,
+    "paired": "same draw per seed in every cell",
+    "baseline": "condition A re-run per (e0, seed)"
+  },
+  "noise_seeds": 8,
+  "classification_thresholds": {
+    "near_infeasible_margin": 1.5,
+    "saturation_fraction": 0.5,
+    "oscillation_crossings": 4,
+    "overshoot_ratio": 0.5
+  },
+  "baseline_condition_A": {
+    "goal0|e-135|seed0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 141.8422900074581,
+      "zero_crossings": 81
+    },
+    "goal0|e-135|seed1": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 136.38245459056702,
+      "zero_crossings": 90
+    },
+    "goal0|e-135|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 144.88896338554312,
+      "zero_crossings": 97
+    },
+    "goal0|e-135|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 139.10313311485635,
+      "zero_crossings": 86
+    },
+    "goal0|e-135|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 140.66488823636104,
+      "zero_crossings": 93
+    },
+    "goal0|e-135|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 138.74200132936545,
+      "zero_crossings": 85
+    },
+    "goal0|e-135|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 139.9932020703023,
+      "zero_crossings": 87
+    },
+    "goal0|e-135|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 138.35818580873138,
+      "zero_crossings": 94
+    },
+    "goal0|e-90|seed0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 136.06618949011235,
+      "zero_crossings": 81
+    },
+    "goal0|e-90|seed1": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 131.04423763243787,
+      "zero_crossings": 90
+    },
+    "goal0|e-90|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 139.20637529043236,
+      "zero_crossings": 97
+    },
+    "goal0|e-90|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 133.32620266310064,
+      "zero_crossings": 86
+    },
+    "goal0|e-90|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 134.91078112748573,
+      "zero_crossings": 93
+    },
+    "goal0|e-90|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 132.98193673636516,
+      "zero_crossings": 85
+    },
+    "goal0|e-90|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 134.77462496439978,
+      "zero_crossings": 87
+    },
+    "goal0|e-90|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 132.74419608507768,
+      "zero_crossings": 94
+    },
+    "goal0|e-60|seed0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 132.2154558118819,
+      "zero_crossings": 81
+    },
+    "goal0|e-60|seed1": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 127.48542632701844,
+      "zero_crossings": 90
+    },
+    "goal0|e-60|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 135.4179832270252,
+      "zero_crossings": 97
+    },
+    "goal0|e-60|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 129.4749156952635,
+      "zero_crossings": 86
+    },
+    "goal0|e-60|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 131.07470972156887,
+      "zero_crossings": 93
+    },
+    "goal0|e-60|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 129.14189367436495,
+      "zero_crossings": 85
+    },
+    "goal0|e-60|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 131.2955735604648,
+      "zero_crossings": 87
+    },
+    "goal0|e-60|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 129.25314288347136,
+      "zero_crossings": 94
+    },
+    "goal0|e-30|seed0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 128.3647221336514,
+      "zero_crossings": 81
+    },
+    "goal0|e-30|seed1": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 123.92661502159896,
+      "zero_crossings": 90
+    },
+    "goal0|e-30|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 131.62959116361802,
+      "zero_crossings": 97
+    },
+    "goal0|e-30|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 125.62362872742634,
+      "zero_crossings": 86
+    },
+    "goal0|e-30|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 127.28118957117968,
+      "zero_crossings": 91
+    },
+    "goal0|e-30|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 125.52577442311309,
+      "zero_crossings": 83
+    },
+    "goal0|e-30|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 127.8165221565298,
+      "zero_crossings": 87
+    },
+    "goal0|e-30|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 125.76208968186505,
+      "zero_crossings": 94
+    },
+    "goal0|e30|seed0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 127.86280727303038,
+      "zero_crossings": 80
+    },
+    "goal0|e30|seed1": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 123.16650688487216,
+      "zero_crossings": 91
+    },
+    "goal0|e30|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 131.03021169310864,
+      "zero_crossings": 96
+    },
+    "goal0|e30|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 123.92105479175201,
+      "zero_crossings": 85
+    },
+    "goal0|e30|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 128.4482044000915,
+      "zero_crossings": 92
+    },
+    "goal0|e30|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 126.50645401586509,
+      "zero_crossings": 84
+    },
+    "goal0|e30|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 126.85841934865981,
+      "zero_crossings": 86
+    },
+    "goal0|e30|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 125.75252906585716,
+      "zero_crossings": 95
+    },
+    "goal0|e60|seed0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 131.49633268139542,
+      "zero_crossings": 80
+    },
+    "goal0|e60|seed1": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 126.93807843782889,
+      "zero_crossings": 91
+    },
+    "goal0|e60|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 134.57220248807764,
+      "zero_crossings": 96
+    },
+    "goal0|e60|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 126.06976782391487,
+      "zero_crossings": 85
+    },
+    "goal0|e60|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 132.23750227752762,
+      "zero_crossings": 92
+    },
+    "goal0|e60|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 129.9967938122411,
+      "zero_crossings": 84
+    },
+    "goal0|e60|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 129.93508743418252,
+      "zero_crossings": 88
+    },
+    "goal0|e60|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 129.59185872262702,
+      "zero_crossings": 95
+    },
+    "goal0|e90|seed0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 135.27096828651798,
+      "zero_crossings": 80
+    },
+    "goal0|e90|seed1": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 130.70964999078566,
+      "zero_crossings": 91
+    },
+    "goal0|e90|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 138.1141932830467,
+      "zero_crossings": 96
+    },
+    "goal0|e90|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 128.39715748958096,
+      "zero_crossings": 85
+    },
+    "goal0|e90|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 136.02680015496384,
+      "zero_crossings": 92
+    },
+    "goal0|e90|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 133.50513957003355,
+      "zero_crossings": 84
+    },
+    "goal0|e90|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 133.7864188886237,
+      "zero_crossings": 88
+    },
+    "goal0|e90|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 133.4311883793969,
+      "zero_crossings": 95
+    },
+    "goal0|e135|seed0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 140.93292169420187,
+      "zero_crossings": 80
+    },
+    "goal0|e135|seed1": {
+      "success": true,
+      "settling_s": 0.30000000000000004,
+      "iae": 136.36700732022078,
+      "zero_crossings": 91
+    },
+    "goal0|e135|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 143.55072170967517,
+      "zero_crossings": 98
+    },
+    "goal0|e135|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 133.61580132538955,
+      "zero_crossings": 85
+    },
+    "goal0|e135|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 141.7107469711181,
+      "zero_crossings": 92
+    },
+    "goal0|e135|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 138.83876048540824,
+      "zero_crossings": 84
+    },
+    "goal0|e135|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 139.5634160702855,
+      "zero_crossings": 88
+    },
+    "goal0|e135|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 139.1901828645517,
+      "zero_crossings": 95
+    },
+    "goal0|e-170|seed0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 145.3507802760951,
+      "zero_crossings": 81
+    },
+    "goal0|e-170|seed1": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 139.88803149227178,
+      "zero_crossings": 90
+    },
+    "goal0|e-170|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 148.3968314887826,
+      "zero_crossings": 97
+    },
+    "goal0|e-170|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 142.61162890528885,
+      "zero_crossings": 86
+    },
+    "goal0|e-170|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 144.17323217644196,
+      "zero_crossings": 93
+    },
+    "goal0|e-170|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 142.2503849063244,
+      "zero_crossings": 85
+    },
+    "goal0|e-170|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 143.4979829732034,
+      "zero_crossings": 87
+    },
+    "goal0|e-170|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 141.86603043479923,
+      "zero_crossings": 94
+    },
+    "goal0|e-150|seed0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 143.76765684657332,
+      "zero_crossings": 81
+    },
+    "goal0|e-150|seed1": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 138.16186024327675,
+      "zero_crossings": 90
+    },
+    "goal0|e-150|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 146.78315941724668,
+      "zero_crossings": 97
+    },
+    "goal0|e-150|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 141.02877659877495,
+      "zero_crossings": 86
+    },
+    "goal0|e-150|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 142.58292393931947,
+      "zero_crossings": 93
+    },
+    "goal0|e-150|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 140.6620228603655,
+      "zero_crossings": 85
+    },
+    "goal0|e-150|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 141.73272777226975,
+      "zero_crossings": 87
+    },
+    "goal0|e-150|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 140.251205622023,
+      "zero_crossings": 94
+    },
+    "goal0|e-120|seed0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 139.91692316834283,
+      "zero_crossings": 81
+    },
+    "goal0|e-120|seed1": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 134.6030489378573,
+      "zero_crossings": 90
+    },
+    "goal0|e-120|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 142.9947673538395,
+      "zero_crossings": 97
+    },
+    "goal0|e-120|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 137.17748963093777,
+      "zero_crossings": 86
+    },
+    "goal0|e-120|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 138.7468525334026,
+      "zero_crossings": 93
+    },
+    "goal0|e-120|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 136.82197979836533,
+      "zero_crossings": 85
+    },
+    "goal0|e-120|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 138.25367636833477,
+      "zero_crossings": 87
+    },
+    "goal0|e-120|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 136.4651659954398,
+      "zero_crossings": 94
+    },
+    "goal0|e-75|seed0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 134.14082265099714,
+      "zero_crossings": 81
+    },
+    "goal0|e-75|seed1": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 129.26483197972817,
+      "zero_crossings": 90
+    },
+    "goal0|e-75|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 137.31217925872875,
+      "zero_crossings": 97
+    },
+    "goal0|e-75|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 131.40055917918204,
+      "zero_crossings": 86
+    },
+    "goal0|e-75|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 132.99274542452727,
+      "zero_crossings": 93
+    },
+    "goal0|e-75|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 131.06191520536504,
+      "zero_crossings": 85
+    },
+    "goal0|e-75|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 133.03509926243225,
+      "zero_crossings": 87
+    },
+    "goal0|e-75|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 130.9986694842745,
+      "zero_crossings": 94
+    },
+    "goal0|e-45|seed0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 130.29008897276665,
+      "zero_crossings": 81
+    },
+    "goal0|e-45|seed1": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 125.70602067430869,
+      "zero_crossings": 90
+    },
+    "goal0|e-45|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 133.5237871953216,
+      "zero_crossings": 97
+    },
+    "goal0|e-45|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 127.54927221134488,
+      "zero_crossings": 86
+    },
+    "goal0|e-45|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 129.15667401861043,
+      "zero_crossings": 93
+    },
+    "goal0|e-45|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 127.22187214336488,
+      "zero_crossings": 85
+    },
+    "goal0|e-45|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 129.55604785849727,
+      "zero_crossings": 87
+    },
+    "goal0|e-45|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 127.50761628266822,
+      "zero_crossings": 94
+    },
+    "goal0|e45|seed0": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 129.60901487883413,
+      "zero_crossings": 80
+    },
+    "goal0|e45|seed1": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 125.05229266135053,
+      "zero_crossings": 91
+    },
+    "goal0|e45|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 132.80120709059315,
+      "zero_crossings": 96
+    },
+    "goal0|e45|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 124.99541130783345,
+      "zero_crossings": 85
+    },
+    "goal0|e45|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 130.34285333880953,
+      "zero_crossings": 92
+    },
+    "goal0|e45|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 128.25162391405308,
+      "zero_crossings": 84
+    },
+    "goal0|e45|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 128.11889364669227,
+      "zero_crossings": 86
+    },
+    "goal0|e45|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 127.6721938942421,
+      "zero_crossings": 95
+    },
+    "goal0|e75|seed0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 133.38365048395673,
+      "zero_crossings": 80
+    },
+    "goal0|e75|seed1": {
+      "success": true,
+      "settling_s": 0.1,
+      "iae": 128.8238642143073,
+      "zero_crossings": 91
+    },
+    "goal0|e75|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 136.34319788556218,
+      "zero_crossings": 96
+    },
+    "goal0|e75|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 127.14412433999628,
+      "zero_crossings": 85
+    },
+    "goal0|e75|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 134.13215121624577,
+      "zero_crossings": 92
+    },
+    "goal0|e75|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 131.74196371042913,
+      "zero_crossings": 84
+    },
+    "goal0|e75|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 131.86075316140315,
+      "zero_crossings": 88
+    },
+    "goal0|e75|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 131.51152355101198,
+      "zero_crossings": 95
+    },
+    "goal0|e120|seed0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 139.04560389164055,
+      "zero_crossings": 80
+    },
+    "goal0|e120|seed1": {
+      "success": true,
+      "settling_s": 0.30000000000000004,
+      "iae": 134.48122154374238,
+      "zero_crossings": 91
+    },
+    "goal0|e120|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 141.6561840780157,
+      "zero_crossings": 96
+    },
+    "goal0|e120|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 131.87625338012,
+      "zero_crossings": 85
+    },
+    "goal0|e120|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 139.8160980324,
+      "zero_crossings": 92
+    },
+    "goal0|e120|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 137.06088684695,
+      "zero_crossings": 84
+    },
+    "goal0|e120|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 137.6377503430649,
+      "zero_crossings": 88
+    },
+    "goal0|e120|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 137.2705180361668,
+      "zero_crossings": 95
+    },
+    "goal0|e150|seed0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 142.82023949676315,
+      "zero_crossings": 80
+    },
+    "goal0|e150|seed1": {
+      "success": true,
+      "settling_s": 0.30000000000000004,
+      "iae": 138.25279309669918,
+      "zero_crossings": 91
+    },
+    "goal0|e150|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 145.4692103196481,
+      "zero_crossings": 98
+    },
+    "goal0|e150|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 135.35534927065905,
+      "zero_crossings": 85
+    },
+    "goal0|e150|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 143.6053959098362,
+      "zero_crossings": 92
+    },
+    "goal0|e150|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 140.6166341238665,
+      "zero_crossings": 84
+    },
+    "goal0|e150|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 141.48908179750612,
+      "zero_crossings": 88
+    },
+    "goal0|e150|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 141.10984769293665,
+      "zero_crossings": 95
+    },
+    "goal0|e170|seed0": {
+      "success": true,
+      "settling_s": 0.2,
+      "iae": 144.4406525088523,
+      "zero_crossings": 80
+    },
+    "goal0|e170|seed1": {
+      "success": true,
+      "settling_s": 0.30000000000000004,
+      "iae": 139.8747075558232,
+      "zero_crossings": 91
+    },
+    "goal0|e170|seed2": {
+      "success": true,
+      "settling_s": 0.6000000000000001,
+      "iae": 147.05907468972313,
+      "zero_crossings": 98
+    },
+    "goal0|e170|seed3": {
+      "success": true,
+      "settling_s": 1.1,
+      "iae": 137.1205826722642,
+      "zero_crossings": 85
+    },
+    "goal0|e170|seed4": {
+      "success": true,
+      "settling_s": 3.4000000000000004,
+      "iae": 145.21862411432468,
+      "zero_crossings": 92
+    },
+    "goal0|e170|seed5": {
+      "success": true,
+      "settling_s": 1.7000000000000002,
+      "iae": 142.34430680830113,
+      "zero_crossings": 84
+    },
+    "goal0|e170|seed6": {
+      "success": true,
+      "settling_s": 0.4,
+      "iae": 143.07191230469155,
+      "zero_crossings": 88
+    },
+    "goal0|e170|seed7": {
+      "success": true,
+      "settling_s": 3.2,
+      "iae": 142.69855932177134,
+      "zero_crossings": 95
+    }
+  },
+  "outcome_counts": {
+    "success": 21352,
+    "body_infeasible": 6624,
+    "saturation_dominated": 2554,
+    "success_near_infeasible": 2496,
+    "slow_but_stable": 1605,
+    "overshoot_dominant": 1392,
+    "persistent_oscillation": 250,
+    "failure_other": 15
+  },
+  "attributable_fraction": 0.8174603174603174,
+  "n_rescued_by_body": 0,
+  "n_baseline_failures": 0,
+  "axis_effect_range_MARGINAL": {
+    "r_max_ratio": 0.5210262345679012,
+    "alpha_ratio": 0.2060185185185186,
+    "tau_ratio": 0.21097883597883604
+  },
+  "largest_marginal_effect_axis": "r_max_ratio",
+  "axis_effect_caveat": "These are MARGINAL means over an unpaired grid. Three times in this project such a marginal read as a main effect and was in fact an interaction (r_max x tau, r_max x alpha, tau x plugin). Do not quote them as main effects; stage1_sweep_analysis.py pairs and splits.",
+  "n_trials": 36288
+}

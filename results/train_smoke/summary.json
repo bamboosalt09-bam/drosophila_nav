@@ -1,0 +1,14 @@
+{
+  "fly": {
+    "trainable": 143,
+    "final_reward": -0.3434526267406535,
+    "final_reached": 0.0,
+    "final_collided": 0.5
+  },
+  "rnn": {
+    "trainable": 7041,
+    "final_reward": 0.015822726720777232,
+    "final_reached": 0.0,
+    "final_collided": 0.0
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "fly": {
+    "trainable": 2,
+    "final_reward": 0.05958867613906043,
+    "final_reached": 0.0,
+    "final_collided": 0.0
+  }
+}

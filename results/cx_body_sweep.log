@@ -1,0 +1,55 @@
+C:\english_folder\fruitfly\drosophila_nav\src\core\flywire_rate.py:122: UserWarning: Sparse invariant checks are implicitly disabled. Memory errors (e.g. SEGFAULT) will occur when operating on a sparse tensor which violates the invariants, but checks incur performance overhead. To silence this warning, explicitly opt in or out. See `torch.sparse.check_sparse_tensor_invariants.__doc__` for guidance.  (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\aten\src\ATen\Context.cpp:855.)
+  return torch.sparse_csr_tensor(
+C:\english_folder\fruitfly\drosophila_nav\src\core\flywire_rate.py:122: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\aten\src\ATen\SparseCsrTensorImpl.cpp:51.)
+  return torch.sparse_csr_tensor(
+66601 neurons; gain -3e+06 frozen  (51 s)
+
+body             arm             reached  collided     dist   r_sat   a_sat
+unconstrained    connectome        0.875     0.125     1.20   0.000   0.000
+unconstrained    P blind           0.812     0.188     1.62   0.000   0.000
+unconstrained    P + oracle        0.969     0.000     1.36   0.000   0.000
+
+alpha 5.00       connectome        0.875     0.125     1.34   0.015   0.257
+alpha 5.00       P blind           0.812     0.188     1.62   0.000   0.013
+alpha 5.00       P + oracle        0.969     0.000     1.41   0.001   0.033
+
+alpha 2.00       connectome        0.906     0.094     1.32   0.005   0.492
+alpha 2.00       P blind           0.812     0.188     1.61   0.000   0.043
+alpha 2.00       P + oracle        0.969     0.000     1.45   0.001   0.107
+
+alpha 1.00       connectome        0.750     0.219     1.73   0.018   0.756
+alpha 1.00       P blind           0.812     0.188     1.62   0.000   0.106
+alpha 1.00       P + oracle        0.906     0.000     2.13   0.000   0.227
+
+alpha 0.50       connectome        0.688     0.219     2.81   0.018   0.864
+alpha 0.50       P blind           0.844     0.156     1.40   0.000   0.249
+alpha 0.50       P + oracle        0.750     0.062     3.53   0.000   0.392
+
+r_max 45 deg/s   connectome        0.875     0.125     1.31   0.071   0.248
+r_max 45 deg/s   P blind           0.812     0.188     1.61   0.012   0.015
+r_max 45 deg/s   P + oracle        0.969     0.000     1.33   0.041   0.049
+
+r_max 25 deg/s   connectome        0.906     0.094     1.29   0.185   0.241
+r_max 25 deg/s   P blind           0.812     0.188     1.62   0.072   0.033
+r_max 25 deg/s   P + oracle        0.906     0.031     1.59   0.148   0.088
+
+tau 0.20 s       connectome        0.906     0.094     1.17   0.015   0.209
+tau 0.20 s       P blind           0.812     0.188     1.62   0.000   0.002
+tau 0.20 s       P + oracle        0.969     0.000     1.39   0.001   0.013
+
+tau 0.40 s       connectome        0.875     0.125     1.36   0.016   0.151
+tau 0.40 s       P blind           0.812     0.188     1.63   0.000   0.000
+tau 0.40 s       P + oracle        0.969     0.000     1.40   0.000   0.000
+
+--- connectome advantage over the blind P reference, by body ------
+body              d_reached     d_dist      a_sat
+unconstrained        +0.062      -0.42      0.000
+alpha 5.00           +0.062      -0.27      0.257
+alpha 2.00           +0.094      -0.30      0.492
+alpha 1.00           -0.062      +0.11      0.756
+alpha 0.50           -0.156      +1.41      0.864
+r_max 45 deg/s       +0.062      -0.31      0.248
+r_max 25 deg/s       +0.094      -0.33      0.241
+tau 0.20 s           +0.094      -0.45      0.209
+tau 0.40 s           +0.062      -0.27      0.151
+wrote results/cx_body_sweep.csv

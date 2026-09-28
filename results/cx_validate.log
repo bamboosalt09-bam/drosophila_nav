@@ -1,0 +1,67 @@
+532 neurons, 2697 edges, rho 60.3 -> 0.9  (17 s)
+frozen: fixed cue magnitude 0.10, gain 3000, 2 obstacles, 24 episodes x 10 held-out seeds
+
+seed  arm            reached  collided     dist
+2     connectome        0.75      0.17     2.71
+2     conn+heading      0.75      0.12     1.98
+2     P control         0.79      0.21     1.48
+2     straight          0.21      0.29     8.33
+
+3     connectome        0.83      0.12     1.30
+3     conn+heading      0.83      0.12     1.76
+3     P control         0.88      0.12     1.66
+3     straight          0.08      0.25    10.30
+
+4     connectome        0.79      0.12     1.75
+4     conn+heading      0.83      0.08     1.57
+4     P control         0.92      0.04     1.83
+4     straight          0.12      0.17    10.47
+
+5     connectome        0.62      0.21     2.36
+5     conn+heading      0.67      0.17     2.29
+5     P control         0.67      0.29     2.81
+5     straight          0.12      0.33     9.87
+
+6     connectome        0.79      0.08     2.26
+6     conn+heading      0.71      0.12     1.97
+6     P control         0.75      0.25     1.61
+6     straight          0.21      0.08     9.52
+
+7     connectome        0.83      0.08     2.13
+7     conn+heading      0.83      0.08     2.07
+7     P control         0.83      0.12     1.92
+7     straight          0.08      0.21    10.47
+
+8     connectome        0.88      0.00     2.04
+8     conn+heading      0.88      0.00     2.39
+8     P control         0.79      0.17     1.92
+8     straight          0.17      0.08    10.41
+
+9     connectome        0.83      0.12     1.36
+9     conn+heading      0.83      0.12     1.37
+9     P control         0.79      0.21     1.98
+9     straight          0.12      0.29     9.37
+
+10    connectome        0.83      0.04     1.65
+10    conn+heading      0.88      0.00     1.59
+10    P control         0.75      0.25     2.22
+10    straight          0.04      0.29    10.54
+
+11    connectome        0.79      0.04     1.68
+11    conn+heading      0.83      0.00     1.61
+11    P control         0.75      0.25     1.93
+11    straight          0.08      0.33     9.77
+
+--- pooled over 10 held-out seeds ------------------------
+arm            reached       sd  collided     dist       sd
+connectome       0.796    0.069     0.100     1.93     0.45
+conn+heading     0.804    0.071     0.083     1.86     0.33
+P control        0.792    0.071     0.192     1.93     0.37
+straight         0.125    0.056     0.233     9.90     0.70
+
+connectome minus P reference, paired by seed:
+  reached  mean +0.004, wins 5 / losses 4 / ties 1
+  distance mean -0.01 m, better in 6 of 10 seeds
+
+never-turn baseline: reached 0.125, dist 9.90 m
+wrote C:\english_folder\fruitfly\drosophila_nav\results\cx_validate.csv

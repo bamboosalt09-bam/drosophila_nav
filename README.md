@@ -67,6 +67,22 @@ python -m venv .venv
 .venv/Scripts/python.exe -m pip install -r requirements.txt
 ```
 
+## Data (not in git, ~2 GB)
+
+`data/` is ignored.  Put the connectome files there before running:
+
+* `data/malecns/` — from `storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/` (CC-BY, no account):
+  `body-annotations-male-cns-v1.0-minconf-0.5.feather`,
+  `body-neurotransmitters-male-cns-v1.0.feather`,
+  `connectome-weights-male-cns-v1.0-minconf-0.5.feather`
+* `data/flywire/` — FlyWire v783 (`proofread_connections_783.feather`,
+  `proofread_root_ids_783.npy`, `neuron_annotations_783.tsv`, `edges_783.npz`,
+  `column_assignment.csv.gz`, `visual_neuron_types.csv.gz`)
+
+Also ignored and rebuilt on demand: the fisheye extension (`build_cpp.bat`,
+needs MSVC), subnet pickles in `results/subnet/`, training clips in
+`results/clips/`, and result images (`*.png`).
+
 ## Run
 
 ```bash

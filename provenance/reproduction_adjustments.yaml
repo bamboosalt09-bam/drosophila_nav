@@ -1716,3 +1716,696 @@ malecns_pipeline_and_flygym:
     steering, DNg11 for grooming, Giant Fiber for escape.  That is the
     approach this project is deliberately avoiding: we keep all 166,700 and
     designate only anatomical input and output.
+
+flygym_closed_loop:
+  date: 2026-09-17
+  what: |
+    Mapping 3 (timescales) done; the connectome now drives a NeuroMechFly v2
+    body in MuJoCo and reads its eyes back.  MuJoCo timestep 1e-4 s measured
+    from mujoco_globals.yaml, rate model dt 5 ms, so one brain step is exactly
+    50 physics steps held at zero-order hold.
+  setup_facts_that_cost_a_round: |
+    A bare flygym NeuroMechFly has NO joints, NO actuators and NO eye cameras.
+    All three must be added: add_joints(Skeleton(ROLL_PITCH_YAW,
+    LEGS_ACTIVE_ONLY), NEUTRAL), add_actuators(dofs, "position", NEUTRAL,
+    kp=30) -> 42 actuators, add_vision().
+  actuators_are_position_actuators: |
+    Input is a target ANGLE, so the motor readout is applied as a deviation
+    from the neutral pose, not as an absolute value.  Joint dof names are
+    parent-child-axis (lf_trochanterfemur-lf_tibia-pitch) and our command keys
+    are the child segment, so the join is exact rather than substring-matched.
+    24 of 24 commands reach an actuator.
+  cost: ~1590 s of wall clock per biological second on this laptop.
+
+flygym_loop_control:
+  date: 2026-09-17
+  script: experiments/flygym_loop_control.py
+  claim_tested: "the closed loop moved the body 0.381 mm in 100 ms"
+  result: |
+    blocked   (actuator_gain 0)    0.3808 mm
+    connected (actuator_gain 0.3)  0.3807 mm, separation from blocked 0.00007 mm
+    amplified (actuator_gain 30)   0.3770 mm, separation from blocked 0.00581 mm
+  conclusion: |
+    The readout DOES reach the body and the path is linear (100x gain gives
+    ~83x separation), but 0.380 of the 0.381 mm is gravity.  "Moved 0.381 mm"
+    is not locomotion.  The single pooled number would have said the opposite
+    of the truth; the paired comparison is what says it.
+
+motor_drive_probe:
+  date: 2026-09-17
+  script: experiments/motor_drive_probe.py
+  question: "why are the joint commands 1e-3?"
+  candidates: [global scale, agonist/antagonist cancellation, motor neurons undriven]
+  result: |
+    Neither scale nor silence.  Rate p99 along the chain: ol_intrinsic 2.10e-1,
+    visual_projection 3.60e-2, cb_intrinsic 1.71e-2, descending_neuron
+    2.19e-2, vnc_intrinsic 5.77e-3, vnc_motor 1.77e-2.  One ~10x attenuation
+    crossing out of the optic lobe, then no further loss; motor neurons are
+    more active than the VNC interneurons around them, and only 18 of 909
+    receive no input at all.
+  the_actual_finding: |
+    Excitatory and inhibitory input nearly cancel at every stage and the
+    residue is always negative.  At cb_intrinsic the median neuron's net input
+    is 450x smaller than its own excitatory input (exc +6.72e-5, inh -6.67e-5,
+    net -1.48e-7).  Median rate is therefore exactly 0.0 at every stage past
+    the optic lobe: ~60% of each stage sits at the rectification floor.
+  probe_bug_found_and_fixed: |
+    First version printed "(none)" for optic/central/descending because those
+    are not the label strings.  Real super_class values: ol_intrinsic 89403,
+    cb_intrinsic 32164, vnc_intrinsic 13161, visual_projection 9201,
+    descending_neuron 1314, vnc_motor 708, cb_motor 107.
+
+tonic_sweep:
+  date: 2026-09-17
+  script: experiments/tonic_sweep.py
+  results: results/tonic_sweep.csv
+  hypothesis: |
+    A network resting at its rectification floor cannot represent a signed
+    quantity, which would explain both the one-sided joint commands and the
+    long-open "turn never crosses zero".  Real flies have tonic excitation;
+    this model has none.  Predicted: a constant baseline drive restores signed
+    output.
+  result: REFUTED
+  numbers: |
+    tonic 0 -> 0.1 lifts cb_intrinsic from 54.8% to 93.5% active and
+    vnc_intrinsic from 40.1% to 95.7%, so the mechanism works.  But motor
+    offset/range goes 1.73 -> 55.5 -> 70.1 -> 119.9 -> 172.6 -> 278.2:
+    monotonically WORSE by 160x, and no level crosses zero.  Lifting every
+    neuron equally raises the common mode far faster than the
+    heading-dependent difference.
+  what_this_eliminates: |
+    The one-sided turn signal now survives (a) balanced wiring, R/L 1.0000,
+    (b) matched input columns between eyes, and (c) a 100x range of operating
+    points.  Three candidate causes eliminated; still unexplained.
+  near_miss: |
+    A 4-heading 50 ms smoke run of the same script gave offset/range 0.223 at
+    tonic 0 -- appearing to cross zero and to refute the standing result.  At
+    12 headings and 200 ms the same configuration gives 1.73.  A range over
+    four points is not a range.  Seventh time an under-split number pointed
+    the opposite way; caught before it was written down as a finding.
+
+sparse_backward_fix:
+  date: 2026-09-17
+  file: src/core/flywire_rate.py
+  found_while: "checking whether the target study is computable on this laptop"
+  problem: |
+    Connectome training cost 1,911 ms per step against a 6.7 ms forward -- a
+    285x ratio.  Torch's autograd for sparse-CSR mm is the cause; it does this
+    even though the weight matrix has requires_grad=False and the only
+    gradient needed is dL/dx = W^T @ grad.
+  measured: |
+    W  @ r   (CSR)              5.46 ms
+    WT @ g   (CSR)              5.14 ms
+    torch autograd fwd+bwd   1840.50 ms
+    custom  _SpMM  fwd+bwd     10.93 ms
+    COO instead of CSR:  forward 226 ms, fwd+bwd 561 ms  (worse both ways)
+  fix: |
+    `_SpMM(torch.autograd.Function)`: keep the transpose as a second CSR
+    tensor built once in __init__, forward is torch.sparse.mm(W, x), backward
+    is torch.sparse.mm(WT, grad).  Weights carry no gradient so W and WT
+    return None.
+  correctness: "max |grad diff| against torch autograd = 0.000e+00, bit-identical"
+  consequence: |
+    10,000-episode connectome training goes from 22 days to 8.5 hours on this
+    laptop.  This is what made the target study computable here at all.
+  remove_when: "torch fixes sparse-CSR autograd upstream; the maths is identical"
+
+loop_profile_and_the_824ms_error:
+  date: 2026-09-17
+  script: experiments/loop_profile.py
+  retracted_claim: |
+    "The flygym loop costs 76 s per biological second and rendering is 86% of
+    it, at 824 ms per call."  Reported to the user, then withdrawn.
+  what_was_wrong: |
+    The profiler did not warm up.  The FIRST get_ommatidia_readouts lazily
+    constructs mj.Renderer and a GL context, which costs 8.30 s.  Averaged
+    over ten calls that alone reads as 824 ms/call.  Steady-state vision is
+    33.2 ms.  Eighth time in this project a mean has hidden a single outlier.
+  corrected_profile: |
+    body: CPG controller     55.6%   1.88 ms x 50 calls per brain step
+    vision: render+readout   19.9%  33.17 ms median
+    body: build observation   9.1%
+    brain: 166k sparse step   7.6%  12.28 ms median
+    body: mujoco step         6.0%
+    total 34 s per biological second
+  the_real_finding: |
+    The connectome is 7.6% of the cost, not the bottleneck.  The bottleneck is
+    flygym's Python CPG controller running at 10,000 calls/s -- and that is
+    part of the walking body, which is itself off the research axis.
+  fix_applied: "profiler warms up, and reports median and max alongside the mean"
+
+camera_render_cost:
+  date: 2026-09-17
+  measured: |
+    MuJoCo offscreen render, one camera, this laptop:
+      32x32   12.15 ms      96x96   11.45 ms
+      48x48   13.80 ms     128x128  11.91 ms
+      64x64   12.64 ms     256x256  12.64 ms
+  finding: |
+    Cost is FLAT in resolution: it is per-call overhead (scene update, GL
+    context, pixel readback), not pixels.  So resolution is free and camera
+    COUNT is what costs.  Three plain cameras (36 ms) are slightly MORE
+    expensive than flygym's two-eye compound-eye pipeline (33 ms), which was
+    the opposite of what was expected when the user proposed replacing the
+    compound eye with cameras.
+  context: "no CUDA on this machine (torch 2.14.0+cpu), so GPU batch rendering is unavailable"
+
+pheromone_input_address:
+  date: 2026-09-17
+  question: "the user's sensor design puts a pheromone field on one camera"
+  finding: |
+    MaleCNS carries the address already, so no functional designation is
+    needed -- the glomerulus name IS the address, the same way the lamina is
+    for vision.  2,635 ORNs named by glomerulus; the canonical Drosophila
+    pheromone glomeruli are all present and bilateral:
+      ORN_DA1  204 (cVA, Or67d), ORN_VA1d 132 (Or88a),
+      ORN_VA1v 130 (Or47b),      ORN_DL3  103 (cVA, Or65a/b/c)  = 569
+    Also JO 672, Johnston's organ -- airflow sensing, which a flying body has
+    and a drone has as airspeed/IMU.
+  NOT_known: |
+    What the pheromone camera actually SEES, and what role the pheromone plays
+    in the task.  The user says they described this earlier; it is in neither
+    the master handoff document (zero mentions of pheromone/camera/olfaction/
+    sensor) nor any session transcript on this machine.  It predates this
+    project, in the ChatGPT conversation the master document was written from.
+    Must be asked.  Must not be invented.
+
+connectome_closed_loop_sensing:
+  date: 2026-09-17
+  design: |
+    Two separate sensory streams into the connectome, per the user's design:
+      camera L,R -> both eyes   scene as silhouettes, 6,199 lamina cells
+      camera 3   -> olfaction   target centroid only, as a bilateral drive
+    The third stream is the "virtual attraction cue": NOT a chemical sensor,
+    a visual centroid delivered where an attractant odour would arrive.
+  files: [src/environment/target_world.py, src/sensors/connectome_input.py,
+          src/sensors/attraction_cue.py, src/sim/policies.py, src/sim/episode.py]
+
+loader_side_bug:
+  date: 2026-09-17
+  severity: "affected every left/right result on MaleCNS since the dataset switch"
+  problem: |
+    `side` was built from `somaSide` alone.  Sensory neurons have their soma
+    OUTSIDE the CNS -- antenna, eye, leg -- so somaSide is blank for 18,003 of
+    166,700 neurons, 17,453 of them the sensory periphery (vnc_sensory 6,354,
+    ol_sensory 6,062, cb_sensory 4,455, sensory_ascending 536).  10.5% of the
+    network, and specifically the entire input side, carried no side label.
+    It was therefore excluded from the per-stage laterality balancing and from
+    every left/right readout.
+  fix: "fall back to rootSide, the side where the neurite enters"
+  after: |
+    unsided 18,003 -> 550.  Laterality still exactly R/L 1.0000 at every stage
+    (measured with |incoming weight|, the metric balance_hemispheres uses),
+    and five sensory super_classes are now inside the balancing that were not
+    before.
+  near_miss: |
+    First check used SIGNED incoming weight and read 1.0552 / 0.9573, i.e.
+    "the fix broke the balance".  It did not; the metric was wrong.  Would
+    have been the ninth wrong number reported in this project.
+
+integration_step_is_not_free:
+  date: 2026-09-17
+  claim_tested: "brain dt 5 ms x 20 -> 10 ms x 10 is a free 2x speedup"
+  result: REFUTED
+  numbers: |
+    offset/range of the descending readout across target bearings; below 0.5
+    means the steering signal crosses zero and is therefore signed:
+       5 ms x 20  (100 ms)   0.09   monotonic, crosses zero
+       2 ms x 50  (100 ms)   0.38   crosses zero
+      10 ms x 10  (100 ms)   8.06   flat, no direction at all
+      20 ms x  5  (100 ms)   8.41   flat
+       5 ms x 40  (200 ms)   2.31   drifts past the directional state
+  conclusion: |
+    dt must stay at or below 5 ms, a quarter of the ~20 ms membrane tau, and
+    the window at 100 ms.  A speedup that looked free removed the signal being
+    measured, and 1,000 training episodes were nearly run on it.
+
+frozen_core_leak:
+  date: 2026-09-17
+  problem: |
+    `self.net = net` in ConnectomeFlyPolicy registered FlyWireRate as an
+    nn.Module SUBMODULE, so its 141 per-cell-type log_tau/bias/log_gain joined
+    policy.parameters() and went into the optimiser.  The fly arm reported 143
+    trainable parameters instead of 2 -- the frozen core was being trained.
+  fix: "explicit requires_grad_(False) on the net, plus an assert n == 2"
+
+eye_azimuth_convention_clash:
+  date: 2026-09-17
+  problem: |
+    `flywire_eye` documents its lattice as "0 = straight ahead, + = to the
+    fly's RIGHT" (right eye mean +59 deg, left -59).  Everything else in this
+    project is CCW-positive, + = LEFT: heading, yaw rate, the cue's bearing.
+    Feeding a CCW scene to a right-positive lattice mirrored the visual world.
+  fix: "negate the lattice azimuth once at the ConnectomeInput boundary"
+  honest_note: |
+    Fixing it changed the glomerulus sweep by less than three significant
+    figures, because that sweep's scene is a near-uniform bright sky with one
+    small target sphere, and mirroring a symmetric field does nothing.  The
+    bug was real; it was not the cause of the effect it was suspected of.
+
+glomerulus_polarity_sweep:
+  date: 2026-09-17
+  results: results/glomerulus_polarity.csv
+  question: "which olfactory channel carries an attraction cue that steers TOWARD the target"
+  method: |
+    All 53 ORN glomeruli, one at a time, cue injected as a bilateral drive,
+    target swept across bearing, sign convention verified independently on the
+    validated reduced core (steering R-L positive -> positive yaw -> LEFT turn,
+    checked at five heading errors).
+  result: |
+    5 of 53 give approach, 48 give avoidance.  The canonical attractant
+    channels from the literature -- DM1 (Or42b), VA2, DM2, DM4 -- all steer
+    AWAY in this model.  Literature valence did NOT predict model polarity, and
+    a hypothesis that aversive cVA glomeruli were causing it was refuted.
+  chosen: |
+    ORN_VM2 (Or43b): offset/range 0.017, crosses zero, approach, and an
+    attractant channel in the literature.  Chosen on the measurement, with the
+    disagreeing channels recorded rather than dropped.
+  vision_is_not_silent: |
+    Separately measured with a pillar off to one side, target dead ahead:
+      both       R-L -2.91e-05
+      eyes only  R-L -5.17e-05     <- vision is the LARGER term
+      ORN only   R-L +2.64e-05
+      neither    R-L  0
+    Pillar on the right gives a rightward turn -- object fixation, the correct
+    Drosophila behaviour, under the independently verified sign convention.
+
+steering_signal_crosses_zero:
+  date: 2026-09-17
+  significance: "the longest-open problem in Stage 2"
+  history: |
+    `turn` had never crossed zero: offset/range 0.43 open loop on a bar, 1.73
+    in the tonic sweep, and unmoved by balanced wiring, matched input columns
+    or a 100x operating-point range.
+  now: |
+    With both streams connected and the cue at ORN_VM2, open field:
+      bearing  -38.7 -21.8 -11.3  +0.0 +11.3 +21.8 +38.7  deg
+      R-L      -1.64 -0.97 -0.45 +0.32 +0.93 +1.24 +1.31  (x1e-5)
+      offset/range 0.036, crosses zero, MONOTONIC, and signed toward the target
+  interpretation: |
+    The network was never missing a mechanism; it was missing a SIGNED input.
+    Every earlier probe drove it with luminance alone, which carries no left-
+    right sign.  A bilateral attraction cue supplies one and the output is
+    signed.  With obstacles the monotonicity breaks, because occlusion cuts
+    the cue -- that is the task, not a defect.
+
+cue_magnitude_swamped_the_direction: >
+  Three closed-loop attempts failed after an open-loop bearing sweep had
+  looked monotonic.  The cause was not the neuron model, not the graph cut,
+  and not a missing heading input.  The descending/PFL readout carries a DC
+  term that scales with TOTAL cue drive, and that term is twice the entire
+  bearing-dependent range: measured on the 532-neuron subcircuit, offset
+  3.38e-4 against a range of 1.77e-4 across +-40 deg.  Apparent target size
+  changes about 5x over a 12 m approach (strength 0.038 -> 0.190), so in
+  closed loop the readout reported how BRIGHT the target was, not where it
+  was, and the direction signal never crossed zero.  Open loop this is
+  invisible, because every reading is taken at one distance.
+  Fix: pin the cue magnitude and let only the bilateral RATIO vary, which is
+  also what an adapting olfactory population delivers.  With that single
+  change the same subcircuit steers -- 24 episodes, seed 1, 2 obstacles,
+  start 12.31 m: reached 0.71, collided 0.08, final distance 1.83 m, against
+  a kp=2 proportional reference at 0.67 / 0.29 / 2.62 m and a never-turn
+  baseline at 0.08 / 0.25 / 10.44 m.
+  Any open-loop probe of a steering readout must sweep bearing AT SEVERAL
+  DISTANCES, or it cannot see this class of failure at all.
+
+heading_injection_refuted: >
+  Hypothesis, stated before the measurement: the PFNs carry body heading, the
+  subcircuit had none injected, and the central complex cannot do its vector
+  computation with one operand missing -- so supplying heading should be what
+  makes it steer.  REFUTED by its own first run.  Driving 396 PFNs with a
+  bilateral sin(heading) imbalance moves reach from 0.67 to 0.71 at n=24,
+  inside the noise, and final distance from 2.00 m to 1.83 m.  Directly
+  measured, the PFL readout moves 2.2e-5 across a +-1.2 rad heading sweep
+  against 1.77e-4 across a +-40 deg bearing sweep -- 8x less.
+  Connectivity is not the reason: PFN -> PFL is one hop, FB5AB -> PFL is two.
+  Caveat that keeps this from being a verdict on the biology: heading is
+  injected as a bilateral imbalance, not as a bump across columns, because
+  the MaleCNS annotation carries no column index.  The claim is "this
+  encoding of heading does almost nothing here", not "heading is irrelevant
+  to the central complex".
+
+reference_controller_in_every_run: >
+  For most of this project "the connectome did not reach the target" was
+  reported without a controller known to be able to reach it.  It is not
+  interpretable.  Measured on the same 8 tasks: at 8 obstacles a kp=2
+  proportional controller on the identical cue reaches only 0.38 and collides
+  0.62 -- so at that density a reach of 0.00 says almost nothing about the
+  circuit.  At 2 obstacles the same reference reaches 0.67.
+  Every closed-loop table from here carries both a P reference and a
+  never-turn baseline, or it is not reportable.
+
+one_seed_is_not_a_result: >
+  The first report of the working subcircuit read "beats the hand-written
+  reference on all three" from 24 episodes at one seed, at an operating point
+  that had been CHOSEN by looking at that seed and the one before it.  Held
+  out 10 fresh seeds with every setting frozen, 240 episodes: reach 0.796 vs
+  0.792 (Wilcoxon p 0.65, better in 5 of 10) and final distance 1.93 m vs
+  1.93 m (p 0.77).  Both were ties.  The "win" was selection plus seed noise.
+  What did replicate: collisions 0.100 vs 0.192, better in 8 of 10 seeds,
+  p 0.031 -- and the steering itself, 0.796 reach against 0.125 for a policy
+  that never turns.  The circuit collides less because it turns less
+  violently; it has no obstacle input at all.
+  Rule: an operating point picked by looking at seeds must be frozen and
+  re-run on seeds it did not see, reported per seed and paired, before any
+  comparative claim.
+
+the_subcircuit_is_blind: >
+  The user asked why reach stalls near 0.80 and suspected vision was not
+  getting in.  Correct, and it was a regression introduced by the subcircuit
+  cut, not a subtlety: of the 532 neurons, ZERO are visual.  All 532 are
+  cb_intrinsic; 0 of the 6,199 lamina cells are present.  The only inputs are
+  the attraction cue at FB5AB and heading at the PFNs.  The full-network
+  pipeline (ConnectomeInput / ConnectomeFlyPolicy) did drive 6,199 lamina
+  cells; cutting to the 10 CX families to stop the oscillation threw the eyes
+  away, and that was not called out at the time.
+  Failure breakdown, 120 episodes per arm, 5 seeds:
+    connectome  reached 0.758  collided 0.142  timeout 0.100
+    P reference reached 0.800  collided 0.183  timeout 0.017
+  Collisions are the ceiling and BOTH arms hit it, which is what a ceiling
+  shared by two different controllers should look like.  Losing sight of the
+  target is NOT the cause: when an arm arrives the cue is visible 99.9% of
+  steps, and only 7 of 120 episodes had the cue for under half the run.
+  Size of the hole, measured with an oracle that is handed ground-truth
+  obstacle positions: reach 0.792 -> 0.938, collisions 0.192 -> 0.000.  So
+  obstacle sensing is worth about +0.15 reach, and the remaining 6% is
+  timeouts and detour, not blindness.
+  Timeouts are the one failure that is the connectome's own: 0.100 against
+  0.017 for the P reference.  That is a separate defect and it has not been
+  diagnosed.
+
+restoring_vision_costs_66k_neurons: >
+  Anatomically, the lamina does not reach the CX families quickly.  Forward
+  BFS from 6,199 lamina cells intersected with backward BFS from the 532:
+    hops 2   7,080 neurons,    15,543 edges,  0% of the CX families reached
+    hops 3  28,730 neurons,   490,325 edges, 19%
+    hops 4  66,601 neurons, 1,230,464 edges, 59%
+    hops 5  78,019 neurons, 1,501,803 edges, 60%
+  Vision is four synapses from the central complex, and buying 59% of the
+  families costs 125x the current subcircuit -- back into the size regime
+  that oscillated.  That regime is no longer hopeless, though: the cause of
+  the oscillation is now known to be spectral radius (1135 unrescaled), and
+  the same rho -> 0.9 rescaling that made the 532 work applies unchanged.
+  It is a runtime question now, not a stability one.
+
+option_B_vision_restored_what_it_found: >
+  Built the 4-hop lamina-to-CX subnetwork: 66,601 neurons, 1,230,464 edges,
+  spectral radius 922 -> 0.9, all 6,199 lamina cells and all 532 CX families
+  inside.  Runtime 42.7 ms per 100 ms control cycle, 5.1 s per episode -- the
+  size was never the obstacle.  Closed loop it FAILED: best gain reached
+  0.167 against 0.25 for a policy that never turns.  Four causes were found
+  and the first two are fixed.
+  1. LAMINA WAS TRANSMITTING ABSOLUTE LUMINANCE.  A uniform bright scene
+     carries no direction, yet it pushed 355 units of drive into 1,779 lamina
+     cells against 0.04 into the 2 cue cells -- 8,887:1, all of it DC.  The
+     bearing sweep went from monotonic (vision off) to non-monotonic with
+     offset/range 1174 (vision on).  FIXED by subtracting the mean, which is
+     also what L1/L2 large monopolar cells actually do: they high-pass.
+     Empty-scene ratio 8,887:1 -> 8.7:1.
+  2. THE READOUT ADDRESS MADE VISION INVISIBLE BY CONSTRUCTION.  A fly does
+     not avoid obstacles through the central complex -- looming runs lamina
+     -> LC/LPLC -> descending neurons and never touches PFL.  Reading only
+     the 36 PFL cells could not see an obstacle however the eyes were driven.
+     The cut already contained LPLC2 185/185, LPLC1 134/134, LC16 182/182,
+     LC11 143/143, GF 17, DNp01 2 and 732 descending neurons, including
+     DNa02 and DNa03 -- the Westeinde core own outputs.  FIXED: reading at
+     descending neurons made the visual signal 9x stronger (3.4e-5 -> 2.9e-4).
+  3. THE CUE IS 370,000x WEAKER THAN VISION AT DNa02.  Measured at DNa02
+     L1/R1: cue-only range 2.7e-8, vision-only range 1.0e-2, and driving both
+     gives a readout identical to vision alone to every printed digit.  Two
+     FB5AB cells cannot compete with 6,199 lamina cells for the same
+     descending neurons.  The 532 subcircuit worked precisely because it had
+     no visual competitor.
+  4. THE VISUAL SIGNAL IS THREAT SIZE, NOT BEARING.  Sweeping a pillar,
+     DNa02 R-L peaks at 0 deg (1.79e-2) and falls either side (1.07e-2 at
+     -40, 8.28e-3 at +40).  That is LPLC2 behaving correctly -- it reports
+     how hard something is looming.  Excluding 0 deg the sweep IS ordered, so
+     bearing is present, but one left-minus-right number cannot carry
+     "turn which way" and "how urgently" at the same time.
+  So option B did restore vision, and vision does reach the steering
+  descending neurons strongly.  What it does not do is arrive as a signed
+  bearing on the same channel the approach cue uses.  Approach and avoidance
+  are two signals in a fly and they were being summed into one scalar here.
+
+retinotopy_was_destroyed_by_reset_index: >
+  THE root cause of every visual failure in the 66k network, and it was one
+  line.  `build()` did `ann.iloc[idx].reset_index(drop=True)`, but that index
+  IS root_id and `load_malecns_eye` keys the retinotopic lattice off it.
+  After the reset the lattice reported root_ids 0..66600, which were matched
+  against real root_ids starting at 10001: 1,779 of 6,199 lamina cells
+  matched, every one of them an UNRELATED neuron, and every viewing direction
+  landed on the wrong cell.
+  What it looked like from the outside, before the cause was found:
+    - both eyes reported an identical -136.8..+136.8 deg field, i.e. no
+      left-right separation at all, though the lattice itself is correct
+      (right eye -15..+137 deg, monocular span 152 deg, centre 61 deg)
+    - driving the left lamina and the right lamina with equal total drive
+      produced readouts of the SAME sign (PFL +4.05e-6 vs +4.76e-8, ratio 85)
+      -- a mirror-symmetric circuit must answer with opposite signs
+    - the bearing response was non-monotonic at every distance and every
+      readout, which was repeatedly blamed on the circuit, on the cut, and on
+      looming physiology
+  After the fix, same network, nothing else changed:
+    - left eye -10.4..+136.8 (median +58.8), right eye -136.8..+14.8
+      (median -58.8), all 6,199 lamina cells injected
+    - mirror test at the descending neurons: L -4.45e-8, R +3.47e-8 --
+      opposite signs, |ratio| 1.28
+    - bearing sweep at 8 m: +4.10e-7 +6.25e-7 +4.36e-8 -5.07e-7 -3.86e-7,
+      offset/range 0.03, crossing zero almost exactly at 0 deg.  It falls off
+      past +-20 deg because the target is leaving the frontal field, which is
+      geometry, not a defect.
+    - closed loop, seed 2, 12 episodes: reach 0.167 -> 0.833
+  `ConnectomeInput` now raises if fewer than 90% of the lamina cells match,
+  so this cannot fail silently again.
+  Scope: subnetwork experiments only.  The whole-network runs passed the
+  loader ann straight through with its index intact and are unaffected, and
+  the 532 subcircuit contains no lamina cells at all.
+
+the_scene_never_implemented_its_own_premise: >
+  The design has rested from the start on "목표물이 광도가 높다고 가정한
+  것임" -- the intensity-weighted centroid only makes sense for a bright
+  target.  The SCENE never implemented it: `world_scene` appended the target
+  to the obstacle list and rendered it as the same 0.0 silhouette against a
+  1.0 sky, so the eyes could not tell the goal from a pillar.  On the user
+  suggestion the scene is now a dark sky (0.15), dark obstacles (0.0) and a
+  bright target (1.0), with nearest-hit resolution so an occluded target
+  reads as the occluder -- consistent with what the cue sensor already did.
+  Nothing emits onto anything else; analytic ray casting has no reflection.
+  Second change, same measurement: the target is a VERTICAL beacon, not a
+  sphere.  As a 0.6 m sphere it subtends 8.6 deg at 8 m and only cells near
+  the horizon can see it -- 60 of 1,779 within +-5 deg of the horizon across
+  the frontal +-50 deg -- and at +20 deg bearing it fell between them
+  entirely, 0 bright cells against 7 at -40 deg.  A vertical beacon is
+  sampled by every elevation row: 9-32 bright cells at every bearing tested.
+  Physics untouched: reaching and collision still use the 3D point distance.
+
+vision_arm_beats_the_blind_reference: >
+  240 held-out episodes, 10 seeds x 24, gain frozen at -3e6 after the
+  retinotopy fix.  Connectome with vision vs the blind kp=2 reference:
+  reach 0.875 vs 0.792, better in 10 of 10 seeds, Wilcoxon p 0.0020;
+  collisions 0.121 vs 0.192, 9 of 10, p 0.0039; final distance 1.33 m vs
+  1.93 m, 9 of 10, p 0.0098.  Dropping seed 2, where the gain was chosen:
+  9 of 9 on reach, p 0.0039.
+  Against the oracle that is given ground-truth obstacle positions, the
+  connectome reaches less (0.875 vs 0.938, p 0.051) and collides more
+  (0.121 vs 0.000, p 0.0078) but produces SHORTER paths (1.33 m vs 1.88 m,
+  9 of 10, p 0.0195) and almost never times out (0.004 vs 0.062, 10 of 10,
+  p 0.0020).  Less safe, more efficient.
+
+the_easy_world_was_not_the_task: >
+  Everything measured before 2026-09-20 used `corridor_world`, and the task
+  characterisation says what that actually was: 2-14 pillars, target 12 m
+  dead ahead, inside the camera frame at t=0 in 94% of episodes, median start
+  bearing 14 deg.  It was "fly at the thing you can already see".  With no
+  pillar on the line all three arms drew the same straight path, which is why
+  detour came out near-identical (1.019 connectome vs 1.013 P) -- the paths
+  WERE the same path.
+  `cluttered_world` is the specified task: 45 obstacles, target 22-32 m at
+  any bearing, heading anywhere in the full circle, visible at t=0 in only
+  25% of maps.  Every map is proven solvable by grid BFS before use, so a
+  failure is the controller's and never the generator's.
+  Result over 16 maps, 400-step budget:
+    planner, full information   reached 0.875  collided 0.125
+    P + oracle obstacles        reached 0.375  collided 0.562
+    connectome, eyes + cue      reached 0.375  collided 0.625
+    P blind, cue only           reached 0.125  collided 0.875
+  The blind reference collapses from 0.79 to 0.125 the moment the target is
+  not already in frame.  The connectome holds 3x that.
+
+search_appears_to_emerge_from_visual_turning: >
+  OBSERVATION, not yet a verified claim -- the control that would establish
+  it (same maps, vision off, cue only) has not been run.
+  In 2 of the 6 maps the connectome solved, it found a target that was not
+  visible from the start and that no other arm found:
+    map 14  target at (-23, +4).  Connectome went out to the south-east,
+            curved west and north, and arrived.  P blind AND P + oracle both
+            flew due south to y = -38, the opposite direction.  The planner
+            also failed.  Target visible for only 37% of steps, and the
+            visible steps are all in the second half of the path -- it was
+            found en route.
+    map 8   target at (-20, +24).  Connectome went south, curved west, picked
+            the target up and went north to it.  P + oracle ended at
+            (+37, -5).  Visible 50% of steps.
+  Mechanism, hypothesised: with no target in view the cue is silent but the
+  EYES are not.  The lamina keeps reporting obstacle silhouettes, that
+  asymmetry keeps reaching the descending neurons, and the resulting turning
+  sweeps the field of view.  A cue-only controller commands zero when it
+  cannot see the target, flies straight, and therefore never sees anything.
+  Nothing in this was designed.  There is no search behaviour anywhere in the
+  policy.
+  NOT ESTABLISHED, and must not be written as if it were: this is 16 maps,
+  6 successes, 2 of them search.  The vision-off control is the experiment
+  that decides it.
+
+what_the_references_are_and_are_not: >
+  The arms beaten so far are HAND-WRITTEN controllers, not learned models.
+  "일반 인공지능보다 낫다" is not yet supportable and must not be written
+  anywhere: the GRU baseline the whole comparison was designed around has
+  still not been built or trained.  What IS supportable today is narrower and
+  still worth having -- a controller given ground-truth obstacle positions
+  and the same attraction cue reaches 0.375 on the cluttered search task, the
+  same as the frozen connectome, and in individual maps flies in the exactly
+  opposite direction from the target.
+
+the_closed_loop_inversion_was_a_sampling_delay: >
+  THE cause of every closed-loop failure in the vision network, found
+  2026-09-20 after five other hypotheses were measured and rejected.
+  Symptom: the readout encodes target bearing almost perfectly when the body
+  is held still and swept in heading (corr +0.95 to +0.99), and the
+  correlation INVERTS the moment the agent flies (-0.50 to -0.99).  It
+  inverted under every remedy tried: gain up, gain down, gain sign flipped,
+  state reset every step, state leaked at 0.9/0.7/0.5, readout moved to
+  DNa02/DNa03, readout pooled over all 732 descending neurons, vision
+  switched off entirely, and sensory adaptation on the readout.
+  Cause: a recurrent network has an effective time constant of tau/(1-rho).
+  With the 20 ms membrane and rho 0.9 that is 200 ms, against a 100 ms
+  control cycle.  Measured step response, cue only, target stepped hard left:
+    rho   effective tau   settles in   value at 100 ms, percent of final
+    0.90      200 ms        695 ms            -105
+    0.70       67 ms        195 ms            +119
+    0.50       40 ms         85 ms             +97
+    0.30       29 ms         95 ms             +93
+    0.10       22 ms         95 ms             +93
+  At rho 0.9 the sample is taken seven settling times too early, while the
+  transient is still swinging through the OPPOSITE sign.  The command was
+  therefore the negative of what the circuit computes.  The circuit was
+  never wrong; the sampling instant was.
+  Fix: rho 0.50, so the circuit settles inside its own control cycle.
+  Flying the same room, everything else identical:
+    rho 0.90  standing corr +0.948, flying -0.503, 21 steps to a crash
+    rho 0.50  standing corr +0.959, flying +0.971, 68 steps
+    rho 0.30  standing corr +0.967, flying +0.981, 56 steps
+  Note what this says about the earlier rho sweep, which found 0.90, 0.95,
+  0.98 and 0.99 indistinguishable: they were all far too slow, and only the
+  direction that was never tested -- downward -- mattered.
+  RULE: a recurrent readout must be checked for SETTLING TIME against the
+  control period before any closed-loop conclusion is drawn from it.  An
+  open-loop sweep allowed to settle longer than the loop does is measuring a
+  different system.
+
+what_remains_after_the_inversion_fix: >
+  Fixing the sampling delay moves the failure up one level rather than
+  removing it.  On room 0, 161 obstacles, 5 reachable beacons:
+    connectome rho 0.50  corr +0.971, 68 steps, 0 beacons, crashed
+    P blind              113 steps, 1 beacon, crashed
+    planner              307 steps, 3 beacons, crashed
+  Steering now tracks the target accurately and the arm survives 3x longer
+  than before, but it flies into walls -- the same failure mode as the P
+  reference.  Approach works; avoidance does not, even with the eyes on.
+  The cue/vision balance measured earlier (2.59) was taken at rho 0.9 and in
+  an empty scene, so it must be re-measured before anything is concluded
+  about why vision is not producing avoidance.
+
+fisheye_replaces_per_cell_ray_casting: >
+  The lamina cast 6,199 x 5 rays per control step and the cue projected 69
+  surface samples per TARGET, each occlusion-tested against every obstacle.
+  In a 161-obstacle room that was 49.6 ms and 34.2 ms, with the target
+  rendered twice -- once into the lamina's scene and again as the cue
+  sensor's own projection.  Worse than the cost: `sense(target)` took the
+  target's world position as an argument, which a real drone cannot have,
+  and scaled with the number of targets, which a camera never does.
+  One equidistant-fisheye image replaces both.  The lamina indexes into it,
+  the cue is found in it.  Culling makes it cheap: an obstacle covers a
+  contiguous pixel block (typically 2.2% of the field), so it is tested
+  against that block rather than against every ray.  Without culling the
+  image is no faster than the rays (64.6 ms vs 49.6); with it, 11.5 ms.
+  Verified against the ray caster: 98.2% of 400 directions agree, single
+  beacon bearing within 2.5 deg, three beacons come back as three blobs, an
+  occluded beacon disappears, a half-occluded one halves in pixels and its
+  centroid moves toward the visible side.
+  Also tried and REJECTED: vectorising the old loop over all obstacles at
+  once.  That was 151 ms against 24.6 ms for the Python loop -- (6199, 167)
+  intermediates are 100 MB of traffic and memory bandwidth becomes the
+  bottleneck.  The loop kept each obstacle's work in cache.
+
+lamp_beats_stereo_for_range: >
+  Passive range recovery failed twice.  Stereo on flat surfaces returned a
+  constant 3.0-3.5 s from 20 m to 3 m -- pixel quantisation, not range --
+  because a flat wall has no feature to correspond.  Adding world-fixed
+  surface texture made correspondence possible in principle but the estimate
+  still returns inf at every distance: the correlation window spans the
+  frontal +-45 deg, more than half of which is sky at zero disparity, so the
+  best match is always a shift of zero.  Expansion-rate tau works in the far
+  field but saturates near: at 2.4 m from contact (true tau 0.20 s) it
+  reported 7.19 s, because `blocked` stops growing once the wall fills the
+  frame.
+  A lamp on the drone solves it outright.  Brightness falls as
+  1/(1+(r/4)^2), measured contribution 0.151 at 2 m, 0.029 at 5 m, 0.002 at
+  12 m, 0.0005 at 18 m -- 300x, monotonic, needs no motion and no
+  correspondence, and costs nothing because the render already computes the
+  hit distance.
+  This is explicitly NOT a fly.  A fly has no headlamp; this is a drone
+  sensor chosen because the drone is the body being flown, and it is
+  declared rather than passed off as vision.
+  Offsetting the lamp 0.35 m to one side does break left-right symmetry but
+  only by 0.0064 at 3 m, because the lamp-to-surface distance barely differs
+  across the field.  A wider offset or a narrower beam would be needed for
+  that to carry direction.
+
+tau_alone_has_a_fixed_point_at_contact: >
+  The speed law was urgency = tau_crit / tau with tau = range / speed, and
+  nothing else.  tau is dimensionless, which was the whole point -- it makes
+  a fly at 0.3 m/s past a 5 cm twig and a drone at 2 m/s past a 2 m pillar
+  equally urgent, so the connectome's fly-scale tuning transfers.  But a
+  dimensionless quantity has no absolute distance in it BY CONSTRUCTION, and
+  I used it as though it did.
+  Braking triggers when range < tau_crit * speed.  Slowing down therefore
+  lowers the threshold that caused the slowing, and the loop converges on
+  range = tau_crit * v, whose limit as v -> 0 is zero clearance.  The fixed
+  point is the collision.  Measured, room 0, steps 37-52: range held between
+  0.52 and 1.21 m for sixteen consecutive steps while speed decayed 1.08 ->
+  0.45 m/s and yaw ran up to -50 deg/s.  The vehicle was avoiding the whole
+  time and still touched.
+  Fix: D_STOP = 0.8 m, an absolute gate multiplied into the speed, a pure
+  function of distance so it cannot be talked down by going slower.  Yaw
+  still works at zero speed, so the behaviour becomes stop-and-turn.
+
+the_lamp_inverted_the_avoidance_sign: >
+  With LAMP_POWER 0.45 a wall 1.5 m away peaked at 0.354 against a sky of
+  0.15, so the signed centroid weight `I - sky` went POSITIVE on it and the
+  wall attracted like a beacon.  Measured bearing to a wall at +45 deg:
+  -44.3 at 8 m, -44.2 at 5 m, then +10.4 at 3 m, +31.7 at 2 m, +42.5 at
+  1.5 m.  The avoidance term inverted at exactly the range where avoidance
+  matters.
+  Two independent fixes, both kept.  (a) Steer on the unlit frame,
+  `scene = img - lamp`, which a real drone gets by strobing; bearing is then
+  a flat -44 deg at every distance.  (b) LAMP_POWER 0.45 -> 0.10, so the
+  lamp never outshines the sky (0.095 at 1.5 m).  This costs NOTHING: the
+  lamp channel is separated, so range error is identical, 12%/1%/0% at
+  2/5/10 m, from power 0.45 down to 0.03.
+  Fixing this did not change flight outcomes at all -- 4/13 found and 3
+  collisions before and after.  The sign inversion was real and was not the
+  binding constraint.  Recorded because measuring it is what ruled it out.
+
+a_normalised_bearing_cannot_carry_urgency: >
+  Tried amplifying near-surface darkness so proximity would show up in
+  steering: `scene = img - k*lamp` for k = 1, 3, 6, 10, which makes a near
+  wall progressively darker and thus more repulsive per pixel.  Target 20 m
+  ahead, wall at +20 deg closing from 12 m to 1.5 m.  Bearing at 2 m: -19.6,
+  -18.5, -18.0, -17.7.  It barely moves, and in the wrong direction.
+  The centroid is a weighted MEAN of directions, so the added weight enters
+  numerator and denominator alike and the result cannot be pushed past the
+  wall's own bearing.  -19.6 deg means the same thing at 12 m and at 1.5 m.
+  Proximity cannot enter through the bearing channel at all; it has to enter
+  through magnitude, i.e. the speed law, which is why the absolute standoff
+  is the fix and not a cleverer image.

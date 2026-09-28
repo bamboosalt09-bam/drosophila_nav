@@ -1,0 +1,33 @@
+C:\english_folder\fruitfly\drosophila_nav\src\core\flywire_rate.py:177: UserWarning: Sparse invariant checks are implicitly disabled. Memory errors (e.g. SEGFAULT) will occur when operating on a sparse tensor which violates the invariants, but checks incur performance overhead. To silence this warning, explicitly opt in or out. See `torch.sparse.check_sparse_tensor_invariants.__doc__` for guidance.  (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\aten\src\ATen\Context.cpp:855.)
+  return torch.sparse_csr_tensor(
+C:\english_folder\fruitfly\drosophila_nav\src\core\flywire_rate.py:177: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\aten\src\ATen\SparseCsrTensorImpl.cpp:51.)
+  return torch.sparse_csr_tensor(
+34125 neurons, 1086631 edges (0 s); threat in: 311 LC4/LPLC2 cells by direction; escape out L5 R5; steer from DNa01/02 L2 R2
+steering calibration: sweep r -0.38, gain -5.58e+03
+
+beams arm          reach'ble   walled  collided  steps  stopped  dist m
+    0 connectome        2/5         0      True    194       0%    26.8
+    0 planner           4/5         0      True    540       0%   107.6
+    0 centroid          0/5         0      True     36       0%     6.7
+      (25 s; escape base L0.000 R0.000, peak L0.229 R0.177)
+    1 connectome        2/5         0     False   1200      72%    26.6
+    1 planner           4/5         0     False   1200      38%   106.6
+    1 centroid          1/5         0     False   1200       0%   223.3
+      (79 s; escape base L0.000 R0.000, peak L0.229 R0.177)
+    3 connectome        2/5         0     False   1200      70%    25.1
+    3 planner           4/5         0     False   1200      28%   105.6
+    3 centroid          1/5         0     False   1200       0%   221.5
+      (79 s; escape base L0.000 R0.000, peak L0.229 R0.177)
+    6 connectome        4/5         0     False   1200       2%    77.0
+    6 planner           4/5         0     False   1200       4%   113.2
+    6 centroid          2/5         0     False   1200       1%   145.5
+      (79 s; escape base L0.000 R0.000, peak L0.229 R0.177)
+   12 connectome        4/5         0     False   1200       1%    84.7
+   12 planner           4/5         0     False   1200       4%   112.1
+   12 centroid          2/5         0     False   1200       2%   144.7
+      (73 s; escape base L0.000 R0.000, peak L0.229 R0.177)
+   24 connectome        4/5         0     False   1200       0%   111.1
+   24 planner           4/5         0     False   1200       4%   112.8
+   24 centroid          2/5         0     False   1200       0%   154.4
+      (77 s; escape base L0.000 R0.000, peak L0.229 R0.177)
+wrote sweep_beams_room5.csv

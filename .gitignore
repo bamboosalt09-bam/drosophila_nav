@@ -5,3 +5,12 @@ __pycache__/
 results/**/*.png
 results/**/*.gif
 data/
+
+# build products (rebuild with build_cpp.bat)
+build/
+*.pyd
+
+# regenerable caches: training clips (experiments/collect_clips.py) and
+# subnet pickles (src/core/subnet_file.py rebuilds them on first use)
+results/clips/
+results/subnet/*.pkl

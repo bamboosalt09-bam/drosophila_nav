@@ -150,9 +150,16 @@ class FlyWireBrain:
     """LIF over the whole connectome.  Indices are positions in `self.ids`."""
 
     def __init__(self, min_synapses: int = 1, dt_ms: float = 0.1,
-                 w_scale: float = 1.0):
-        self.ids, self.out, self.ann, self.n_unsigned = load_connectome(
-            min_synapses, w_scale)
+                 w_scale: float = 1.0, connectome=None):
+        # `connectome` is the (ids, out, ann, n_unsigned) tuple any loader
+        # returns -- MaleCNS's included, which is why `malecns.load_malecns`
+        # was written to return exactly this shape.  Passing it runs the same
+        # Shiu et al. LIF over a different dataset with no other change.
+        if connectome is not None:
+            self.ids, self.out, self.ann, self.n_unsigned = connectome
+        else:
+            self.ids, self.out, self.ann, self.n_unsigned = load_connectome(
+                min_synapses, w_scale)
         self.n = len(self.ids)
         self.n_edges = self.out.nnz
         self.w_scale = float(w_scale)

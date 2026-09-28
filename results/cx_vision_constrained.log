@@ -1,0 +1,66 @@
+C:\english_folder\fruitfly\drosophila_nav\src\core\flywire_rate.py:122: UserWarning: Sparse invariant checks are implicitly disabled. Memory errors (e.g. SEGFAULT) will occur when operating on a sparse tensor which violates the invariants, but checks incur performance overhead. To silence this warning, explicitly opt in or out. See `torch.sparse.check_sparse_tensor_invariants.__doc__` for guidance.  (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\aten\src\ATen\Context.cpp:855.)
+  return torch.sparse_csr_tensor(
+C:\english_folder\fruitfly\drosophila_nav\src\core\flywire_rate.py:122: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\aten\src\ATen\SparseCsrTensorImpl.cpp:51.)
+  return torch.sparse_csr_tensor(
+66601 neurons, 1230464 edges, rho 922 -> 0.9; lamina 6199, CX 532  (56 s)
+
+seed  arm                   reached  collided  timeout     dist
+2     P control (blind)        0.79      0.21     0.00     1.49   0.000   0.012  (4 s)
+2     P + oracle obstacles     0.96      0.00     0.04     1.57   0.001   0.030  (5 s)
+2     straight                 0.21      0.29     0.50     8.33   0.000   0.000  (5 s)
+2     connectome gain -3e+06     0.88      0.12     0.00     1.35   0.014   0.252  (110 s)
+
+3     P control (blind)        0.88      0.12     0.00     1.65   0.000   0.010  (4 s)
+3     P + oracle obstacles     0.96      0.00     0.04     1.56   0.001   0.029  (5 s)
+3     straight                 0.08      0.25     0.67    10.30   0.000   0.000  (6 s)
+3     connectome gain -3e+06     1.00      0.00     0.00     0.91   0.023   0.303  (114 s)
+
+4     P control (blind)        0.92      0.04     0.04     1.81   0.000   0.009  (2 s)
+4     P + oracle obstacles     0.92      0.00     0.08     2.10   0.000   0.022  (2 s)
+4     straight                 0.12      0.17     0.71    10.47   0.000   0.000  (3 s)
+4     connectome gain -3e+06     1.00      0.00     0.00     0.89   0.015   0.278  (119 s)
+
+5     P control (blind)        0.67      0.29     0.04     2.80   0.000   0.012  (4 s)
+5     P + oracle obstacles     0.88      0.00     0.12     3.24   0.001   0.035  (5 s)
+5     straight                 0.12      0.33     0.54     9.87   0.000   0.000  (5 s)
+5     connectome gain -3e+06     0.79      0.21     0.00     1.47   0.025   0.265  (122 s)
+
+6     P control (blind)        0.75      0.25     0.00     1.61   0.000   0.009  (4 s)
+6     P + oracle obstacles     0.96      0.00     0.04     1.56   0.000   0.032  (4 s)
+6     straight                 0.21      0.08     0.71     9.52   0.000   0.000  (6 s)
+6     connectome gain -3e+06     0.79      0.21     0.00     1.43   0.014   0.250  (114 s)
+
+7     P control (blind)        0.83      0.12     0.04     1.92   0.000   0.009  (5 s)
+7     P + oracle obstacles     0.92      0.00     0.08     2.15   0.000   0.022  (5 s)
+7     straight                 0.08      0.21     0.71    10.47   0.000   0.000  (7 s)
+7     connectome gain -3e+06     0.88      0.12     0.00     1.19   0.014   0.269  (112 s)
+
+8     P control (blind)        0.79      0.17     0.04     1.91   0.000   0.009  (5 s)
+8     P + oracle obstacles     0.88      0.04     0.08     2.37   0.005   0.031  (5 s)
+8     straight                 0.17      0.08     0.75    10.41   0.000   0.000  (7 s)
+8     connectome gain -3e+06     0.83      0.12     0.04     2.36   0.019   0.253  (128 s)
+
+9     P control (blind)        0.83      0.17     0.00     1.63   0.000   0.012  (4 s)
+9     P + oracle obstacles     0.96      0.00     0.04     1.78   0.000   0.028  (5 s)
+9     straight                 0.12      0.29     0.58     9.37   0.000   0.000  (6 s)
+9     connectome gain -3e+06     0.92      0.08     0.00     0.99   0.015   0.279  (121 s)
+
+10    P control (blind)        0.75      0.25     0.00     2.24   0.000   0.013  (4 s)
+10    P + oracle obstacles     0.96      0.00     0.04     1.44   0.000   0.030  (5 s)
+10    straight                 0.04      0.29     0.67    10.54   0.000   0.000  (6 s)
+10    connectome gain -3e+06     0.83      0.17     0.00     1.28   0.022   0.272  (123 s)
+
+11    P control (blind)        0.75      0.25     0.00     1.93   0.000   0.015  (4 s)
+11    P + oracle obstacles     0.96      0.00     0.04     1.68   0.000   0.031  (4 s)
+11    straight                 0.08      0.33     0.58     9.77   0.000   0.000  (5 s)
+11    connectome gain -3e+06     0.88      0.12     0.00     1.38   0.027   0.270  (117 s)
+
+--- pooled ------------------------------------------------
+arm                   reached  collided  timeout     dist   r_sat   a_sat
+P control (blind)       0.796     0.188    0.017     1.90   0.000   0.011
+P + oracle obstacles    0.933     0.004    0.062     1.94   0.001   0.029
+straight                0.125     0.233    0.642     9.90   0.000   0.000
+connectome gain -3e+06    0.879     0.117    0.004     1.33   0.019   0.269
+
+best connectome: connectome gain -3e+06 -> reached 1.000, collided 0.000 (blind P reference collides 0.188)
+wrote results/cx_vision_loop.csv

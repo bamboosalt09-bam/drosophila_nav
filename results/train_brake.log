@@ -1,0 +1,29 @@
+C:\english_folder\fruitfly\drosophila_nav\src\core\flywire_rate.py:177: UserWarning: Sparse invariant checks are implicitly disabled. Memory errors (e.g. SEGFAULT) will occur when operating on a sparse tensor which violates the invariants, but checks incur performance overhead. To silence this warning, explicitly opt in or out. See `torch.sparse.check_sparse_tensor_invariants.__doc__` for guidance.  (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\aten\src\ATen\Context.cpp:855.)
+  return torch.sparse_csr_tensor(
+C:\english_folder\fruitfly\drosophila_nav\src\core\flywire_rate.py:177: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\aten\src\ATen\SparseCsrTensorImpl.cpp:51.)
+  return torch.sparse_csr_tensor(
+stage-normalised gains, rho 32.0 -> 1.00
+train 1014 clips, val 372 clips, 6 frames each
+before training:  steer r +0.034   brake r -0.085
+C:\english_folder\fruitfly\drosophila_nav\experiments\train_heads.py:256: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\torch\csrc\autograd\generated\python_variable_methods.cpp:821.)
+  % (step, float(loss), float(cs), float(cb), skipped,
+  step   0  loss -0.0806   steer +0.286  brake -0.284  skipped 0  (2 s)
+  step  20  loss -0.0195   steer +0.827  brake +0.140  skipped 0  (30 s)
+  step  40  loss -0.0987   steer +0.789  brake -0.314  skipped 0  (62 s)
+  step  60  loss -0.0873   steer +0.717  brake -0.295  skipped 0  (87 s)
+  step  80  loss -0.0954   steer +0.724  brake -0.309  skipped 0  (110 s)
+  step 100  loss -0.0725   steer +0.532  brake -0.269  skipped 0  (132 s)
+  step 120  loss -0.0497   steer +0.747  brake +0.223  skipped 0  (154 s)
+  step 140  loss -0.0460   steer +0.572  brake -0.214  skipped 0  (175 s)
+  step 160  loss -0.0856   steer +0.401  brake +0.293  skipped 0  (196 s)
+  step 180  loss -0.0049   steer +0.562  brake -0.070  skipped 0  (219 s)
+  step 200  loss -0.1120   steer +0.322  brake -0.335  skipped 0  (239 s)
+  step 220  loss -0.0911   steer +0.495  brake -0.302  skipped 0  (262 s)
+  step 240  loss -0.0056   steer +0.642  brake +0.075  skipped 0  (286 s)
+  step 249  loss -0.0044   steer +0.261  brake -0.066  skipped 0  (299 s)
+after training:   steer r +0.016   brake r +0.028
+                  was   steer r +0.034   brake r -0.085
+skipped 0 of 250 steps; parameters finite: True
+wrote eye_trained_brake.npz
+EXIT=0

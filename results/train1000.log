@@ -1,0 +1,23 @@
+C:\english_folder\fruitfly\drosophila_nav\src\core\flywire_rate.py:122: UserWarning: Sparse invariant checks are implicitly disabled. Memory errors (e.g. SEGFAULT) will occur when operating on a sparse tensor which violates the invariants, but checks incur performance overhead. To silence this warning, explicitly opt in or out. See `torch.sparse.check_sparse_tensor_invariants.__doc__` for guidance.  (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\aten\src\ATen\Context.cpp:855.)
+  return torch.sparse_csr_tensor(
+C:\english_folder\fruitfly\drosophila_nav\src\core\flywire_rate.py:122: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\aten\src\ATen\SparseCsrTensorImpl.cpp:51.)
+  return torch.sparse_csr_tensor(
+loaded in 35 s; {'lamina': 6199, 'orn_left': 17, 'orn_right': 20}
+--- fly: 2 trainable parameters ---
+  [fly] ep    64  reward +0.025  reached 0.00  collided 0.04  (423 s)
+   [fly] ep   100  reward -0.156  reached 0.02  collided 0.14  (3910 s)
+  [fly] ep   150  reward -0.174  reached 0.00  collided 0.06  (56308 s)
+fly] ep   208  reward +0.026  reached 0.00  collided 0.00  (1953 s)
+  [fly] ep   256  reward +0.015  reached 0.00  collided 0.00  (2465 s)
+  [fly] ep   304  reward +0.009  reached 0.00  collided 0.00  (3084 s)
+  [fly] ep   352  reward -0.031  reached 0.00  collided 0.00  (3761 s)
+  [fly] ep   400  reward -0.091  reached 0.00  collided 0.00  (4913 s)
+  [fly] ep   464  reward -0.036  reached 0.00  collided 0.00  (6225 s)
+  [fly] ep   512  reward -0.044  reached 0.00  collided 0.00  (7680 s)
+  [fly] ep   560  reward -0.062  reached 0.00  collided 0.00  (35356 s)
+  [fly] ep   608  reward -0.319  reached 0.00  collided 0.48  (51293 s)
+  [fly] ep   656  reward -0.071  reached 0.00  collided 0.00  (62641 s)
+  [fly] ep   704  reward -0.076  reached 0.00  collided 0.00  (63160 s)
+  [fly] ep   752  reward -0.097  reached 0.00  collided 0.00  (63533 s)
+  [fly] ep   800  reward -0.071  reached 0.00  collided 0.00  (64033 s)
+  [fly] ep   864  reward -0.044  reached 0.00  collided 0.00  (64607 s)

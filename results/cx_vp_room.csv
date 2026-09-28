@@ -1,0 +1,4 @@
+found,first,steps,collided,cue_frac,corr,room,arm,reachable,gain,sweep_corr,zero
+0,,600,False,1.0,0.22625204834857995,0,connectome VP,5,-27960.66851041527,-0.5936631358295118,-2.1262726477289107e-06
+3,95.0,600,False,1.0,,0,planner,5,,,
+0,,600,False,1.0,,0,centroid,5,,,

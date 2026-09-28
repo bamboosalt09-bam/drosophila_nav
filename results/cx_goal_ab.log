@@ -1,0 +1,39 @@
+C:\english_folder\fruitfly\drosophila_nav\src\core\flywire_rate.py:122: UserWarning: Sparse invariant checks are implicitly disabled. Memory errors (e.g. SEGFAULT) will occur when operating on a sparse tensor which violates the invariants, but checks incur performance overhead. To silence this warning, explicitly opt in or out. See `torch.sparse.check_sparse_tensor_invariants.__doc__` for guidance.  (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\aten\src\ATen\Context.cpp:855.)
+  return torch.sparse_csr_tensor(
+C:\english_folder\fruitfly\drosophila_nav\src\core\flywire_rate.py:122: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\aten\src\ATen\SparseCsrTensorImpl.cpp:51.)
+  return torch.sparse_csr_tensor(
+FB5AB instant  L1/R1  range 1.131e-06  gain -2.12e+06
+ORN instant    L32/R26  range 2.130e-06  gain -1.13e+06
+ORN held       L32/R26  range 2.130e-06  gain -1.13e+06
+
+ map arm             reached  collided   steps     dist    seen
+   0 FB5AB instant     False      True     250     29.2     50%
+   0 ORN instant       False      True     222     69.0      5%
+   0 ORN held          False      True      66     38.8     15%
+   0 P blind           False      True      36     22.4     69%
+   0 planner            True     False     168      0.9     95%
+
+   1 FB5AB instant     False      True     202     57.2      0%
+   1 ORN instant       False      True     206     60.7      0%
+   1 ORN held          False      True     206     60.7      0%
+   1 P blind           False      True     193     59.0      0%
+   1 planner            True     False     161      0.9     84%
+
+   2 FB5AB instant     False      True     202     54.2      0%
+   2 ORN instant       False      True      53     33.5      0%
+   2 ORN held          False      True      53     33.5      0%
+   2 P blind           False      True     147     51.2      0%
+   2 planner            True     False     186      0.9     78%
+
+   3 FB5AB instant     False      True     277     73.4      0%
+   3 ORN instant       False      True     234     69.0      0%
+   3 ORN held          False      True     234     69.0      0%
+   3 P blind           False      True     127     52.7      0%
+   3 planner            True     False     168      0.9     93%
+
+--- reached, out of 4 ------------------------------
+  FB5AB instant  0/4
+  ORN instant    0/4
+  ORN held       0/4
+  P blind        0/4
+  planner        4/4

@@ -65,7 +65,16 @@ def _load_annotations() -> pd.DataFrame:
         "super_class": a["superclass"],
         "cell_class": a["class"],
         "cell_type": a["type"],
-        "side": a["somaSide"].map(_SIDE),
+        # somaSide, falling back to rootSide.  Sensory neurons have their soma
+        # OUTSIDE the CNS -- in the antenna, the eye, a leg -- so somaSide is
+        # blank for 18,003 of 166,700 neurons, and 17,453 of those are the
+        # sensory periphery: vnc_sensory 6,354, ol_sensory 6,062, cb_sensory
+        # 4,455, sensory_ascending 536.  rootSide, where the neurite enters,
+        # is the side that means anything for them.  Using somaSide alone left
+        # 10.5% of the network -- the entire input side -- unsided, which
+        # silently excluded it from the laterality balancing and from every
+        # left/right readout.
+        "side": a["somaSide"].map(_SIDE).fillna(a["rootSide"].map(_SIDE)),
         "top_nt": a["bodyId"].map(nt),
         # kept because they are the point of using this dataset at all
         "neuromere": a["somaNeuromere"],

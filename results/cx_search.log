@@ -1,0 +1,15 @@
+C:\english_folder\fruitfly\drosophila_nav\src\core\flywire_rate.py:122: UserWarning: Sparse invariant checks are implicitly disabled. Memory errors (e.g. SEGFAULT) will occur when operating on a sparse tensor which violates the invariants, but checks incur performance overhead. To silence this warning, explicitly opt in or out. See `torch.sparse.check_sparse_tensor_invariants.__doc__` for guidance.  (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\aten\src\ATen\Context.cpp:855.)
+  return torch.sparse_csr_tensor(
+C:\english_folder\fruitfly\drosophila_nav\src\core\flywire_rate.py:122: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\aten\src\ATen\SparseCsrTensorImpl.cpp:51.)
+  return torch.sparse_csr_tensor(
+66601 neurons; 16 maps, up to 400 steps  (54 s)
+
+target 27.7 m away, visible at t=0 in 25% of maps
+
+arm                   reached  collided  timeout     dist   detour cue_frac
+planner (full info)     0.875     0.125    0.000     1.81    1.011    0.657   (53 s)
+P + oracle              0.375     0.562    0.062    38.88    0.823    0.326   (43 s)
+P blind                 0.125     0.875    0.000    36.64    0.727    0.231   (19 s)
+connectome              0.375     0.625    0.000    33.32    1.025    0.271   (356 s)
+
+wrote results/cx_search.csv
