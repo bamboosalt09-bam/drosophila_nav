@@ -268,6 +268,20 @@ turns right, −16 °/s in the open, while the drone layer's swerves at walls
 1–2 m ahead were LEFT (+67 °/s).  The orbit is the circuit's residual right
 bias (−9 °/s on symmetric scenes) with no cue to override it.
 
+**v17 = OPTOMOTOR REFLEX (user: "시운동 반사는 최소한 구현").**  HSE/HSN/HSS/H2
+(1 per side) are in the subnet and steer strongly and symmetrically
+(0.1/cell: +70.5 left cells, −69.8 right; `diag/diag_hs.py`).  Rotation is
+read off the camera (`vp_input.yaw_flow`: per-azimuth brightness profile vs
+last frame, best shift; pure rotation ±90 → ±90–91, in flight r 0.76 vs the
+path's own turn rate, median error 6.3 °/s, sign 92%; `diag/diag_flow.py`).
+A left rotation excites the side that turns right, OPTO_K = 0.5 of the
+rotation turned back (`wire_opto`, 0.00071 drive per deg/s).  Room 6, 24
+beams: 5/6 by 34.0 s, 215 m, no collision — **but the orbit is unchanged**:
+after the 5th beacon 98% of turns are right (v16: 85%), −38 °/s with the
+column 2–4 m ahead.  Prediction (right share down to 50–65%) FAILED.  The
+orbit is not a small drift the reflex can null: it is a steady right turn
+around the pillar column that the reflex only halves.  Not yet diagnosed.
+
 ### Version history (room 6 unless stated; "found" of the reachable beacons)
 
 Keep this table growing.  Each version changed the listed things and nothing

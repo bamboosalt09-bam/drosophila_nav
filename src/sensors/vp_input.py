@@ -135,6 +135,53 @@ def threat_level(beams, centres_deg, speed):
     return (float(s[c >= 0].max()) if (c >= 0).any() else 0.0,
             float(s[c <= 0].max()) if (c <= 0).any() else 0.0)
 
+# THE OPTOMOTOR REFLEX: self-rotation, seen by the camera, into HS/H2.
+#
+# A fly turning one way sees the world stream the other way, and its
+# lobula plate's horizontal wide-field cells (HSE, HSN, HSS, H2) turn it
+# back -- which is what keeps a fly's small built-in turning bias from
+# closing into a circle.  Without it the circuit's residual right bias
+# (~-9 deg/s on symmetric scenes) turned room 6 into a clockwise orbit
+# whenever nothing was in view.  The cells are in the subnet (1 per side
+# each) and reach DNa01/02 strongly and symmetrically: 0.1/cell on one side
+# turns the drone +70.5 (left cells) / -69.8 (right) deg/s, linear to 0.5.
+#
+# The rotation is MEASURED FROM THE IMAGE, as the fly does -- no extra
+# sensor: the per-azimuth brightness profile of this frame against the
+# last one, shifted to the best match (`yaw_flow`).  The side excited is
+# the one whose cells turn the drone AGAINST the rotation, and the drive
+# per degree/s is set so the reflex cancels OPTO_K of the rotation; both are
+# measured by the runner (`wire_opto`), not assumed.
+OPTO_K = 0.5                   # fraction of the measured rotation turned back
+OPTO_TYPES = ("HSE", "HSN", "HSS", "H2")
+OPTO_MAX_SHIFT = 12            # columns (~13.6 deg) searched per frame
+CONTROL_DT = N_SUB * 0.005     # s between frames
+
+
+def yaw_flow(prev, cur, da_deg, dt=CONTROL_DT, max_shift=OPTO_MAX_SHIFT):
+    """Rotation rate (deg/s, + = LEFT) from two brightness-per-azimuth
+    profiles: the shift that best lines them up, to a fraction of a column.
+
+    Turning left moves everything to lower azimuth, i.e. lower column index,
+    so cur[i] ~ prev[i + s] with s > 0.
+    """
+    a = cur - cur.mean()
+    b = prev - prev.mean()
+    n = len(a)
+    sc = []
+    for s in range(-max_shift, max_shift + 1):
+        lo, hi = max(0, -s), min(n, n - s)
+        sc.append(float(np.dot(a[lo:hi], b[lo + s:hi + s])) / max(hi - lo, 1))
+    sc = np.array(sc)
+    k = int(np.argmax(sc))
+    frac = 0.0
+    if 0 < k < len(sc) - 1:
+        den = sc[k - 1] - 2 * sc[k] + sc[k + 1]
+        if den < 0:
+            frac = 0.5 * (sc[k - 1] - sc[k + 1]) / den
+    return (k - max_shift + frac) * da_deg / dt
+
+
 # NO GYRO INPUT (removed 2026-09-28, user: "biological route, or none").
 # The IMU yaw rate went to Johnston's organ, push-pull.  Measured against the
 # pooled 1,304-DN readout it was strong; against DNa01/02 it moved the turn
@@ -239,6 +286,15 @@ class VPInput:
         is_st = np.isin(ct, STEER_TYPES)
         self.steer_l = np.flatnonzero(is_st & (side == "left"))
         self.steer_r = np.flatnonzero(is_st & (side == "right"))
+        is_opto = np.isin(ct, OPTO_TYPES)
+        self.opto_l = np.flatnonzero(is_opto & (side == "left"))
+        self.opto_r = np.flatnonzero(is_opto & (side == "right"))
+        # rows excited by a LEFT / RIGHT self-rotation, and drive per deg/s:
+        # set by the runner's wire_opto; 0 = reflex off
+        self.opto_on_left, self.opto_on_right = self.opto_r, self.opto_l
+        self.opto_per_deg = 0.0
+        self._prev_prof = None
+        self.flow = 0.0               # last measured rotation, deg/s
         is_esc = np.isin(ct, ESCAPE_TYPES)
         self.esc_l = np.flatnonzero(is_esc & (side == "left"))
         self.esc_r = np.flatnonzero(is_esc & (side == "right"))
@@ -248,6 +304,8 @@ class VPInput:
 
     def reset(self) -> None:
         self._prev_val = None
+        self._prev_prof = None
+        self.flow = 0.0
 
     def drive(self, world, position, heading_rad):
         # One compiled sweep returns the unlit scene, the per-azimuth range
@@ -267,11 +325,18 @@ class VPInput:
         s = (scent_mass / (scent_mass + CUE_HALF)
              if self.fixed_strength is None else self.fixed_strength)
         d = self._build(scene[self._px], frac, s, beams_m, cen)
+        # optomotor: this frame's rotation, turned back through HS/H2
+        prof = r["unlit"].reshape(self.cam.n_az, self.cam.n_el).mean(axis=1)
+        self.flow = (yaw_flow(self._prev_prof, prof, self.cam.da)
+                     if self._prev_prof is not None else 0.0)
+        self._prev_prof = prof
+        rows = self.opto_on_left if self.flow > 0 else self.opto_on_right
+        d[rows, :] += self.opto_per_deg * abs(self.flow)
         return d, {"bearing": r["bearing"], "scent": scent,
                    "scent_mass": scent_mass,
                    "blocked": r["blocked"], "weight": r["weight"],
                    "rear": r["rear"], "threat_in": (a_l, a_r),
-                   "beams": beams_m}
+                   "beams": beams_m, "flow": self.flow}
 
     def _build(self, lum, frac, s, beams_m, cen):
         """The drive for one control cycle, one column per sub-step."""
@@ -325,6 +390,13 @@ def demo() -> None:
     assert abs(w[:3].sum() - w[3]) < 1e-12            # 3 cells vs 1 cell
     assert abs(w[4] - w[5:7].sum()) < 1e-12           # 1 vs 2
     assert w[7] == 1.0 and w[8] == 1.0                # no mirror / no direction
+    # yaw_flow: a profile shifted 5.4 columns reads as that rotation
+    rng = np.random.default_rng(0)
+    x = np.convolve(rng.normal(size=300), np.ones(5) / 5, "same")
+    xs = np.interp(np.arange(256) + 5.4, np.arange(300), x)
+    est = yaw_flow(x[:256], xs, 1.0, dt=0.1)
+    assert abs(est - 54.0) < 3.0, est                 # +5.4 col = left turn
+    assert abs(yaw_flow(xs, x[:256], 1.0, dt=0.1) + 54.0) < 3.0
     print("vp_input demo ok")
 
 

@@ -218,6 +218,36 @@ def wire_cue(net, inp, info, p0, probe=0.02):
     return ul, ur
 
 
+def wire_opto(net, inp, gain, zero, p0, probe=0.05):
+    """Which HS/H2 side turns the drone which way, and the drive per deg/s
+    of rotation that turns back OPTO_K of it.  Returns (left, right) deg/s
+    at `probe` per cell."""
+    from sensors.vp_input import OPTO_K
+    empty = TargetWorld(target=np.array([300.0, 0.0, 2.0]), obstacles=[])
+    keep = inp.opto_per_deg
+    inp.opto_per_deg = 0.0
+
+    def u(rows):
+        v = net.init_state(1)
+        inp.reset()
+        for _ in range(3):
+            d, _ = inp.drive(empty, p0, 0.0)
+            d[rows] += probe
+            v, r = step_circuit(net, v, d)
+        return math.degrees(gain * (steer(inp, r) - zero))
+
+    u0 = u(np.array([], dtype=int))
+    ul, ur = u(inp.opto_l) - u0, u(inp.opto_r) - u0
+    # a LEFT rotation must excite the side that turns the drone RIGHT
+    if ul < ur:
+        inp.opto_on_left, inp.opto_on_right = inp.opto_l, inp.opto_r
+    else:
+        inp.opto_on_left, inp.opto_on_right = inp.opto_r, inp.opto_l
+    slope = 0.5 * (abs(ul) + abs(ur)) / probe      # deg/s per unit drive
+    inp.opto_per_deg = OPTO_K / slope if slope > 0 else keep
+    return ul, ur
+
+
 def _finish(ag, w, rem, found, first, k):
     """Beacon bookkeeping shared by both loops."""
     i = ag.world.reached_any(ag.p)
@@ -375,6 +405,10 @@ def main(argv=None) -> int:
           % (ul, ur), flush=True)
     gain, cc, zero = calibrate(net, inp, info, w, p0)
     print("steering calibration: sweep r %+.2f, gain %.2e" % (cc, gain),
+          flush=True)
+    ol, orr = wire_opto(net, inp, gain, zero, p0)
+    print("optomotor -> HS/H2: left cells alone %+.0f, right %+.0f deg/s at "
+          "0.05/cell; %.2g per deg/s of rotation" % (ol, orr, inp.opto_per_deg),
           flush=True)
 
     rows, paths = [], {}
