@@ -17,3 +17,7 @@ results/subnet/*.pkl
 
 # ...except the sweep figures: they are the record the user reads
 !results/sweep_*.png
+
+# live viewer snapshot (cx_vp_room.py --live)
+results/live.json
+results/live.json.tmp

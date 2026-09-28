@@ -42,6 +42,32 @@ from cx_room import START, planner_for
 
 K_AVOID = 1.0                # 1/m: the centroid arm's threat bend
 MAX_STEPS = 1200             # 120 s; at 60 s the connectome was often still en route
+LIVE = None                  # --live: the file experiments/live_view.py watches
+LIVE_EVERY = 5               # control steps between snapshots (0.5 s)
+
+
+def _live(label, k, ag, w, sc, centres, u, cmd, found, final=False):
+    """Write the flight's current state for the live viewer (--live)."""
+    if LIVE is None or (k % LIVE_EVERY and not final):
+        return
+    import json
+    import os
+    snap = {"label": label, "t": round((k + 1) * DT, 1), "found": found,
+            "final": final, "collided": bool(ag.collided),
+            "path": ag.path_array()[:, :2].round(2).tolist(),
+            "heading": float(ag.heading), "u_deg": math.degrees(u),
+            "r_deg": math.degrees(cmd[0]), "v": cmd[1],
+            "beams": [None if not np.isfinite(b) else round(float(b), 2)
+                      for b in sc["beams"]],
+            "centres": [float(c) for c in centres],
+            "cue_deg": float(sc["scent"]) if sc["scent_mass"] > 0 else None,
+            "targets": [[float(t[0]), float(t[1])] for t in ag.world.all_targets()],
+            "all_targets": [[float(t[0]), float(t[1])] for t in w.all_targets()],
+            "obstacles": [[o.x, o.y, o.radius] for o in w.obstacles]}
+    tmp = str(LIVE) + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(snap, f)
+    os.replace(tmp, LIVE)
 # The number of sub-steps per control cycle now lives on the input, as
 # `VPInput.n_sub`, because it is the length of the drive sequence.
 
@@ -264,11 +290,16 @@ def fly(net, inp, info, w, heading, gain, zero, base, peak):
         stopped += int(v_cmd <= 0.0)
         inp.speed = max(ag.v, 0.2)
         ag.step(r_cmd, v_cmd, 0.0, DT)
+        label = "connectome, %d beams" % len(inp.cam.rangefinder.centres)
+        _live(label, k, ag, w, tr, inp.cam.rangefinder.centres, u,
+              (r_cmd, v_cmd), found)
         if ag.collided:
             break
         found, first, done = _finish(ag, w, rem, found, first, k)
         if done:
             break
+    _live(label, k, ag, w, tr, inp.cam.rangefinder.centres, u,
+          (r_cmd, v_cmd), found, final=True)
     corr = (float(np.corrcoef(bs, us)[0, 1])
             if len(bs) > 3 and np.std(us) > 0 else float("nan"))
     out = _row(ag, found, first, k, seen, stopped, corr, w)
@@ -303,6 +334,9 @@ def fly_reference(w, heading, centres, k_yaw=0.05, planner=None):
                               pose=(ag.p[0], ag.p[1], ag.heading))
         stopped += int(v_cmd <= 0.0)
         ag.step(r_cmd, v_cmd, 0.0, DT)
+        label = "%s, %d beams" % ("planner" if planner else "centroid",
+                                  len(centres))
+        _live(label, k, ag, w, sc, centres, u, (r_cmd, v_cmd), found)
         if ag.collided:
             break
         n0 = found
@@ -311,6 +345,7 @@ def fly_reference(w, heading, centres, k_yaw=0.05, planner=None):
             break
         if planner and found != n0:
             cmd = planner(ag.world)
+    _live(label, k, ag, w, sc, centres, u, (r_cmd, v_cmd), found, final=True)
     return _row(ag, found, first, k, seen, stopped, float("nan"), w)
 
 
@@ -318,7 +353,12 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--room", type=int, default=0)
     ap.add_argument("--beams", default="0,1,3,6,12,24")
+    ap.add_argument("--live", action="store_true",
+                    help="write results/live.json for experiments/live_view.py")
     args = ap.parse_args(argv)
+    global LIVE
+    if args.live:
+        LIVE = REPO / "results" / "live.json"
 
     t0 = time.perf_counter()
     net, ann, sub, info = build_vp_subnet()
