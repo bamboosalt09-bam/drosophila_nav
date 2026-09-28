@@ -81,7 +81,11 @@ python -m venv .venv
 
 Also ignored and rebuilt on demand: the fisheye extension (`build_cpp.bat`,
 needs MSVC), subnet pickles in `results/subnet/`, training clips in
-`results/clips/`, and result images (`*.png`).
+`results/clips/`, and result images (`*.png`) except the sweep figures
+`results/sweep_*.png`.
+
+Where the work stands and how to resume: `docs/HANDOFF.md`, section
+"2026-09-28 — Structure B" (and `CLAUDE.md` for a new Claude session).
 
 ## Run
 

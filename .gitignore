@@ -14,3 +14,6 @@ build/
 # subnet pickles (src/core/subnet_file.py rebuilds them on first use)
 results/clips/
 results/subnet/*.pkl
+
+# ...except the sweep figures: they are the record the user reads
+!results/sweep_*.png

@@ -3,6 +3,11 @@
 `provenance/reproduction_adjustments.yaml` is the full record; this says where
 the work stands and what to do next.
 
+**Latest state: 2026-09-28, "Structure B" (below the goal section).**  Read
+the goal section, then that section, then "Working with this user".  The
+pending decision is at the end of the 2026-09-28 section: do not start coding
+before the user answers it.
+
 # THE RESEARCH GOAL — read this before doing anything
 
 **This section exists because it was missing, and its absence cost a whole
@@ -146,6 +151,203 @@ Everything here is something a previous session drifted into:
   too; the plant is abstract on purpose.
 - polishing the 3D visualisation.  The user: *"3D 영상의 완성도를 높이는 작업은
   현재의 과학적 불확실성을 해결하는 우선 과제는 아닙니다."*
+
+## 2026-09-28 — Structure B: the fly proposes, the drone follows
+
+### The premise, in the user's words — every design choice answers to this
+
+> 초파리가 예상 경로를 지정해주면 그걸 드론이 현실적인 조건 하에서 경로를
+> 수정해 따라가는 거  *(2026-09-28)*
+
+> 나는 센서를 최소화해도 작동은 되게 하고 싶었거든.  *(2026-09-28)*
+
+> 초파리는 벽에 앉아도 되지만 드론은 안되니까. 거리 센서 넣어봐  *(2026-09-28)*
+
+I spent days making the fly circuit do collision avoidance by itself.  That
+was the wrong division of labour.  The user chose **structure B** ("당연히 B로
+가야하고"):
+
+    fisheye + rangefinder ─► connectome (VP subnet) ─► intended turn u
+                                                         │
+                         drone layer (sim/drone_layer.py, SAME for every arm)
+                         ─► yaw rate r, speed v within airframe limits
+
+* The fly is the drone's onboard brain.  It says where it wants to go
+  (intended turn, unlimited rate).  It does **not** get a flyable path handed
+  to it and it does **not** need to avoid walls perfectly.
+* The drone layer turns the intent into a feasible motion: speed from the
+  predicted collision along the intended arc, stop, committed turn when
+  blocked, back-off with a clear rear.  **It never chooses direction** —
+  direction belongs to the proposer.  (Rejected alternative A: a virtual fly
+  flying ahead of the drone.  Its camera would have to be where no camera is;
+  impossible on a real drone.)
+* Arms compared, all on the same drone layer and sensors: **connectome**,
+  **planner** (knows the whole map — an upper bound, not an AI baseline),
+  **centroid** (reactive: turn toward the bright blob, bend away from threat).
+
+### What is in the loop now (read these files first)
+
+| File | Role |
+|---|---|
+| `experiments/cx_vp_room.py` | the experiment.  `--room N --beams 0,1,3,6,12,24`.  Writes `results/sweep_beams_room{N}.csv`, `results/paths_room{N}.npz` (overwritten each run — copy to `_vNN` to keep) |
+| `src/sim/drone_layer.py` | `follow(u, pts, rear, mem, pose)` — the drone layer.  `demo()` asserts its behaviour |
+| `src/sensors/rangefinder.py` | HC-SR04-class ring: 15° cones, 0.02–4 m, 2 cm noise, beacons do not echo.  `LAYOUTS` 0/1/3/6/12/24.  Rear sector = beams with \|c\| ≥ 150° (only 6+ have one) |
+| `src/sensors/vp_input.py` | camera + rangefinder → neurons; readouts |
+| `src/sensors/fisheye.py` | `sense()`; odour cue = **strongest single blob** (winner-take-all) |
+| `src/sensors/_fisheye_cpp/` | C++ renderer, `build_cpp.bat` (MSVC + pybind11) → `_fisheye.cp313-win_amd64.pyd` |
+| `src/environment/room_file.py` | rooms as files, `results/rooms/room{N}.npz`; `FLY_CLEARANCE = 0.5`; rooms 0,5,6,7 re-flagged (old flags in `results/rooms_bak/`) |
+| `src/core/subnet_file.py` | subnet pickle cache `results/subnet/vp_h4_rho0.50_*.pkl` (rebuilt on first run) |
+| `experiments/diag/` | the diagnostics behind every number below (`diag_*.py`) and the figure scripts (`plot_v4.py`, `plot_room6.py BEFORE AFTER`) |
+
+Circuit wiring (MaleCNS VP subnet, 34,125 neurons, 9,188 visual projection
+neurons injected, ρ 0.50):
+
+| Signal | Enters / read from | Notes |
+|---|---|---|
+| scene luminance | VP neurons by measured receptive field | unchanged from 09-20 |
+| odour cue (virtual attraction cue) | ORN | strongest blob only.  The intensity-weighted mean pointed *between* beacons, 24–34° off the nearest in the first seconds; WTA: 83% → **100%** within 15° of the nearest |
+| threat | **LC4 + LPLC2 (311 cells)**, each cell from the beam **nearest its own receptive direction** | looming, not nearness: `min((0.75 s / ttc)², 4)`, `ttc = range / (speed · cos bearing)`.  Side wall at 90° = 0 |
+| intended turn | **DNa01/DNa02** (L2 / R2) only | the pooled 1,304-DN readout turned LC4 threat into a 4,000 °/s turn *toward* the wall |
+| escape | DNp01/02/04/06/11 | **recorded only**, not used in control |
+| gyro | Johnston's organ push-pull (user's choice) | measured ~0 effect on DNa01/02 (±0.3 °/s).  Left as is; ask before rerouting |
+| alternation push | PFL3, calibrated at run start (0.02/cell ≈ 72 °/s) | see the open problem below |
+
+Drone layer constants: `R_MAX 90°/s`, `D_STOP 0.45 m` (body 0.25 + 0.2),
+`V_BACK −0.4 m/s` only if rear > D_STOP, `SWEPT 0.40 m` half-width,
+`A_BRAKE 2 m/s²` (half the airframe's 4), `V_CRUISE 2 m/s`, speed
+`v = min(2, √(2·2·(d_hit − 0.45)), R_MAX/|k|)`, in-place turn at the full
+intended rate when v < 0.3, committed saccade until 0.75 m open ahead, 2 s
+world-frame obstacle memory.  Flights are 120 s (1,200 steps).
+
+### Version history (room 6 unless stated; "found" of the reachable beacons)
+
+Keep this table growing.  Each version changed the listed things and nothing
+else; every earlier CSV/NPZ is kept as `results/*_vNN.*`.
+
+| Ver | Change | Connectome found, beams 0/1/3/6/12/24 |
+|---|---|---|
+| v1 | structure B, room 0, 60 s, pooled DN steering | 3/3/0/0/0/0 of 5 (3+ beams: stalled, turning into walls) |
+| v2 | threat per cell by direction; steering from DNa01/02 | 1c/1/4/3/0/– (threat readout silently off; run cut by Python loss) |
+| v3 | threat calibration defined in the circuit (L 0.229, R 0.177) | 3/3/3/2/1/2 of 5, **0 collisions** |
+| v4 | **4 rooms (0,5,6,7)**, 120 s, D_STOP 0.8→0.45, reach clearance 1.4→0.5, reachable/walled counted apart | totals of 23: conn 6c/4/9/10/11/13 · planner 12c/15/15/15/15/14 · centroid 3c/7/10/8/8/9 |
+| v5 | stalled → in-place turn at intended rate; committed saccade | 0c/**6**/5/3/1/2 (was 0c/0/2/0/1/2) |
+| v6 | speed from predicted collision on the intended arc (was ±60° nearest range) | 5/5/5/5/5/5, 0 collisions, 184–203 m (was 44–151) |
+| v7 | each LC4/LPLC2 cell takes its nearest beam (12 beams had fed 135/311 cells, 24 fed all 311 → threat doubled with beam count) | 5/5/5/5/5/5 |
+| v8 | alternation v1: JO push after a 10 s leaky integral of 360° | 5/5/5/5/5/5 — **never fired** |
+| v9 | threat = looming; drone layer's threat bend removed (centroid keeps its own, `K_AVOID`); odour WTA; alternation over a 20 s window; 2 s obstacle memory; `od_l/od_r` rename | 0c/5/**6**/**6**/5/5 (only v5 1-beam had reached all 6 before) |
+| v10 | alternation push moved JO → PFL3 (JO measured ~0 on DNa) | 0c/5/6/5/5/3; fired 1/0/3/1/3 — corridor loop broken but sweeps wrecked |
+| v11 | alternation only if the last full turn stayed within 3 m | 0c/5/6/6/5/5; fired 1/0/0/0/0 — 12-beam corridor loop not caught |
+
+Figures for each row: `results/sweep_vNN_paths_room6.png` (all arms × beams)
+and `results/sweep_vNN_connectome_*_vs_vNN_room6.png` (before/after);
+v4: `results/sweep_v4_paths_room{0,5,6,7}.png`, `sweep_v4_summary.png`.
+
+`c` = collided.  Planner and centroid from v9 on: 5 and 4 at every beam count
+≥ 1, both collide at 0 beams.
+
+### What is settled, with the number
+
+* **Zero range sensors is not enough.**  v4: every arm collided in all four
+  rooms at 0 beams.  The 0-beam successes in room 6 (v6–v8) were luck: fastest
+  and straightest (1.69 m/s, 21°/m turning vs 29–35°/m with beams) and the
+  *averaged* odour cue happened to keep it 0.82 m from walls; with WTA it
+  grazed a pillar (0.27 m) and hit.  `diag/diag_zero.py`.
+* **Rear beams matter more than beam count.**  1 and 3 beams have no rear
+  beam, so no back-off: 70–82% of the flight stalled in corners (v4, rooms
+  5–7) until the in-place-turn fix.  `diag/diag_trap.py`.
+* **The in-place turn had been cut to 15% of intent** (`k × 0.3 m/s`).  Fixed
+  in v5.  Before it (room 5, 3 beams) the longest stall was 58 s with 0° net turn.
+* **More beams made it slower** because the old speed law braked for side walls
+  inside ±60°.  Path-based speed (v6) removed the paradox.
+* **Signal strength must not depend on beam count** (user: "신호로 들어가는
+  세기는 동일하게 해야지").  Nearest-beam per cell (v7).
+* **Reached beacons already disappear** (`_finish()` rebuilds the world).
+  Lingering near them (conn 18%, centroid 17%, planner 8% of time within 3 m
+  after 2 s) is corners/pockets, not attraction.
+* **Paths are chaotic.**  12 vs 24 beams diverged 3.4 s after start.  One
+  flight per condition cannot rank versions; differences of ±1 beacon are
+  noise.
+* **Training was tried and dropped** (before structure B): 327 cell-type parameters
+  (log_tau, bias, log_gain × 109 groups) on the 68,045-neuron optic-lobe
+  subnet.  Steering over-fitted (held-out r 0.175); looming never learned
+  (r −0.085 → +0.029, then brake-only head also failed).  Gradient window was
+  30 ms against a 100 ms frame — a known flaw if this is revisited.  That is
+  why range comes from a sensor.
+* **CO₂/olfactory neurons as avoidance input: rejected by the user** ("이산화탄소
+  감지 뉴런 말고 다른 뉴런으로").  All VP types *attract* when excited; the
+  sign-correct avoidance route is LC4/LPLC2 → DNa, which is what is used.
+
+### OPEN — the decision waiting on the user (2026-09-28)
+
+**The loop problem.**  After 5 beacons the 12/24-beam flights circle in the
+left corridor of room 6 for the last ~40 s.  Two geometric triggers failed:
+angle only (v10) fired on normal room-scale sweeps and broke good routes;
+angle + 3 m radius (v11) missed the corridor loop, whose turns span 5.2–5.7 m.
+Offline (`diag/diag_spread.py`): the start-to-end gap of each full turn is
+0.0–2.5 m in the corridor loop and mostly 3–26 m in sweeps, but some sweeps
+also close at 0.2–0.4 m (in-place rotations).  Any threshold is fitted to room 6.
+
+The user asked: **"애초에 반경과 각변위로 설정하려는 시도가 잘못되었을지도...?"**
+My answer (agreed in substance, awaiting their choice):
+
+1. What I built is an anti-circling device, not spontaneous alternation.  Real
+   alternation is a 1-bit memory at **choice points** ("last time I turned
+   left → now right").  Candidate: at the moment a committed saccade starts,
+   bias PFL3 opposite to the previous saccade.  No threshold.  May not break
+   this loop (it circles without being blocked).
+2. The loop is probably caused by the **odour cue pulling toward a beacon
+   visible through the partition**; reversing the turn does not remove the
+   pull (v10 reversed it and the loop came back).  Candidate: **ORN
+   adaptation** — a cue held for a long time fades, recovers when the scene
+   changes.  Targets the cause, no geometric threshold.
+
+Recommended: remove the geometric alternation, try (2) alone on room 6, then
+(1) separately.  **Nothing is implemented yet.**  After that, finish 2D with
+the proper evaluation: rooms 0/5/6/7 × 4 start headings × beams 1/6/24 ×
+alternation on/off, then path efficiency (path length / shortest path).
+
+Later, the user's curiosity: 3D.  Today it is 2D flight in a 3D world (climb
+command always 0; horizontal beams only).  First step would be to measure
+whether the circuit gives an up/down signal at all (DNs split by receptive
+elevation, beacons above/below) before building anything.
+
+### Working with this user — rules learned the hard way
+
+These were stored in Claude's local memory on the original PC; they are
+copied here so a new chat does not lose them.
+
+* **Read the code before running anything.**  Write down the number you
+  expect before launching a simulation; if you cannot predict it, the
+  experiment is not designed yet.  Runs cost the user minutes; reading costs
+  nothing.  n = 1–3 is not a measurement.
+* **One room, fast cycles** while debugging (room 6 is the worst case and the
+  current bench).  Widen to four rooms only when the behaviour works.
+* **Do not fix what was not asked** ("고치라고 말도 안 했는데 왜 고치는데?").
+  Propose, predict, wait for the yes.  When the user asks for a list of fixes
+  to be done together (e.g. "V9에서 남은 문제점 좀 수정해보자"), do all of
+  them *before* running.
+* **"멈춰" means stop immediately** and listen.
+* **Show results as images** (path grids, before/after) — the user reads
+  paths, and caught several bugs from them.  Save every run as `_vNN` before
+  the next one overwrites it.
+* Answer in Korean; the user addresses decisions directly and expects a
+  recommendation, not a survey.
+* The master design document is
+  `C:\Users\최성준\Downloads\drosophila_navigation_handoff_master.md` (not in
+  this repo).  Its decisions are settled.
+
+### Reproduce the current numbers
+
+```bash
+PYTHONPATH=src .venv/Scripts/python.exe -m sim.drone_layer
+PYTHONPATH=src .venv/Scripts/python.exe -m sensors.rangefinder
+.venv/Scripts/python.exe experiments/cx_vp_room.py --room 6 > results/sweep_v12_room6.log
+.venv/Scripts/python.exe experiments/diag/plot_room6.py v11 v12
+```
+
+The first two lines are the self-checks (both print "demo ok").  A full room-6 sweep takes
+about 5 minutes; the first run on a new machine also rebuilds the subnet
+cache.
 
 ## 2026-09-20 — sensing rebuilt end to end
 
