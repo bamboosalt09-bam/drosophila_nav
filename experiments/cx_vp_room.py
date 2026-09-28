@@ -67,7 +67,12 @@ def _live(label, k, ag, w, sc, centres, u, cmd, found, final=False):
     tmp = str(LIVE) + ".tmp"
     with open(tmp, "w") as f:
         json.dump(snap, f)
-    os.replace(tmp, LIVE)
+    try:
+        os.replace(tmp, LIVE)
+    except PermissionError:
+        # Windows: the viewer has the file open this instant.  Skip this
+        # snapshot -- a live view must never stop a flight (it did, at 40 s).
+        pass
 # The number of sub-steps per control cycle now lives on the input, as
 # `VPInput.n_sub`, because it is the length of the drive sequence.
 
