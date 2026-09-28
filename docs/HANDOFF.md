@@ -219,6 +219,25 @@ Drone layer constants: `R_MAX 90°/s`, `D_STOP 0.45 m` (body 0.25 + 0.2),
 intended rate when v < 0.3, committed saccade until 0.75 m open ahead, 2 s
 world-frame obstacle memory.  Flights are 120 s (1,200 steps).
 
+### INPUTS — the current spec (2026-09-28, after the cleanup; read this, not the history)
+
+Four sensors, four routes, one strength each.  No mirror twin, no ORN.
+Measured alone, same baseline, stimulus left / right (`diag/diag_inputs.py`,
+u in deg/s, + = left):
+
+| input | sensor → neurons | drive | left / right | L+R |
+|---|---|---|---|---|
+| vision | fisheye → 9,188 VP cells by wiring-derived receptive field | `(lum − mean) · 0.2`, equal total per 10° mirror band, prev→cur ramp over 20 sub-steps | pillar 45°, 2.5 m: −22.7 / +13.5 (away ✓) | −9.2 |
+| threat | rangefinder → 311 LC4/LPLC2, each from the beam nearest its direction | `0.5 · min((0.75 s / ttc)², 4)`, equal total per 10° band | same pillar at 2 m/s: −44.8 / +36.2 (away ✓) | −8.7 |
+| goal cue | strongest bright blob → PFL3, push-pull by bearing | `0.01 · m/(m+0.0007)` per cell, equal per side; polarity measured per run | beacon 60°, 10 m: +21.0 / −24.9 (toward ✓) | −3.9 |
+| gyro | IMU yaw → JO push-pull | base 1.0 ± yaw/90°/s | ±90 °/s: −0.2 / +0.2 | **dead** |
+
+Readout: DNa01/02 right − left, gain and zero from a beacon sweep
+(`calibrate`).  Escape DNp01/02/04/06/11 recorded only.  Residual right
+bias ≈ −9 °/s on vision and threat (the circuit's own; input totals are
+equal).  Open for the user: what to do with the dead gyro input; whether
+the relative strengths (threat ≈ 2× vision) are what is wanted.
+
 ### Version history (room 6 unless stated; "found" of the reachable beacons)
 
 Keep this table growing.  Each version changed the listed things and nothing

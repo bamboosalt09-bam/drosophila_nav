@@ -219,19 +219,12 @@ class VPInput:
         # 0, i.e. at -145 deg; they now read nothing instead.
         self._az_ok = np.isfinite(az) & np.isfinite(el)
         self._vp_w = mirror_weights(az)
-        # the MIRROR TWIN reads each cell's pixel at -az: the mirror image
-        # of the scene, exactly, because the camera's azimuth grid is
-        # symmetric about 0
-        self._px_m = self.cam.bind(-np.nan_to_num(az), np.nan_to_num(el))
-        # MIRROR TWIN.  When True, drive() also builds `d_mirror`, the drive
-        # this circuit would receive in the mirror-image world, and the
-        # runner steers on (turn - mirror turn) / 2.  The circuit is not
-        # mirror-symmetric even with equal input per side: a corridor with a
-        # wall 1.5 m on each side turned it -34 deg/s and in room 6 that made
-        # a clockwise orbit at every beam count, 0 beams included.  A real
-        # fly is bilaterally symmetric; the residue is the reconstruction's.
-        self.twin = False
-        self.d_mirror = None
+        # A MIRROR TWIN lived here (v14-v16): a second copy of the circuit
+        # fed the mirror image, steering on (turn - mirror turn) / 2.  It
+        # removed the circuit's left/right bias exactly, and with it every
+        # signal a symmetric scene carries -- a wall dead ahead gave 0 deg/s
+        # all the way in.  Removed once the drone layer took over modifying
+        # the path around walls.  git has it.
 
         ct = ann["cell_type"].astype(str).to_numpy(dtype="<U48")
         side = ann["side"].to_numpy(dtype="<U16")
@@ -270,7 +263,6 @@ class VPInput:
 
     def reset(self) -> None:
         self._prev_val = None
-        self._prev_val_m = None
 
     def drive(self, world, position, heading_rad):
         # One compiled sweep returns the unlit scene, the per-azimuth range
@@ -291,21 +283,15 @@ class VPInput:
              if self.fixed_strength is None else self.fixed_strength)
         # gyro: opposing push-pull on JO; + yaw is a LEFT turn
         g = float(np.clip(-self.yaw_rate / GYRO_FULL, -1.0, 1.0))
-        d = self._build(scene[self._px], self.thr_az, frac, g, s, beams_m,
-                        cen, "_prev_val")
-        if self.twin:
-            # the mirror world: every azimuth negated, left and right swapped
-            self.d_mirror = self._build(scene[self._px_m], -self.thr_az,
-                                        -frac, -g, s, beams_m, cen,
-                                        "_prev_val_m")
+        d = self._build(scene[self._px], frac, g, s, beams_m, cen)
         return d, {"bearing": r["bearing"], "scent": scent,
                    "scent_mass": scent_mass,
                    "blocked": r["blocked"], "weight": r["weight"],
                    "rear": r["rear"], "threat_in": (a_l, a_r),
                    "beams": beams_m}
 
-    def _build(self, lum, thr_az, frac, g, s, beams_m, cen, prev_attr):
-        """The drive for one view of the world (as seen, or its mirror)."""
+    def _build(self, lum, frac, g, s, beams_m, cen):
+        """The drive for one control cycle, one column per sub-step."""
         # contrast, as the lamina transmits it: a uniform scene has no
         # direction in it and must not drive anything
         lum = lum - lum.mean()
@@ -318,9 +304,8 @@ class VPInput:
         # differentiation is left to the circuit's own dynamics.  Costs one
         # frame of delay, which every real camera pipeline has.
         val = lum * self.drive_gain * self._az_ok * self._vp_w
-        prev = getattr(self, prev_attr, None)
-        prev = prev if prev is not None else val
-        setattr(self, prev_attr, val)
+        prev = self._prev_val if self._prev_val is not None else val
+        self._prev_val = val
         ramp = np.linspace(1.0 / self.n_sub, 1.0, self.n_sub)
         seq = prev[:, None] * (1.0 - ramp) + val[:, None] * ramp
 
@@ -334,7 +319,7 @@ class VPInput:
         # in.  Fewer beams now means coarser angular resolution, not weaker
         # threat.
         if len(cen):
-            gap = np.abs((thr_az[:, None] - cen[None, :] + 180.0)
+            gap = np.abs((self.thr_az[:, None] - cen[None, :] + 180.0)
                          % 360.0 - 180.0)
             nb = np.argmin(gap, axis=1)
             s_cell = looming(beams_m[nb], cen[nb], self.speed)

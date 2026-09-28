@@ -4,8 +4,9 @@ The drone flies straight at 2 m/s toward a wall (a row of pillars) from 7 m
 away, heading fixed -- no drone layer, nothing steers -- and the intended
 turn u is logged every cycle.  The wall is square to the path (0 deg) or
 rotated so that its LEFT end is nearer (+15, +30) or its right end (-15);
-"away" is then a right or a left turn.  12 beams.  Run with the mirror
-twin on and off.  u > 0 is a LEFT turn.
+"away" is then a right or a left turn.  12 beams.  u > 0 is a LEFT turn.
+2026-09-28 with the mirror twin ON (since removed): a wall dead ahead gave
+0 all the way in; the +-15 deg wall's avoidance faded below 1.3 m.
 """
 import math
 import sys
@@ -37,21 +38,19 @@ def wall(dist, ang_deg):
             for s in np.arange(-8.0, 8.01, 0.8)]
 
 
-for twin in (True, False):
-    inp.twin = twin
+for _ in (0,):
     C.wire_cue(net, inp, info, p0)
     gain, cc, zero = C.calibrate(net, inp, info, None, p0)
     inp.cam.rangefinder = Rangefinder(inp.cam.a, LAYOUTS[12])
     inp.speed = 2.0
-    print("\n=== mirror twin %s" % ("ON" if twin else "OFF"))
     for ang in (0, 15, 30, -15):
-        v = net.init_state(2 if twin else 1)
+        v = net.init_state(1)
         inp.reset()
         x, rows = 0.0, []
         for k in range(40):
             wld = TargetWorld(target=far, obstacles=wall(7.0, ang))
             d, tr = inp.drive(wld, np.array([x, 0.0, 2.0]), 0.0)
-            v, r = C.step_circuit(net, v, C.twin(inp, d))
+            v, r = C.step_circuit(net, v, d)
             rows.append((tr["beams"][front],
                          math.degrees(gain * (C.steer(inp, r) - zero))))
             x += 0.2

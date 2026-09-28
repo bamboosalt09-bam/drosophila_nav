@@ -1,7 +1,7 @@
-﻿"""Re-create one moment of a saved flight and split the intended turn.
+"""Re-create one moment of a saved flight and split the intended turn.
 
 usage: diag_pose.py VER BEAMS T   (room 6, connectome path)
-Static: the circuit settles 3 cycles from rest at that pose, twin on, with
+Static: the circuit settles 3 cycles from rest at that pose, with
 the remaining beacons as they were.  Each input is removed in turn.
 """
 import math
@@ -24,7 +24,6 @@ from sensors.vp_input import VPInput
 VER, BEAMS, T = sys.argv[1], int(sys.argv[2]), float(sys.argv[3])
 net, ann, sub, info = build_vp_subnet()
 inp = VPInput(net, ann, info)
-inp.twin = True
 net.freeze_params(5.0)
 w, h, reach = room(6)
 C.wire_cue(net, inp, info, np.array(C.START))
@@ -44,14 +43,13 @@ inp.speed = float(np.hypot(*d) / 0.1)
 
 
 def u(drop=()):
-    v = net.init_state(2)
+    v = net.init_state(1)
     inp.reset()
     for _ in range(3):
         dd, tr = inp.drive(wld, p, hd)
         for rows in drop:
             dd[rows] = 0.0
-            inp.d_mirror[rows] = 0.0
-        v, r = C.step_circuit(net, v, C.twin(inp, dd))
+        v, r = C.step_circuit(net, v, dd)
     return math.degrees(gain * (C.steer(inp, r) - zero)), tr
 
 

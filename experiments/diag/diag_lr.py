@@ -1,4 +1,4 @@
-﻿"""Left/right symmetry of every input and readout the loop uses (no flight)."""
+"""Left/right symmetry of every input and readout the loop uses (no flight)."""
 import sys
 from pathlib import Path
 
