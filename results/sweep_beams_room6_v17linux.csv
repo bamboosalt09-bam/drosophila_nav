@@ -1,0 +1,4 @@
+found,first,steps,reached,collided,cue_frac,stopped,dist,corr,threat_mean,room,beams,arm,reachable,found_ok,found_walled
+5,85,1200,0 1 3 4 5,False,0.2833333333333333,0.0,216.7123338320688,0.2826646123561092,0.08429132761039697,6,24,connectome,6,5,0
+5,66,1200,0 1 3 4 5,False,0.405,0.0,237.33666666666667,,,6,24,planner,6,5,0
+4,97,1200,0 1 3 4,False,0.9458333333333333,0.0,230.86005954170756,,,6,24,centroid,6,4,0

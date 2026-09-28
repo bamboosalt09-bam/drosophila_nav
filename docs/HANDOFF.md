@@ -281,6 +281,17 @@ after the 5th beacon 98% of turns are right (v16: 85%), −38 °/s with the
 column 2–4 m ahead.  Prediction (right share down to 50–65%) FAILED.  The
 orbit is not a small drift the reflex can null: it is a steady right turn
 around the pillar column that the reflex only halves.  Not yet diagnosed.
+(A proportional reflex can only scale a standing bias b to b/(1+K) = 67% at
+K = 0.5; it cannot null it.  The prediction was wrong, not the reflex.)
+
+**v17 on Linux (cloud session, g++ build of the fisheye extension):**
+calibration numbers identical, planner bit-identical, centroid within 6 cm.
+The connectome flight matches Windows to < 1 cm for 57.4 s (all 5 beacons,
+same times), then diverges: after one lap round the left column it LEAVES
+the orbit and tours the right half (after 40 s: 68% right turns, mean −6 °/s,
+x up to +15.6; Windows: 87%, −23 °/s, x ≤ −8.3).  So the orbit is not a
+trap every flight falls into: a sub-centimetre difference decides it.  The
+98% of v17 is one realisation.  `sweep_v17linux_*`, `paths_room6_v17linux`.
 
 ### Version history (room 6 unless stated; "found" of the reachable beacons)
 

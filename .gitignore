@@ -24,4 +24,5 @@ results/live.json.tmp
 
 # committed on purpose, so a fresh clone runs without the 2 GB connectome or MSVC:
 !src/sensors/_fisheye_cpp/_fisheye.cp313-win_amd64.pyd
+!src/sensors/_fisheye_cpp/_fisheye.cpython-313-x86_64-linux-gnu.so
 !results/subnet/vp_h4_rho0.50_ol_intrinsic.pkl

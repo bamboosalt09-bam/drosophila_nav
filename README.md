@@ -81,6 +81,21 @@ extension built for CPython 3.13 / win_amd64
 neither MSVC nor the 2 GB connectome is needed.  Watch a flight with
 `experiments/live_view.py` and `--live` (see `CLAUDE.md`).
 
+On Linux (the cloud sessions), Python 3.13: the repo also carries
+`_fisheye.cpython-313-x86_64-linux-gnu.so` (g++ 13, `-O3 -ffast-math`; rebuild
+with `.venv/bin/python src/sensors/_fisheye_cpp/build.py`).
+
+```bash
+uv venv --python 3.13 .venv
+VIRTUAL_ENV=.venv uv pip install -r requirements.txt   # torch from PyPI
+PYTHONPATH=src .venv/bin/python -m sim.drone_layer
+.venv/bin/python experiments/cx_vp_room.py --room 6
+```
+
+It reproduces v17 exactly for planner and centroid; the connectome flight
+matches to < 1 cm for 57 s, then diverges (float order differs; paths are
+chaotic).  Room-6 run: 91 s on 4 cores.
+
 Where the work stands and how to resume: `docs/HANDOFF.md` (start with
 "INPUTS" and "DRONE LAYER" in the 2026-09-28 section), `CLAUDE.md` for a
 new Claude session, and the settled research design in

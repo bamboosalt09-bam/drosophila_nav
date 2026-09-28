@@ -1,0 +1,11 @@
+34125 neurons, 1086631 edges (1 s); threat in: 311 LC4/LPLC2 cells by direction; escape out L5 R5; steer from DNa01/02 L2 R2
+goal cue -> PFL3: left side alone turns -88, right +70 deg/s
+steering calibration: sweep r -0.75, gain -4.47e+03
+optomotor -> HS/H2: left cells alone +35, right -35 deg/s at 0.05/cell; 0.00071 per deg/s of rotation
+
+beams arm          reach'ble   walled  collided  steps  stopped  dist m
+   24 connectome        5/6         0     False   1200       0%   216.7
+   24 planner           5/6         0     False   1200       0%   237.3
+   24 centroid          4/6         0     False   1200       0%   230.9
+      (81 s; escape base L0.000 R0.000, peak L0.229 R0.177)
+wrote sweep_beams_room6.csv
