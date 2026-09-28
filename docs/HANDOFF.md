@@ -436,6 +436,15 @@ partly met).  Remaining: the 6th beacon behind the upper partition is
 never found — once nothing is in view the drone wanders the lower half and
 never goes round the left end.  24 beams lost the 6/6 of v14.  0 beams
 still hits the partition at 3 s.
+**Correction (user: "아까보다 훨씬 악화됐는데"):** the whole-flight averages
+above hid what the pictures show.  v15 24 beams took its 5 beacons FASTER
+(by 41 s; v14 by 50 s) and then wandered the lower half for the remaining
+79 s with nothing in view — that wander is the "mess".  v14 24 beams went
+up the left side after its 5th and took the 6th at 79 s.  v14 went round
+the left end at 1, 6 and 24 beams; v15 at none.  In the no-cue phase the
+only differences are the steering gain (−4.47e3 vs −5.41e3: every non-cue
+turn 17% weaker) and where the phase starts.  One flight each: not yet
+separable from chance.
 
 (Superseded proposal, kept for the record:) a *mirror twin* — run a second copy of the
 circuit on the mirror image of every input (camera flipped, beams flipped,
