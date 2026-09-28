@@ -97,6 +97,34 @@ def looming(rng, bearing_deg, speed):
     return np.minimum((THREAT_TTC / ttc) ** 2, THREAT_MAX)
 
 
+MIRROR_BAND = 10.0           # deg
+
+
+def mirror_weights(az, band=MIRROR_BAND):
+    """Per-cell input weight so a mirror image gets the same TOTAL drive.
+
+    Within each azimuth band, the cells looking at +az and those at -az
+    often differ in number (LC4+LPLC2 are 165 left vs 146 right), so the
+    same stimulus on the other side arrived stronger or weaker purely by
+    count.  Each cell's share is scaled by (mean count of the pair) / (its
+    side's count) -- the rule the odour and gyro inputs already follow per
+    side.  Cells without a direction, or whose mirror band is empty, keep 1.
+
+    ponytail: azimuth only; elevation bands are not balanced.
+    """
+    az = np.asarray(az, dtype=float)
+    w = np.ones(len(az))
+    ok = np.isfinite(az)
+    idx = np.where(ok, np.floor(np.abs(az) / band), -1).astype(int)
+    pos, neg = ok & (az >= 0), ok & (az < 0)
+    for b in np.unique(idx[ok]):
+        p, n = pos & (idx == b), neg & (idx == b)
+        if p.any() and n.any():
+            m = 0.5 * (p.sum() + n.sum())
+            w[p], w[n] = m / p.sum(), m / n.sum()
+    return w
+
+
 def threat_level(beams, centres_deg, speed):
     """(left, right): the strongest looming reading on each side."""
     if not len(beams):
@@ -168,6 +196,7 @@ class VPInput:
         # wiring (NaN).  Casting NaN to int silently pointed them at column
         # 0, i.e. at -145 deg; they now read nothing instead.
         self._az_ok = np.isfinite(az) & np.isfinite(el)
+        self._vp_w = mirror_weights(az)
 
         ct = ann["cell_type"].astype(str).to_numpy(dtype="<U48")
         side = ann["side"].to_numpy(dtype="<U16")
@@ -186,6 +215,7 @@ class VPInput:
         cand = cand[np.isfinite(az_full[cand])]
         self.thr_rows = cand
         self.thr_az = az_full[cand]
+        self._thr_w = mirror_weights(self.thr_az)
         is_st = np.isin(ct, STEER_TYPES)
         self.steer_l = np.flatnonzero(is_st & (side == "left"))
         self.steer_r = np.flatnonzero(is_st & (side == "right"))
@@ -236,7 +266,7 @@ class VPInput:
         # the sequence is constant there and calibration is unchanged, while
         # the same pose reached by closing versus opening now reads
         # differently, which it could not before.
-        val = lum * self.drive_gain * self._az_ok
+        val = lum * self.drive_gain * self._az_ok * self._vp_w
 
         prev = self._prev_val if self._prev_val is not None else val
         self._prev_val = val
@@ -263,7 +293,7 @@ class VPInput:
         else:
             s_cell = np.zeros(len(self.thr_rows))
         d[self.thr_rows] += torch.from_numpy(
-            (THREAT_GAIN * s_cell).astype(np.float32))[:, None]
+            (THREAT_GAIN * self._thr_w * s_cell).astype(np.float32))[:, None]
 
         # THE ODOUR CHANNEL IS NOT THE VISION CHANNEL.
         #
@@ -297,3 +327,17 @@ class VPInput:
                    "blocked": blocked, "weight": weight,
                    "rear": r["rear"], "threat_in": (a_l, a_r),
                    "beams": beams_m}
+
+
+def demo() -> None:
+    """mirror_weights: equal total per mirror band, whatever the counts."""
+    az = np.array([5.0, 6.0, 7.0, -5.0, 25.0, -25.0, -26.0, 40.0, np.nan])
+    w = mirror_weights(az)
+    assert abs(w[:3].sum() - w[3]) < 1e-12            # 3 cells vs 1 cell
+    assert abs(w[4] - w[5:7].sum()) < 1e-12           # 1 vs 2
+    assert w[7] == 1.0 and w[8] == 1.0                # no mirror / no direction
+    print("vp_input demo ok")
+
+
+if __name__ == "__main__":
+    demo()

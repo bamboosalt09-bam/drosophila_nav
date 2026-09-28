@@ -365,6 +365,16 @@ odour cue — `weight` was the wall-laden centroid's, so cue_frac read 1.0 in
 every flight.  Corrected values for that flight: cue_frac 0.54, corr 0.22
 (the intended turn tracks the goal's bearing only weakly — worth a look).
 
+**Input equalised (user's instruction, "좌우 신호 세기를 동일하게 분배"):**
+`vp_input.mirror_weights` — per 10° azimuth band, cells looking at +az and
+−az share the same TOTAL drive (weight = mean count / own count), for
+vision and threat; odour and gyro were already per-side normalised.  Scenes
+after: no cue +3.2; pillar ahead −35 → **−20**; pair −23 → **−16**; pillar
+45° L/R sum −27 → **−18**; but corridor −26 → **−34** and beacon ±60° sum
++16 → **+34**.  Equal input does not give a symmetric turn: what remains
+is the circuit's own response asymmetry.  Kept, because equal input is the
+correct rule regardless; not yet flown.
+
 **Decision for the user:** a *mirror twin* — run a second copy of the
 circuit on the mirror image of every input (camera flipped, beams flipped,
 odour and gyro sign-flipped) and steer on `(u − u_mirror)/2`.  Exact
