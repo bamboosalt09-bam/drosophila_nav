@@ -6,8 +6,7 @@ the pixel its ommatidium points at.  The optic lobe between them is not
 simulated, because this rate model has no reason to reproduce what it
 computes and measurement says it got the sign wrong when it tried.
 
-The ORN cue is unchanged: the rectified whole-image centroid, which ignores
-anything at or below sky level and is pulled only by what is brighter.
+The ORN cue is the strongest bright blob (winner-take-all), see fisheye.sense.
 
 ponytail: every projection neuron gets the same quantity -- local contrast.
 Their real specialisations (LPLC2 looming, LC11 small objects, ...) are not
@@ -22,7 +21,7 @@ import math
 import numpy as np
 import torch
 
-from sensors.fisheye import FisheyeCamera, clearance_ahead
+from sensors.fisheye import FisheyeCamera
 
 # Time to contact at which a manoeuvre is fully urgent.  A fly starts its
 # evasive turn about 100 ms before contact; a 2 m/s drone needs longer
@@ -33,22 +32,6 @@ from sensors.fisheye import FisheyeCamera, clearance_ahead
 # profile, so it is not evidence for this value any more -- the physical
 # argument is.  Re-measure it when something depends on it.
 TAU_CRIT = 2.0
-# Stereo lived here -- BASELINE_M, MIN_DISPARITY_DEG, a `stereo` flag and a
-# `tau_stereo` term -- with a paragraph of justification each.  None of it
-# ever ran: the correlation window spans the frontal +-45 deg, more than
-# half of which is sky at zero disparity, so the best match was always a
-# shift of zero and the estimate returned inf at every distance.  Deleted
-# rather than left looking live.  The lamp does this job.
-#
-# LAMP_R0 lived here too, duplicating `fisheye.LAMP_HALF_M`.  Two copies of
-# one physical constant that nothing kept in step; the compiled renderer
-# takes the one in `fisheye`.
-# How fast the range estimate may change, in metres per second of estimate.
-# A beacon slipping behind a pillar, or a wall appearing at a doorway, steps
-# the brightness in one frame; without a limit the speed channel would slam.
-# 12 m/s lets a real approach at 2 m/s through untouched while turning a
-# step into a ramp of a few frames.
-RANGE_SLEW = 12.0
 # Sub-steps the circuit takes per control cycle.  Must match the runner's
 # SETTLE: the drive is now a SEQUENCE over these, not one held column.
 #
@@ -141,40 +124,12 @@ def threat_level(beams, centres_deg, speed):
 GYRO_FULL = math.radians(90.0)
 GYRO_BASE = 1.0
 
-# SPONTANEOUS ALTERNATION: turned one way long enough, turn the other way.
-# The only memory is the recent net rotation -- a leaky integral of the yaw
-# rate the gyro already measures -- so it needs no map and no extra sensor.
-# A full loop (360 deg) accumulated in one direction triggers a push the
-# opposite way for ALT_STEPS control cycles, through the same JO push-pull
-# the gyro uses (measured: strong, correctly lateralised).  The circuit
-# still weighs it against the goal and the threat.  Aimed at the failure in
-# room 6: five beacons taken, the sixth visible behind a partition, and the
-# last ~40 s spent circling in one corridor.
-# The memory is the net rotation over the last ALT_WINDOW seconds -- a
-# plain sum, not a leaky one.  A 10 s leaky integral saturates at
-# (turn rate x 10 s), so any loop slower than 36 deg/s never reached 360 deg:
-# in room 6 it fired 0 times in 6 flights while the drone circled a
-# corridor for the last ~40 s of each.  A window catches a loop of any size
-# that closes within it.
-ALT_WINDOW = 20.0             # s
-ALT_TRIGGER = 2.0 * math.pi   # rad of net turning that counts as a loop
-# ...and only if that last full turn happened in a SMALL AREA.  Turning
-# alone also counts a sweep around the whole room, which is navigation, not
-# a loop: in room 6 the push fired 3 times on such sweeps with 6 and 24
-# beams and broke routes that had been finding 6 of 6.  The corridor loops
-# it is meant for were 5-6 m across.
-ALT_RADIUS = 3.0              # m, around the centre of the last full turn
-ALT_STEPS = 30                # control cycles of opposite push (3 s)
-# The push goes into PFL3, the central-complex output that commands turns
-# through DNa02 -- where a turn bias born of memory belongs.  It first went
-# through the JO push-pull, measured when steering was read from all 1,304
-# descending neurons; after steering moved to DNa01/02 nobody re-measured
-# it, and JO turned out to reach DNa01/02 at 0.1-1 deg/s.  The push had
-# silently gone dead (it fired 2-3 times per flight in room 6 and changed
-# nothing).  PFL3 one-sided at 1/cell moves the same readout by ~3,000
-# deg/s.  Which side turns which way, and how hard to drive it for
-# ALT_TARGET_DEG, are MEASURED by the runner, not assumed.
-ALT_TARGET_DEG = 90.0
+# SPONTANEOUS ALTERNATION was here (v8-v11): a push through PFL3 after a
+# full 360 deg turn within 20 s, later only within a 3 m radius.  Removed:
+# the corridor loop it was aimed at was a standing RIGHT turn from the
+# circuit's own left/right asymmetry (docs/HANDOFF.md, 2026-09-28), and
+# angle/radius thresholds
+# could not tell that loop from a room-scale sweep anyway.  git has it.
 
 # TRIED AND REMOVED: aversion through the CO2-sensing ORNs (ORN_V, the V
 # glomerulus; innate avoidance in Drosophila).  Proximity was sent by side
@@ -213,7 +168,6 @@ class VPInput:
         # wiring (NaN).  Casting NaN to int silently pointed them at column
         # 0, i.e. at -145 deg; they now read nothing instead.
         self._az_ok = np.isfinite(az) & np.isfinite(el)
-        self._prev_val = None
 
         ct = ann["cell_type"].astype(str).to_numpy(dtype="<U48")
         side = ann["side"].to_numpy(dtype="<U16")
@@ -238,12 +192,6 @@ class VPInput:
         is_esc = np.isin(ct, ESCAPE_TYPES)
         self.esc_l = np.flatnonzero(is_esc & (side == "left"))
         self.esc_r = np.flatnonzero(is_esc & (side == "right"))
-        is_pfl3 = ct == "PFL3"
-        self.pfl3_l = np.flatnonzero(is_pfl3 & (side == "left"))
-        self.pfl3_r = np.flatnonzero(is_pfl3 & (side == "right"))
-        self.alt_drive = 0.0          # set by calibration; 0 = no push
-        self.alt_rows_left = self.pfl3_r    # rows that push LEFT (measured)
-        self.alt_rows_right = self.pfl3_l
         is_jo = np.char.startswith(ct, "JO")
         self.jo_l = np.flatnonzero(is_jo & (side == "left"))
         self.jo_r = np.flatnonzero(is_jo & (side == "right"))
@@ -251,30 +199,11 @@ class VPInput:
         self.jo_scale_r = 1.0 / max(len(self.jo_r), 1)
         self.gyro_base = GYRO_BASE
         self.yaw_rate = 0.0       # rad/s, set by the runner from the plant
-        self._yaw_hist = []       # yaw * dt over the last ALT_WINDOW s
-        self._pos_hist = []       # where the drone was at each of those
-        self.alt_dir = 0.0        # -1/+1 while alternating
-        self.alt_left = 0
-        self.alt_count = 0
-        self.dt = 0.1                 # control period, for the tau estimate
-        self.speed = 2.0          # current forward speed, for tau
-        self._goal_world = None
-        self._hist = []               # recent linear-size samples
-        self._tau = np.inf
-        self._range = np.inf          # slew-limited lamp range
-        self._profile = None          # range per azimuth, last frame
-        self._clear_bearing = 0.0
+        self.speed = 2.0          # current forward speed, for looming
         self.n_sub = N_SUB
         self._prev_val = None         # last frame's per-neuron drive
 
     def reset(self) -> None:
-        self._pos_hist = []
-        self._yaw_hist, self.alt_dir, self.alt_left, self.alt_count = \
-            [], 0.0, 0, 0
-        self._goal_world = None
-        self._hist = []
-        self._tau = np.inf
-        self._range = np.inf
         self._prev_val = None
 
     def drive(self, world, position, heading_rad):
@@ -283,7 +212,6 @@ class VPInput:
         # render plus three more passes over 36,864 pixels; together they
         # were 33 ms of the 43 ms control cycle.
         r = self.cam.sense(world, position, heading_rad)
-        rear_m = r["rear"]
         beams_m = r["beams"]
         scene = r["unlit"]          # the lamp is NEVER in the steering image
         lum = scene.ravel()[self._px]
@@ -337,71 +265,6 @@ class VPInput:
         d[self.thr_rows] += torch.from_numpy(
             (THREAT_GAIN * s_cell).astype(np.float32))[:, None]
 
-        # TIME TO CONTACT, two independent estimates.
-        #
-        # The connectome is tuned to a fly: 0.3 m/s past a 5 cm obstacle is
-        # 344 deg/s of image motion, this drone at 2 m/s past a 2 m obstacle
-        # is 57 deg/s.  Raw distance means nothing across that gap, but
-        # tau = distance / closing speed does: 2 m at 2 m/s and 30 cm at
-        # 0.3 m/s are both one second away and equally urgent.
-        #
-        # (a) EXPANSION.  Works at any range, needs motion.  The area-like
-        #     `blocked` grows as 1/d^2, so its logarithmic derivative is
-        #     twice what it should be -- measured tau came out at half the
-        #     true value, exactly.  sqrt(blocked) is a LINEAR size, grows as
-        #     1/d, and needs no correction.  Differencing over several frames
-        #     rather than one removes the 23% of frames where the change was
-        #     below pixel noise.
-        # (b) STEREO.  Works standing still, near field only.  0.25 m of
-        #     baseline resolves ~3 px at 2 m and nothing past 5 m.
-        #
-        # They are complementary, so the nearer (more urgent) one wins.
-        lin = math.sqrt(max(blocked, 0.0))
-        self._hist.append(lin)
-        if len(self._hist) > 4:
-            self._hist.pop(0)
-        tau_flow = np.inf
-        if len(self._hist) >= 3 and lin > 1e-3:
-            span = (len(self._hist) - 1) * self.dt
-            rate = (self._hist[-1] - self._hist[0]) / span
-            if rate > 1e-5:
-                tau_flow = lin / rate
-
-        # LAMP RANGE.  What the lamp adds above the unlit level falls as
-        # 1/(1+(r/r0)^2), so the brightest frontal pixels give range directly
-        # -- no correspondence, no motion, and free because the render has
-        # already computed it.  Measured contribution: 0.151 at 2 m, 0.029 at
-        # 5 m, 0.002 at 12 m.
-        #
-        # Slew-limited, because brightness steps when a beacon slips behind a
-        # pillar or a doorway opens, and an unfiltered step would slam the
-        # speed channel.  The limit is loose enough that a real 2 m/s
-        # approach passes through untouched.
-        rng = self._clearance(r["range"])
-        if np.isfinite(rng):
-            if np.isfinite(self._range):
-                lim = RANGE_SLEW * self.dt
-                rng = float(np.clip(rng, self._range - lim, self._range + lim))
-            self._range = rng
-        elif np.isfinite(self._range):
-            self._range = min(self._range + RANGE_SLEW * self.dt, np.inf)
-            if self._range > 30.0:
-                self._range = np.inf
-        tau_lamp = (self._range / max(self.speed, 1e-3)
-                    if np.isfinite(self._range) else np.inf)
-
-        # The lamp inverts range to within 1-2% wherever it reaches, so it
-        # wins outright there; expansion rate is the fallback beyond it and
-        # is only trustworthy in the far field, where it saturates least.
-        # (A real build would use a rangefinder here -- ultrasonic or ToF --
-        # and the lamp stands in for one.)
-        self._tau = tau_lamp if np.isfinite(tau_lamp) else tau_flow
-        # NOT clipped at 1: above 1 it says "closing faster than the safe
-        # time allows, by this factor", which is exactly what the speed law
-        # needs to divide by.  Clipping it there capped the braking at the
-        # moment braking mattered most.
-        urgency = (float(TAU_CRIT / max(self._tau, 1e-3))
-                   if np.isfinite(self._tau) else 0.0)
         # THE ODOUR CHANNEL IS NOT THE VISION CHANNEL.
         #
         # `bearing` above is the signed centroid: walls push, beacons pull,
@@ -416,7 +279,6 @@ class VPInput:
         # "what is in the way" is left to the visual injection, where it
         # belongs.  Neither needs a target's world position.
         scent, scent_mass = r["scent"], r["scent_mass"]
-        self._goal_world = heading_rad + np.radians(scent)
         frac = float(np.clip(scent / (self.cam.az_span / 2), -1.0, 1.0))
         s = (scent_mass if self.fixed_strength is None
              else self.fixed_strength)
@@ -427,57 +289,11 @@ class VPInput:
         d[self.orn_r, :] = od_r * self.orn_scale_r
         # gyro: opposing push-pull on JO; + yaw is a LEFT turn
         g = -self.yaw_rate / GYRO_FULL
-        self._yaw_hist.append(self.yaw_rate * self.dt)
-        self._pos_hist.append((float(position[0]), float(position[1])))
-        if len(self._yaw_hist) > int(round(ALT_WINDOW / self.dt)):
-            self._yaw_hist.pop(0)
-            self._pos_hist.pop(0)
-        if self.alt_left == 0:
-            # walk back to where the last full turn began
-            acc, start = 0.0, None
-            for i in range(len(self._yaw_hist) - 1, -1, -1):
-                acc += self._yaw_hist[i]
-                if abs(acc) > ALT_TRIGGER:
-                    start = i
-                    break
-            if start is not None:
-                pts = np.asarray(self._pos_hist[start:])
-                spread = np.linalg.norm(pts - pts.mean(axis=0), axis=1).max()
-                if spread < ALT_RADIUS:
-                    # + acc is a LEFT loop; the push goes the other way
-                    self.alt_dir = -math.copysign(1.0, acc)
-                    self.alt_left = ALT_STEPS
-                    self.alt_count += 1
-                    self._yaw_hist, self._pos_hist = [], []
         g = float(np.clip(g, -1.0, 1.0))
         d[self.jo_l, :] = self.gyro_base * (1 + g) * self.jo_scale_l
         d[self.jo_r, :] = self.gyro_base * (1 - g) * self.jo_scale_r
-        if self.alt_left > 0:
-            rows = (self.alt_rows_left if self.alt_dir > 0
-                    else self.alt_rows_right)
-            d[rows, :] += self.alt_drive
-            self.alt_left -= 1
         return d, {"bearing": bearing, "scent": scent,
                    "scent_mass": scent_mass,
                    "blocked": blocked, "weight": weight,
-                   "tau": self._tau, "urgency": urgency,
-                   "tau_flow": tau_flow, "tau_lamp": tau_lamp,
-                   "range": self._range, "profile": self._profile,
-                   "clear_bearing": self._clear_bearing,
-                   "rear": rear_m, "threat_in": (a_l, a_r),
-                   "beams": beams_m, "alternating": self.alt_left > 0}
-
-    def _clearance(self, profile):
-        """Nearest range anywhere in a wide forward cone.
-
-        Was a single percentile over the frontal +-35 deg, which reported a
-        flat 4.00 m for 25 steps while a wall closed from 3.55 m to 0.26 m at
-        +24..+62 deg: the wall drifted out of the window and the percentile
-        inside it was dominated by distant surfaces.  The cone is wide
-        because a turning body sweeps sideways -- the collision in room 0
-        happened at +62 deg.
-        """
-        self._profile = profile
-        rng, brg = clearance_ahead(self.cam, profile, 0.0, 60.0)
-        self._clear_bearing = brg
-        return rng
+                   "rear": r["rear"], "threat_in": (a_l, a_r),
+                   "beams": beams_m}

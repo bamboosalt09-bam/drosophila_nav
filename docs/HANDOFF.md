@@ -210,7 +210,7 @@ neurons injected, ρ 0.50):
 | intended turn | **DNa01/DNa02** (L2 / R2) only | the pooled 1,304-DN readout turned LC4 threat into a 4,000 °/s turn *toward* the wall |
 | escape | DNp01/02/04/06/11 | **recorded only**, not used in control |
 | gyro | Johnston's organ push-pull (user's choice) | measured ~0 effect on DNa01/02 (±0.3 °/s).  Left as is; ask before rerouting |
-| alternation push | PFL3, calibrated at run start (0.02/cell ≈ 72 °/s) | see the open problem below |
+| ~~alternation push~~ | ~~PFL3~~ | removed in v12, see below |
 
 Drone layer constants: `R_MAX 90°/s`, `D_STOP 0.45 m` (body 0.25 + 0.2),
 `V_BACK −0.4 m/s` only if rear > D_STOP, `SWEPT 0.40 m` half-width,
@@ -333,8 +333,44 @@ are RIGHT; mean −22 °/s in the open, −46 °/s with a wall 2–4 m ahead.  v
    part of `zero` that came from the ORN drive becomes a standing turn.  Size
    and sign unknown.  `calibrate_alt` already computes exactly this no-cue
    turn (`u0`) at run start but never prints it.
-Neither is measured yet.  Probes proposed: u0 (no cue), and u with equal
-threat on every LC4/LPLC2 cell; both static, no flight.  After that, finish 2D with
+**Measured (`diag/diag_bias.py`, static, u in deg/s, + = left):** candidate
+2 is refuted — no cue gives +2.9.  The bias is the **circuit's own mirror
+asymmetry**, in threat AND vision AND odour:
+
+| probe | u |
+|---|---|
+| equal threat on all LC4/LPLC2, 0.25 / 1.0 | −21 / −78 |
+| left cells only / right only (0.25) | −81 / +62 (1.32×; counts are 1.13×) |
+| pillar dead ahead 2 m | −35 |
+| mirrored pillar pair | −23 (vision alone −17) |
+| corridor, walls 1.5 m each side | −26 |
+| pillar 45° left / right | −56 / +30 |
+| beacon 60° left / right (odour + vision) | +77 / −61 |
+| gyro, turning right at 90 °/s | +0.3 (JO still has no effect) |
+
+The subnet IS built with `symmetrise=True` (`malecns.mirror_average` +
+`balance_hemispheres`), but only cells with a known partner are averaged;
+LC4/LPLC2 are 165 vs 146 and the VP cells are mostly unpaired, so the
+residue stays.  **Tried and reverted:** re-weighting cells per 30° azimuth
+band so each mirror pair turns equal and opposite.  The circuit is
+nonlinear: the pair went −23 → −6 but the corridor −26 → +18 and the beacon
+sum +16 → +56; the frontal threat band (−4.9 vs +0.2 °/s) cannot be fixed
+by weights at all.
+
+**v12 (cleanup, no behaviour change):** geometric alternation removed (it
+never fired at 12 beams; the 12-beam room-6 flight is bit-identical to v11,
+196.0213 m); dead lamp-range/τ/urgency code removed from `VPInput`
+(computed every step, read by nobody); `cue_frac` and `corr` now use the
+odour cue — `weight` was the wall-laden centroid's, so cue_frac read 1.0 in
+every flight.  Corrected values for that flight: cue_frac 0.54, corr 0.22
+(the intended turn tracks the goal's bearing only weakly — worth a look).
+
+**Decision for the user:** a *mirror twin* — run a second copy of the
+circuit on the mirror image of every input (camera flipped, beams flipped,
+odour and gyro sign-flipped) and steer on `(u − u_mirror)/2`.  Exact
+mirror symmetry for any scene by construction; the real fly is bilaterally
+symmetric, and the residue is reconstruction asymmetry.  Cost: ~2× circuit
+time (room-6 sweep ~5 → ~9 min).  Not implemented.  After that, finish 2D with
 the proper evaluation: rooms 0/5/6/7 × 4 start headings × beams 1/6/24 ×
 alternation on/off, then path efficiency (path length / shortest path).
 

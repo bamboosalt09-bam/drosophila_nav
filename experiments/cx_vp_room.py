@@ -173,8 +173,8 @@ def _row(ag, found, first, k, seen, stopped, corr, w):
     path = ag.path_array()
     # which of the ORIGINAL beacons the path came within reach of; the
     # caller splits them by the room's reachable flags, because a beacon
-    # marked walled-off can still be reached -- the flag uses a 1.4 m
-    # flyability margin and the drone threads narrower gaps
+    # marked walled-off can still be reached -- the flag uses a flyability
+    # margin (room_file.FLY_CLEARANCE) and the drone threads narrower gaps
     reached = [i for i, t in enumerate(w.all_targets())
                if np.min(np.linalg.norm(path[:, :2] - t[:2], axis=1))
                < w.reach_radius]
@@ -186,42 +186,6 @@ def _row(ag, found, first, k, seen, stopped, corr, w):
             "dist": float(np.linalg.norm(np.diff(path[:, :2], axis=0),
                                          axis=1).sum()),
             "corr": corr}
-
-
-def calibrate_alt(net, inp, gain, zero, p0):
-    """Which PFL3 side turns which way, and the drive giving ~90 deg/s.
-
-    Measured because the last route (JO) was assumed, and the assumption
-    silently died when the steering readout changed.
-    """
-    from sensors.vp_input import ALT_TARGET_DEG
-    inp.yaw_rate = 0.0
-    empty = TargetWorld(target=np.array([300.0, 0.0, 2.0]), obstacles=[])
-
-    def du(rows, val):
-        v = net.init_state(1)
-        inp.reset()
-        for _ in range(3):
-            d, _ = inp.drive(empty, p0, 0.0)
-            if len(rows):
-                d[rows] += val
-            v, r = step_circuit(net, v, d)
-        return math.degrees(gain * (float(r[inp.steer_r].mean()
-                                          - r[inp.steer_l].mean()) - zero))
-
-    u0 = du(np.array([], dtype=int), 0.0)
-    best = None
-    for val in (0.001, 0.002, 0.005, 0.01, 0.02, 0.05):
-        e = du(inp.pfl3_r, val) - u0
-        if best is None or (abs(abs(e) - ALT_TARGET_DEG)
-                            < abs(abs(best[1]) - ALT_TARGET_DEG)):
-            best = (val, e)
-    inp.alt_drive = best[0]
-    if best[1] > 0:                   # right PFL3 turns the drone LEFT
-        inp.alt_rows_left, inp.alt_rows_right = inp.pfl3_r, inp.pfl3_l
-    else:
-        inp.alt_rows_left, inp.alt_rows_right = inp.pfl3_l, inp.pfl3_r
-    return best
 
 
 def fly(net, inp, info, w, heading, gain, zero, base, peak):
@@ -244,9 +208,13 @@ def fly(net, inp, info, w, heading, gain, zero, base, peak):
         # avoids through its own steering; this shows how alarmed it was
         thr_l, thr_r = threat_from(r, inp, base, peak)
         thr_sum += max(thr_l, thr_r)
-        if tr["weight"] > 1e-6:
+        # a beacon in view = odour present.  `weight` was used here: the
+        # signed centroid's, which walls feed too, so cue_frac read 1.0 in
+        # every flight and corr compared the turn with the wall-laden
+        # centroid rather than with the goal.
+        if tr["scent_mass"] > 0:
             seen += 1
-            bs.append(tr["bearing"])
+            bs.append(tr["scent"])
             us.append(u)
         r_cmd, v_cmd = follow(u, beam_points(tr["beams"],
                                              inp.cam.rangefinder.centres),
@@ -263,7 +231,6 @@ def fly(net, inp, info, w, heading, gain, zero, base, peak):
     corr = (float(np.corrcoef(bs, us)[0, 1])
             if len(bs) > 3 and np.std(us) > 0 else float("nan"))
     out = _row(ag, found, first, k, seen, stopped, corr, w)
-    out["alternations"] = inp.alt_count
     out["threat_mean"] = thr_sum / (k + 1)
     return out
 
@@ -279,7 +246,7 @@ def fly_reference(w, heading, centres, k_yaw=0.05, planner=None):
     mem = {}
     for k in range(MAX_STEPS):
         sc = cam.sense(ag.world, ag.p, ag.heading)
-        seen += int(sc["weight"] > 1e-6)
+        seen += int(sc["scent_mass"] > 0)
         if cmd:
             u = float(cmd(None, ag.heading, ag))
         else:
@@ -330,9 +297,6 @@ def main(argv=None) -> int:
     gain, cc, zero = calibrate(net, inp, info, w, p0)
     print("steering calibration: sweep r %+.2f, gain %.2e" % (cc, gain),
           flush=True)
-    a_val, a_du = calibrate_alt(net, inp, gain, zero, p0)
-    print("alternation via PFL3: %.3f/cell on the right side turns %+.0f "
-          "deg/s" % (a_val, a_du), flush=True)
 
     rows, paths = [], {}
     print("\n%5s %-12s %8s %8s %9s %6s %8s %7s"
