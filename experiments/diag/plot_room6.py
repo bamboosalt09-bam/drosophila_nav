@@ -15,7 +15,6 @@ from matplotlib.collections import LineCollection
 from environment.room_file import load
 
 RM = 6
-BEAMS = (0, 1, 3, 6, 12, 24)
 INK = "#1f1f1e"
 w, h, reach = load(RM)
 tg = np.array(w.all_targets())
@@ -25,6 +24,9 @@ BEFORE = sys.argv[1] if len(sys.argv) > 1 else "v4"
 AFTER = sys.argv[2] if len(sys.argv) > 2 else "v5"
 runs = {"before": (pd.read_csv(R / ("sweep_beams_room6_%s.csv" % BEFORE)), np.load(R / ("paths_room6_%s.npz" % BEFORE))),
         "after": (pd.read_csv(R / "sweep_beams_room6.csv"), np.load(R / "paths_room6.npz"))}
+# the beam layouts both runs flew
+BEAMS = sorted(set(runs["after"][0].beams) & set(runs["before"][0].beams))
+WIDE = 3.5 * len(BEAMS)
 
 
 def panel(ax, ver, arm, n, label):
@@ -61,7 +63,7 @@ def panel(ax, ver, arm, n, label):
 legend = ("green star = reachable beacon, blue ring = reached, circle = start, "
           "square = end, red X = collision, path colour = time (dark -> bright)")
 
-fig, axes = plt.subplots(3, 6, figsize=(21, 11.2))
+fig, axes = plt.subplots(3, len(BEAMS), figsize=(WIDE, 11.2), squeeze=False)
 for i, arm in enumerate(("connectome", "planner", "centroid")):
     for j, n in enumerate(BEAMS):
         panel(axes[i, j], "after", arm, n, arm)
@@ -71,7 +73,7 @@ fig.tight_layout(rect=(0, 0, 1, 0.965))
 fig.savefig(R / ("sweep_%s_paths_room6.png" % AFTER), dpi=72)
 plt.close(fig)
 
-fig, axes = plt.subplots(2, 6, figsize=(21, 7.6))
+fig, axes = plt.subplots(2, len(BEAMS), figsize=(WIDE, 7.6), squeeze=False)
 for i, (ver, lab) in enumerate((("before", "connectome BEFORE"),
                                 ("after", "connectome AFTER"))):
     for j, n in enumerate(BEAMS):

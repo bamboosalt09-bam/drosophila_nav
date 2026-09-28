@@ -256,7 +256,17 @@ fastest speed that stops 0.45 m short of the first echo on it (brake
 2 m/s², ≤ 2 m/s, ≤ 90 °/s).  A wall across the path starts a swerve ~2.5 m
 out.  Boxed in: turn on the spot one way until a curve opens.  **No
 reversing.**  Echoes remembered 2 s.  Known risk: unsensed directions count
-as free, so 1–3 beams can swerve into an unseen wall.  Not flown yet.
+as free, so 1–3 beams can swerve into an unseen wall — hence **beams are
+fixed at 24 from v16 on** (user; `--beams` default is now 24).
+
+**v16 (swerving drone layer, no twin, no gyro, 24 beams), room 6:**
+connectome 5/6 by 34.5 s (fastest yet: v15 41 s, v14 50 s), 212 m, no
+collision, stopped 0% (was 1%); planner 5/6, stopped **0% (was 26%)**;
+centroid 4/6, 0%.  After the 5th beacon (nothing in view) the connectome
+went back to the clockwise orbit round the left pillar column: 85% of
+turns right, −16 °/s in the open, while the drone layer's swerves at walls
+1–2 m ahead were LEFT (+67 °/s).  The orbit is the circuit's residual right
+bias (−9 °/s on symmetric scenes) with no cue to override it.
 
 ### Version history (room 6 unless stated; "found" of the reachable beacons)
 

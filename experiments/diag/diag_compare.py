@@ -40,6 +40,8 @@ print("%4s %4s %6s %9s %11s %9s %13s %9s %7s %6s"
          "min clr", "cue", "corr"))
 for n in (0, 1, 3, 6, 12, 24):
     for ver in sys.argv[1:]:
+        if "b%d_connectome" % n not in np.load(REPO / "results" / ("paths_room6_%s.npz" % ver)).files:
+            continue
         P = np.load(REPO / "results" / ("paths_room6_%s.npz" % ver))["b%d_connectome" % n]
         d = pd.read_csv(REPO / "results" / ("sweep_beams_room6_%s.csv" % ver))
         row = d[(d.beams == n) & (d.arm == "connectome")].iloc[0]

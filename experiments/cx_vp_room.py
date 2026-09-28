@@ -347,7 +347,7 @@ def fly_reference(w, heading, centres, k_yaw=0.05, planner=None):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--room", type=int, default=0)
-    ap.add_argument("--beams", default="0,1,3,6,12,24")
+    ap.add_argument("--beams", default="24")   # fixed at 24 (user, 2026-09-28)
     ap.add_argument("--live", action="store_true",
                     help="write results/live.json for experiments/live_view.py")
     args = ap.parse_args(argv)
