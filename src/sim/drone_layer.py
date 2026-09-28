@@ -1,18 +1,20 @@
 """The drone layer: follow the path the fly intends, within what a drone can do.
 
-The fly proposes, the drone disposes.  Whatever proposes the path -- the
-connectome, a planner, a centroid follower -- hands over two things: the turn
-it INTENDS (unclipped; a fly can turn at 1,000 deg/s) and a threat level on
-each side.  The drone turns that into something it can fly:
+The user's design: "the fly proposes the expected path, and the drone
+MODIFIES that path within realistic conditions and follows it" -- because a
+fly's sharp turns and its wall-risking manoeuvres are not a drone's.
+Whatever proposes the path -- the connectome, a planner, a centroid
+follower -- hands over the turn it INTENDS (unclipped; a fly can turn at
+1,000 deg/s).  The drone then picks, every cycle, the flyable curve closest
+to that intent (see `follow`):
 
-  * the intended turn is held as a CURVATURE, k = u / V.  A turn too tight
-    for 90 deg/s is not clipped to 90 deg/s and swung wide -- the drone
-    slows down until the same curve fits, so it traces the fly's path
-    instead of a fatter one;
-  * the path is bent away from the side with the greater threat, and speed
-    drops with the nearest threat;
-  * a hard envelope underneath: blocked closer than D_STOP means back off if
-    the rear is clear, else stop.
+  * a turn too tight for the airframe becomes the tightest curve it can
+    fly at a useful speed, not a crawl;
+  * a curve that runs into something within SWERVE_D is bent away early,
+    by as little as clears it -- a swerve, not a stop;
+  * only when no curve moves at all does it turn on the spot.  It never
+    reverses: that stopped-and-backing drone was the drone layer refusing
+    to modify the path, which is its job.
 
 Every arm goes through this same function, so arms differ only in the path
 they propose -- which is the comparison the project is about.
@@ -32,8 +34,7 @@ R_MAX = math.radians(90.0)    # yaw-rate limit of the airframe
 # by 1.5 m ahead, so stopping takes millimetres, and 0.8 m over a +-60 deg
 # cone made door jambs read as "blocked" and turned doorways into dead ends.
 D_STOP = 0.45
-V_BACK = -0.4                 # m/s: backing off, only with a clear rear
-V_TURN = 0.3                  # m/s: turn rate while stopped is k * this
+V_TURN = 0.3                  # m/s: slower than this is not moving
 # SPEED COMES FROM A PREDICTED COLLISION, NOT FROM PROXIMITY.
 # Fly as fast as the airframe allows unless the path being flown is predicted
 # to hit something.  Only sensed points within the body's swept width of the
@@ -88,58 +89,74 @@ def hit_distance(pts, k, width=SWEPT, horizon=HORIZON):
     s = th / abs(k)
     m = (off < width) & (s <= min(horizon, np.pi / abs(k)))
     return float(s[m].min()) if m.any() else np.inf
-# A committed turn is released once the front is this far past D_STOP, so it
-# does not chatter on the threshold.
-SACCADE_CLEAR = 0.3
 
 
-def follow(u_intent, pts, rear, mem=None, pose=None):
-    """-> (yaw-rate command, speed command).
+# The curves the drone may choose from: curvature k (1/m, + = left) from
+# straight to the tightest it can fly while still moving (R_MAX / V_TURN,
+# a 0.19 m radius).
+K_GRID = np.linspace(-R_MAX / V_TURN, R_MAX / V_TURN, 81)
+# A curve whose way is not clear for SWERVE_D metres costs up to SWERVE_W
+# (in the units of curvature, 1/m).  The penalty must outgrow the curvature
+# a swerve needs: at 2.0 a wall 1.5 m ahead cost straight-on 1.0 while the
+# clearing curve (k 1.0) cost 1.3, and the closer the wall the worse that
+# trade got, so the drone flew on until it had to stop.  At 4.0 the swerve
+# starts ~2.5 m out with k ~0.3.  3 m is 1.5 s at cruise: flies turn away from a looming surface
+# well before contact, and so should the drone.
+SWERVE_D = 3.0
+SWERVE_W = 4.0
+# Changing the chosen curve from one cycle to the next also costs, or a
+# wall dead ahead -- equally good to pass left or right -- flips the choice
+# every cycle.
+HOLD_W = 0.3
 
-    The drone does NOT bend the path.  It used to, by the threat imbalance,
-    on top of the fly's own avoidance through LC4 -> DNa01/02: avoidance
-    counted twice, and the drone was choosing direction.  Direction belongs
-    to whatever proposes the path.  `pts` are the sensed echoes (see
-    `beam_points`); speed
-    is the fastest that can still stop before the first predicted contact
-    on the intended curve.  + yaw is a LEFT turn.
 
-    BLOCKED AHEAD -> A COMMITTED TURN (needs `mem`, a dict kept per flight).
-    Measured in room 5 with 3 beams: stopped 838 of 1200 steps; the
-    intended turn flipped sign 267 times while stopped, and the longest stop
-    lasted 58 s with a net heading change of 0 deg -- a corner faced
-    head-on gives balanced threat and a weak, dithering intent.  So the
-    direction is taken ONCE, from the curvature at the moment of stopping
-    (the fly's intent plus the threat bend), and held at full rate until the
-    front clears.  Flies change direction the same way, with ballistic body
-    saccades.  The fly still picks the direction; the drone finishes it.
+def speed_on(pts, k):
+    """Fastest speed on curve k that can still stop before the first contact
+    and stays within the yaw-rate limit."""
+    d = hit_distance(pts, k)
+    v = min(V_CRUISE, math.sqrt(2.0 * A_BRAKE * max(d - D_STOP, 0.0)))
+    return min(v, R_MAX / abs(k)) if abs(k) > 1e-9 else v
+
+
+def follow(u_intent, pts, mem=None, pose=None):
+    """-> (yaw-rate command, speed command); + yaw is a LEFT turn.
+
+    Among the curves the drone can fly while moving, take the one that
+    minimises
+        |k - k_fly|                          (stay on the fly's path)
+      + SWERVE_W * blocked share of SWERVE_D  (do not fly at walls)
+      + HOLD_W * |k - k_last|                 (do not dither)
+    and fly it at the fastest speed that can still stop in time.  `pts`
+    are the sensed echoes (see `beam_points`), plus the last 2 s of them
+    when `mem` and `pose` are given.
+
+    Nothing movable: turn on the spot, one way, held until a curve opens --
+    the committed saccade that ended 58 s dithering stops in corners (room
+    5, 3 beams: the intent flipped sign 267 times while stopped).
     """
     if mem is not None and pose is not None:
         pts = _remember(pts, mem, pose)
-    k = u_intent / V_CRUISE
-    d_path = hit_distance(pts, k)
+    k_fly = u_intent / V_CRUISE
+    k_last = mem.get("k", k_fly) if mem is not None else k_fly
+    best = None
+    for k in np.append(K_GRID, k_fly):
+        v = speed_on(pts, k)
+        if v < V_TURN:
+            continue
+        blocked = max(0.0, 1.0 - hit_distance(pts, k) / SWERVE_D)
+        cost = abs(k - k_fly) + SWERVE_W * blocked + HOLD_W * abs(k - k_last)
+        if best is None or cost < best[0]:
+            best = (cost, float(k), v)
+    if best is not None:
+        _, k, v = best
+        if mem is not None:
+            mem["k"] = k
+            mem.pop("dir", None)
+        return float(np.clip(k * v, -R_MAX, R_MAX)), v
+    side = 1.0 if k_fly >= 0 else -1.0
     if mem is not None:
-        # committed turn: triggered by the intended path, released once the
-        # way straight ahead is clear
-        if d_path < D_STOP or ("dir" in mem and hit_distance(pts, 0.0)
-                               < D_STOP + SACCADE_CLEAR):
-            mem.setdefault("dir", 1.0 if k >= 0 else -1.0)
-            return mem["dir"] * R_MAX, (V_BACK if rear > D_STOP else 0.0)
-        mem.pop("dir", None)
-    v = min(V_CRUISE,
-            math.sqrt(2.0 * A_BRAKE * max(d_path - D_STOP, 0.0)))
-    if abs(k) > 1e-9:
-        v = min(v, R_MAX / abs(k))
-    if d_path < D_STOP:
-        v = V_BACK if rear > D_STOP else 0.0
-    # At a crawl the curve is meaningless -- turn at the rate the fly
-    # intends.  It was k * V_TURN, i.e. the intent times 0.3/2.0: while
-    # stopped the drone turned at 22% of what the fly asked for.
-    if abs(v) < V_TURN:
-        r = float(np.clip(k * V_CRUISE, -R_MAX, R_MAX))
-    else:
-        r = float(np.clip(k * v, -R_MAX, R_MAX))
-    return r, v
+        side = mem.setdefault("dir", side)
+    return side * R_MAX, 0.0
 
 
 def _remember(pts, mem, pose):
@@ -164,29 +181,31 @@ def demo() -> None:
     assert np.isinf(hit_distance(np.array([[2.0, 1.0]]), 0.0))
     # a point on a left arc of radius 2, a quarter turn along
     assert abs(hit_distance(np.array([[2.0, 2.0]]), 0.5) - np.pi) < 1e-9
-    # full speed past a side wall, slowed by one on the path
-    assert follow(0.0, np.array([[1.5, 1.0]]), np.inf)[1] == V_CRUISE
-    v1 = follow(0.0, np.array([[1.0, 0.0]]), np.inf)[1]
-    assert abs(v1 - math.sqrt(2 * A_BRAKE * (1.0 - D_STOP))) < 1e-9  # stops in time
-    # a turn too tight for the airframe: same curve, lower speed
-    r, v = follow(math.radians(360.0), none, np.inf)
-    assert abs(r - R_MAX) < 1e-9 and v < V_CRUISE
-    assert abs(r / v - math.radians(360.0) / V_CRUISE) < 1e-9, "curve changed"
-    # blocked ahead: back off only if the rear is clear
-    wall = np.array([[0.3, 0.0]])
-    assert follow(0.0, wall, np.inf)[1] == V_BACK
-    assert follow(0.0, wall, 0.3)[1] == 0.0
-    # blocked: the direction is chosen once and held through a flipping intent
+    # open space: exactly the fly's path, full speed; a side wall changes
+    # nothing
+    assert follow(0.3, none) == (0.3, V_CRUISE)
+    assert follow(0.0, np.array([[1.5, 1.0]])) == (0.0, V_CRUISE)
+    # a wall across the path 1.5 m ahead: swerve, keep moving, no reverse
+    wall = np.array([[1.5, y] for y in np.arange(-0.8, 0.81, 0.1)])
+    r, v = follow(0.0, wall)
+    assert r != 0.0 and v >= V_TURN
+    # ...and the swerve clears it: the chosen curve does not hit the wall
+    assert hit_distance(wall, r / v) > 1.5
+    # a turn far too tight (1,000 deg/s): the tightest movable curve instead
+    r, v = follow(math.radians(1000.0), none)
+    assert abs(r - R_MAX) < 1e-6 and v >= V_TURN
+    # boxed in: turn on the spot, never backwards, one way through a flip
+    box = np.array([[0.3 * math.cos(a), 0.3 * math.sin(a)]
+                    for a in np.linspace(0, 2 * math.pi, 36)])
     mem = {}
-    r1, _ = follow(+0.1, wall, 0.0, mem)
-    r2, v2 = follow(-2.0, np.array([[0.6, 0.0]]), 0.0, mem)
-    assert r1 == R_MAX and r2 == R_MAX and v2 == 0.0   # held through the flip
-    r3, _ = follow(-2.0, none, 0.0, mem)     # clear: released
-    assert r3 < 0 and "dir" not in mem
+    r1, v1 = follow(+0.1, box, mem)
+    r2, v2 = follow(-2.0, box, mem)
+    assert v1 == v2 == 0.0 and r1 == r2 == R_MAX
+    assert follow(-2.0, none, mem)[0] < 0 and "dir" not in mem   # released
     # a wall seen once is still there when it has left the beam
     mem = {}
-    follow(0.0, np.array([[1.0, 0.0]]), np.inf, mem, pose=(0.0, 0.0, 0.0))
-    assert follow(0.0, none, np.inf, mem, pose=(0.0, 0.0, 0.0))[1] < V_CRUISE
+    follow(0.0, np.array([[1.0, 0.0]]), mem, pose=(0.0, 0.0, 0.0))
+    assert follow(0.0, none, mem, pose=(0.0, 0.0, 0.0))[0] != 0.0
     print("drone_layer demo ok")
 
 

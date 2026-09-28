@@ -290,7 +290,7 @@ def fly(net, inp, info, w, heading, gain, zero, base, peak):
             us.append(u)
         r_cmd, v_cmd = follow(u, beam_points(tr["beams"],
                                              inp.cam.rangefinder.centres),
-                              tr["rear"], mem,
+                              mem,
                               pose=(ag.p[0], ag.p[1], ag.heading))
         stopped += int(v_cmd <= 0.0)
         inp.speed = max(ag.v, 0.2)
@@ -335,7 +335,7 @@ def fly_reference(w, heading, centres, k_yaw=0.05, planner=None):
             u = k_yaw * sc["bearing"] - K_AVOID * V_CRUISE * (thr_l - thr_r)
         r_cmd, v_cmd = follow(u, beam_points(sc["beams"],
                                              cam.rangefinder.centres),
-                              sc["rear"], mem,
+                              mem,
                               pose=(ag.p[0], ag.p[1], ag.heading))
         stopped += int(v_cmd <= 0.0)
         ag.step(r_cmd, v_cmd, 0.0, DT)

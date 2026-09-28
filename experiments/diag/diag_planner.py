@@ -18,9 +18,9 @@ from sensors.rangefinder import LAYOUTS
 w, h, reach = room(6)
 log, agents = [], []
 _f = DL.follow
-def spy(u, pts, rear, mem=None, pose=None):
+def spy(u, pts, mem=None, pose=None):
     k = u / DL.V_CRUISE
-    out = _f(u, pts, rear, mem, pose)
+    out = _f(u, pts, mem, pose)
     log.append((u, DL.hit_distance(pts, k), DL.hit_distance(pts, 0.0),
                 "dir" in (mem or {}), out[0], out[1], len(pts)))
     return out
