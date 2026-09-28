@@ -28,11 +28,10 @@ import numpy as np
 from sim.episode import V_CRUISE
 
 R_MAX = math.radians(90.0)    # yaw-rate limit of the airframe
-# m: nothing allowed nearer than this.  Body radius 0.25 m (the collision
-# test's clearance) plus 0.2 m.  It was 0.8, chosen when the drone could
-# still be doing 2 m/s at a wall; the speed law now floors speed at 0.1 m/s
-# by 1.5 m ahead, so stopping takes millimetres, and 0.8 m over a +-60 deg
-# cone made door jambs read as "blocked" and turned doorways into dead ends.
+# m: every curve must be able to stop this far short of the first echo on
+# it.  Body radius 0.25 m (the collision test's clearance) plus 0.2 m.  It
+# was 0.8, and over a +-60 deg cone that made door jambs read as "blocked"
+# and turned doorways into dead ends.
 D_STOP = 0.45
 V_TURN = 0.3                  # m/s: slower than this is not moving
 # SPEED COMES FROM A PREDICTED COLLISION, NOT FROM PROXIMITY.
@@ -100,8 +99,13 @@ K_GRID = np.linspace(-R_MAX / V_TURN, R_MAX / V_TURN, 81)
 # a swerve needs: at 2.0 a wall 1.5 m ahead cost straight-on 1.0 while the
 # clearing curve (k 1.0) cost 1.3, and the closer the wall the worse that
 # trade got, so the drone flew on until it had to stop.  At 4.0 the swerve
-# starts ~2.5 m out with k ~0.3.  3 m is 1.5 s at cruise: flies turn away from a looming surface
-# well before contact, and so should the drone.
+# starts ~2.5 m out with k ~0.3.  3 m is 1.5 s at cruise: flies turn away
+# from a looming surface well before contact, and so should the drone.
+#
+# ponytail: a direction no beam covers counts as free.  With 1-3 beams (no
+# side or rear beams) a swerve can head into a wall that was never sensed;
+# the 2 s echo memory covers only walls already seen.  If low-beam flights
+# collide after swerving, restrict the curves to the sensed sector.
 SWERVE_D = 3.0
 SWERVE_W = 4.0
 # Changing the chosen curve from one cycle to the next also costs, or a

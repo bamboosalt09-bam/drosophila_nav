@@ -1,17 +1,18 @@
 """Fly the projection-neuron subnetwork in a closed room, over sensor counts.
 
 The fly PROPOSES, the drone disposes (sim.drone_layer.follow): the circuit
-gives an intended turn and a threat level per side, and one drone layer --
-the same for every arm -- turns that into a flyable path.  Range sensors are
-swept 0/1/3/6/12/24 to find how few the whole thing needs.
+gives an intended turn, and one drone layer -- the same for every arm --
+modifies it into a path the drone can fly without hitting anything.  Range
+sensors are swept 0/1/3/6/12/24 to find how few the whole thing needs.
+Inputs: docs/HANDOFF.md, "INPUTS -- the current spec".
 
 34,125 neurons, the optic lobe replaced by a fisheye camera wired straight
 into the visual projection neurons by their measured receptive fields.
 54.5 ms per control step against 120 ms, and a readout four orders of
 magnitude larger than the lamina-injected version.
 
-Both gain AND zero come from a standing sweep in the room the arm will fly,
-the same procedure the lamina arm used, so the two are comparable.
+Gain and zero come from a beacon swept round the drone in EMPTY space
+(`calibrate`); the goal cue's PFL3 polarity is measured first (`wire_cue`).
 """
 from __future__ import annotations
 
@@ -157,8 +158,8 @@ def calibrate(net, inp, info, w, p0):
     sign.  Avoidance came out as attraction and the arm found 0 of 5.
 
     The anchor is the task instead.  A single beacon in empty space at a
-    known bearing defines which way "toward the goal" is; the odour channel
-    already carries that bearing, so the probe asks only whether the
+    known bearing defines which way "toward the goal" is; the goal cue
+    (PFL3) already carries that bearing, so the probe asks only whether the
     circuit's output agrees in sign and how large it is.  No obstacle
     appears in the calibration at all, so whatever the circuit does with
     obstacles is its own and is never scored against a formula.

@@ -245,6 +245,19 @@ bias ≈ −9 °/s on vision and threat (the circuit's own; input totals are
 equal).  Open for the user: what to do with the dead gyro input; whether
 the relative strengths (threat ≈ 2× vision) are what is wanted.
 
+### DRONE LAYER — the current spec (2026-09-28; supersedes the table below)
+
+`sim/drone_layer.follow(u, pts, mem, pose)`.  User: the drone must MODIFY
+the fly's sharp turns and wall-risking moves within realistic limits.
+Every cycle, among 81 curves (straight to a 0.19 m radius) plus the fly's
+own, drop those slower than 0.3 m/s and take the one minimising
+`|k − k_fly| + 4·max(0, 1 − free/3 m) + 0.3·|k − k_last|`, flown at the
+fastest speed that stops 0.45 m short of the first echo on it (brake
+2 m/s², ≤ 2 m/s, ≤ 90 °/s).  A wall across the path starts a swerve ~2.5 m
+out.  Boxed in: turn on the spot one way until a curve opens.  **No
+reversing.**  Echoes remembered 2 s.  Known risk: unsensed directions count
+as free, so 1–3 beams can swerve into an unseen wall.  Not flown yet.
+
 ### Version history (room 6 unless stated; "found" of the reachable beacons)
 
 Keep this table growing.  Each version changed the listed things and nothing
