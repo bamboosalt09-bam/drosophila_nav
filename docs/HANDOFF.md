@@ -293,6 +293,29 @@ x up to +15.6; Windows: 87%, −23 °/s, x ≤ −8.3).  So the orbit is not a
 trap every flight falls into: a sub-centimetre difference decides it.  The
 98% of v17 is one realisation.  `sweep_v17linux_*`, `paths_room6_v17linux`.
 
+**FIXED — Linux now flies the Windows flight (user: "리눅스-윈도우 저 문제부터
+해결").**  Located by switching one thing at a time against the Windows
+`paths_room6_v17.npz` (Linux itself was deterministic: repeat run and 1
+thread both bit-identical to the first Linux run):
+
+| change on Linux | connectome vs Windows | centroid vs Windows |
+|---|---|---|
+| none | differs from step 8 (1e-9 m), > 1 cm at 574 | step 487, 6 cm at end |
+| torch CPU capability avx2 / default | unchanged | unchanged |
+| numpy AVX-512 off | unchanged | unchanged |
+| **MKL_ENABLE_INSTRUCTIONS=AVX2** | **identical, all 1,200 steps** | unchanged |
+| + fisheye built without -ffast-math | identical | step 1007, max 1e-6 m |
+
+Cause 1: MKL's sparse matvec (the circuit) picks its kernel by CPU —
+AVX-512 on the cloud Xeon, AVX2 on the PC — and the two sum in a different
+order.  Pinned in code (`os.environ.setdefault` before torch loads, in
+`core/flywire_rate.py`, `sensors/vp_input.py`, `cx_vp_room.py`); no slower
+(73–76 s vs 81 s).  Cause 2: g++ -ffast-math reorders more than MSVC
+/fp:fast; the Linux extension is now built with -O3 only.  The 1e-6
+residue in the centroid arm is libm (glibc vs MSVC runtime sin/atan2) and
+would need a shared math library in both builds — not done.  Verified in
+room 6 only (the only room with a current Windows reference).
+
 ### Version history (room 6 unless stated; "found" of the reachable beacons)
 
 Keep this table growing.  Each version changed the listed things and nothing

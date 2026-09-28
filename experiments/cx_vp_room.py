@@ -25,6 +25,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
+import os
+os.environ.setdefault("MKL_ENABLE_INSTRUCTIONS", "AVX2")  # see flywire_rate.py
 import numpy as np
 import pandas as pd
 import torch

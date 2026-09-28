@@ -82,7 +82,7 @@ neither MSVC nor the 2 GB connectome is needed.  Watch a flight with
 `experiments/live_view.py` and `--live` (see `CLAUDE.md`).
 
 On Linux (the cloud sessions), Python 3.13: the repo also carries
-`_fisheye.cpython-313-x86_64-linux-gnu.so` (g++ 13, `-O3 -ffast-math`; rebuild
+`_fisheye.cpython-313-x86_64-linux-gnu.so` (g++ 13, `-O3`, no fast-math; rebuild
 with `.venv/bin/python src/sensors/_fisheye_cpp/build.py`).
 
 ```bash
@@ -92,9 +92,9 @@ PYTHONPATH=src .venv/bin/python -m sim.drone_layer
 .venv/bin/python experiments/cx_vp_room.py --room 6
 ```
 
-It reproduces v17 exactly for planner and centroid; the connectome flight
-matches to < 1 cm for 57 s, then diverges (float order differs; paths are
-chaotic).  Room-6 run: 91 s on 4 cores.
+Room 6 v17 on Linux: connectome and planner bit-identical to Windows over
+all 1,200 steps, centroid within 1e-6 m (MKL pinned to AVX2 in
+`core/flywire_rate.py`; see HANDOFF).  Room-6 run: ~90 s on 4 cores.
 
 Where the work stands and how to resume: `docs/HANDOFF.md` (start with
 "INPUTS" and "DRONE LAYER" in the 2026-09-28 section), `CLAUDE.md` for a

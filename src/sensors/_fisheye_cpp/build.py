@@ -14,8 +14,13 @@ from setuptools import setup
 
 HERE = Path(__file__).resolve().parent
 
+# No -ffast-math on Linux: it reorders arithmetic more than MSVC's /fp:fast,
+# and the centroid arm in room 6 then parted from the Windows flight at step
+# 487 (by 6 cm at the end).  With plain -O3 it stays within 1e-6 m of Windows
+# for all 1,200 steps and the connectome/planner arms are bit-identical.
+# The residue is libm (glibc vs the MSVC runtime), not fixable from here.
 extra = ["/O2", "/fp:fast", "/D_USE_MATH_DEFINES"] if sys.platform == "win32" \
-    else ["-O3", "-ffast-math"]
+    else ["-O3"]
 
 setup(
     name="_fisheye",

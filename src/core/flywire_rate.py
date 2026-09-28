@@ -26,6 +26,14 @@ from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
+# Same numbers on every machine.  The circuit's sparse matvec runs in MKL,
+# which picks its kernel by CPU: AVX-512 in the cloud, AVX2 on the Windows
+# PC.  The two sum in a different order, the flights part at 1e-9 m by step
+# 8 and by metres after 57 s (chaos).  Pinned to AVX2, room 6 v17 on Linux
+# is bit-identical to Windows for all 1,200 steps; no slower.  Must be set
+# before torch loads MKL.
+import os
+os.environ.setdefault("MKL_ENABLE_INSTRUCTIONS", "AVX2")
 import torch
 import torch.nn as nn
 

@@ -20,6 +20,8 @@ from __future__ import annotations
 import math
 
 import numpy as np
+import os
+os.environ.setdefault("MKL_ENABLE_INSTRUCTIONS", "AVX2")  # see flywire_rate.py
 import torch
 
 from sensors.fisheye import FisheyeCamera
