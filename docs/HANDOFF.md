@@ -373,7 +373,17 @@ after: no cue +3.2; pillar ahead −35 → **−20**; pair −23 → **−16**; 
 45° L/R sum −27 → **−18**; but corridor −26 → **−34** and beacon ±60° sum
 +16 → **+34**.  Equal input does not give a symmetric turn: what remains
 is the circuit's own response asymmetry.  Kept, because equal input is the
-correct rule regardless; not yet flown.
+correct rule regardless.
+
+**v13 = equal input, flown in room 6** (`sweep_v13_*`): connectome
+5/6/5/5/5/5 for 0/1/3/6/12/24 beams, no collisions (v11: 0c/5/6/6/5/5).
+The first half of every route is now the same clockwise tour; 3 and 6
+beams lost the 6th beacon, 1 beam got it.  The left-pillar orbit now
+appears at 0, 3, 12 and 24 beams, turns 89–100% RIGHT after 70 s.
+**It happens at 0 beams too, where the threat input is zero** — so the
+orbit is driven by VISION's asymmetric response to walls (corridor −34
+°/s), not by threat.  Input distribution cannot fix it; the mirror twin
+(below) would.
 
 **Decision for the user:** a *mirror twin* — run a second copy of the
 circuit on the mirror image of every input (camera flipped, beams flipped,
