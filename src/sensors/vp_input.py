@@ -6,7 +6,8 @@ the pixel its ommatidium points at.  The optic lobe between them is not
 simulated, because this rate model has no reason to reproduce what it
 computes and measurement says it got the sign wrong when it tried.
 
-The ORN cue is the strongest bright blob (winner-take-all), see fisheye.sense.
+The attraction cue (the strongest bright blob, see fisheye.sense) goes to
+PFL3 as a goal bearing, push-pull -- see CUE_GAIN.
 
 ponytail: every projection neuron gets the same quantity -- local contrast.
 Their real specialisations (LPLC2 looming, LC11 small objects, ...) are not
@@ -168,23 +169,44 @@ GYRO_BASE = 1.0
 # neurons -- the same starvation of weak paths seen in the optic lobe.
 
 
+# THE VIRTUAL ATTRACTION CUE GOES TO PFL3, not to the ORNs.
+#
+# ORN (5 glomerular types) barely reaches the steering neurons DNa01/02:
+# odour alone, beacon 60 deg left, turned the drone at most +3.8 deg/s at
+# any strength, and 0.0 at the strength a beacon has at 10-25 m.  It had
+# been measured strong only against the old pooled 1,304-DN readout; after
+# steering moved to DNa01/02 nobody re-measured it, so from v2 to v14 every
+# pull toward a goal came from VISION of the bright beacon alone, which
+# walls outvote (room 6: a beacon at +105 deg for 6 s, the drone flying
+# away).  PFL3 is the central complex's goal -> steering output
+# (Westeinde et al. 2024, this project's Stage 0 core, PFL3 -> DNa02):
+# one-sided at 0.02/cell it turns the drone ~72 deg/s.
+#
+# Push-pull by bearing, split per side by cell count (7 left, 6 right).
+# Which side turns which way is MEASURED by the runner (`wire_cue`), not
+# assumed; the default below is the last measurement (right PFL3 turned
+# the drone left, +2,741 deg/s at 1/cell).
+# Strength is a detection confidence that saturates with the blob's
+# mass, m / (m + CUE_HALF): the raw mass falls as 1/d^2 and at 10 m was
+# 0.003 -- too little to matter anywhere.  CUE_HALF is a beacon's mass at
+# 25 m, where the strength is one half.
+CUE_GAIN = 0.01               # drive per cell at strength 1, bearing 0
+CUE_HALF = 0.0007
+
+
 class VPInput:
     """Build the drive vector for a projection-neuron-injected subnetwork."""
 
     def __init__(self, net, ann, info, drive_gain: float = 0.20,
-                 orn_gain: float = 200.0, cue_types=("ORN_DA1", "ORN_VM2",
-                                                     "ORN_VA1v", "ORN_DC3",
-                                                     "ORN_VA6"),
                  fixed_strength=None):
         self.net, self.ann = net, ann
-        self.drive_gain, self.orn_gain = drive_gain, orn_gain
-        # None means the odour's strength is its MASS, i.e. how much of the
-        # field is brighter than sky.  A constant here made "every beacon is
-        # occluded" -- where the rectified centroid returns (0.0, 0.0) --
-        # indistinguishable from "the goal is dead ahead", because ORN still
-        # drove at full strength claiming bearing zero.  A room with
-        # unreachable beacons is exactly that condition.
+        self.drive_gain = drive_gain
+        # None: strength from the blob's mass (0 when no beacon is in view).
+        # A constant made "every beacon is occluded" indistinguishable from
+        # "the goal is dead ahead"; a room with unreachable beacons is
+        # exactly that condition.
         self.fixed_strength = fixed_strength
+        self.cue_gain = CUE_GAIN
         self.cam = FisheyeCamera()
 
         self.vp_rows = info["vp_rows"]
@@ -213,11 +235,11 @@ class VPInput:
 
         ct = ann["cell_type"].astype(str).to_numpy(dtype="<U48")
         side = ann["side"].to_numpy(dtype="<U16")
-        is_orn = np.array([any(c.startswith(t) for t in cue_types) for c in ct])
-        self.orn_l = np.flatnonzero(is_orn & (side == "left"))
-        self.orn_r = np.flatnonzero(is_orn & (side == "right"))
-        self.orn_scale_l = 1.0 / max(len(self.orn_l), 1)
-        self.orn_scale_r = 1.0 / max(len(self.orn_r), 1)
+        is_pfl3 = ct == "PFL3"
+        self.pfl3_l = np.flatnonzero(is_pfl3 & (side == "left"))
+        self.pfl3_r = np.flatnonzero(is_pfl3 & (side == "right"))
+        # rows whose drive turns the drone LEFT / RIGHT (set by wire_cue)
+        self.cue_left, self.cue_right = self.pfl3_r, self.pfl3_l
         # Threat goes to each LC4/LPLC2 cell in ITS OWN receptive direction.
         # It used to be one number per side, given alike to all 311 of them
         # -- two cell types and every viewing direction lumped into one
@@ -258,15 +280,15 @@ class VPInput:
         scene = r["unlit"].ravel()  # the lamp is NEVER in the steering image
         cen = self.cam.rangefinder.centres
         a_l, a_r = threat_level(beams_m, cen, self.speed)
-        # THE ODOUR CHANNEL IS NOT THE VISION CHANNEL.  ORN gets the bearing
-        # of the strongest bright blob only -- "where is the goal"; "what is
-        # in the way" is left to the visual injection.  Feeding ORN the
-        # signed centroid once handed the circuit a finished steering command
-        # through a second modality.
+        # THE CUE IS NOT THE VISION CHANNEL.  It carries the bearing of the
+        # strongest bright blob only -- "where is the goal"; "what is in
+        # the way" is left to the visual injection.  Feeding it the signed
+        # centroid once handed the circuit a finished steering command
+        # through a second route.
         scent, scent_mass = r["scent"], r["scent_mass"]
         frac = float(np.clip(scent / (self.cam.az_span / 2), -1.0, 1.0))
-        s = (scent_mass if self.fixed_strength is None
-             else self.fixed_strength)
+        s = (scent_mass / (scent_mass + CUE_HALF)
+             if self.fixed_strength is None else self.fixed_strength)
         # gyro: opposing push-pull on JO; + yaw is a LEFT turn
         g = float(np.clip(-self.yaw_rate / GYRO_FULL, -1.0, 1.0))
         d = self._build(scene[self._px], self.thr_az, frac, g, s, beams_m,
@@ -320,10 +342,11 @@ class VPInput:
             s_cell = np.zeros(len(self.thr_rows))
         d[self.thr_rows] += torch.from_numpy(
             (THREAT_GAIN * self._thr_w * s_cell).astype(np.float32))[:, None]
-        base = self.orn_gain * s
-        # odour does not flicker within a control cycle
-        d[self.orn_l, :] = base * (1 + frac) * self.orn_scale_l
-        d[self.orn_r, :] = base * (1 - frac) * self.orn_scale_r
+        # goal bearing, push-pull into PFL3; equal total per side
+        n = 0.5 * (len(self.cue_left) + len(self.cue_right))
+        c = self.cue_gain * s * n
+        d[self.cue_left, :] += c * (1 + frac) / max(len(self.cue_left), 1)
+        d[self.cue_right, :] += c * (1 - frac) / max(len(self.cue_right), 1)
         d[self.jo_l, :] = self.gyro_base * (1 + g) * self.jo_scale_l
         d[self.jo_r, :] = self.gyro_base * (1 - g) * self.jo_scale_r
         return d

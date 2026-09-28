@@ -165,6 +165,36 @@ def calibrate(net, inp, info, w, p0):
     return math.copysign(1.2 / (rng / 2), cc), cc, zero
 
 
+def wire_cue(net, inp, info, p0, probe=0.02):
+    """Which PFL3 side turns the drone LEFT, measured.  Returns deg/s per side.
+
+    Uses a vision-only calibration (cue off, single circuit) to know which
+    readout sign is a left turn, then drives each PFL3 side alone.
+    """
+    keep_gain, keep_twin = inp.cue_gain, inp.twin
+    inp.cue_gain, inp.twin = 0.0, False
+    g0, _, zero0 = calibrate(net, inp, info, None, p0)
+    empty = TargetWorld(target=np.array([300.0, 0.0, 2.0]), obstacles=[])
+
+    def u(rows):
+        v = net.init_state(1)
+        inp.reset()
+        for _ in range(3):
+            d, _ = inp.drive(empty, p0, 0.0)
+            d[rows] += probe
+            v, r = step_circuit(net, v, d)
+        return math.degrees(g0 * (steer(inp, r) - zero0))
+
+    u0 = u(np.array([], dtype=int))
+    ul, ur = u(inp.pfl3_l) - u0, u(inp.pfl3_r) - u0
+    if ur > ul:                       # right PFL3 turns the drone left
+        inp.cue_left, inp.cue_right = inp.pfl3_r, inp.pfl3_l
+    else:
+        inp.cue_left, inp.cue_right = inp.pfl3_l, inp.pfl3_r
+    inp.cue_gain, inp.twin = keep_gain, keep_twin
+    return ul, ur
+
+
 def _finish(ag, w, rem, found, first, k):
     """Beacon bookkeeping shared by both loops."""
     i = ag.world.reached_any(ag.p)
@@ -306,6 +336,9 @@ def main(argv=None) -> int:
     n_ok = sum(reach)
     # steering calibration is beacon-only -- no obstacle, so no echo in any
     # layout -- and is done once
+    ul, ur = wire_cue(net, inp, info, p0)
+    print("goal cue -> PFL3: left side alone turns %+.0f, right %+.0f deg/s"
+          % (ul, ur), flush=True)
     gain, cc, zero = calibrate(net, inp, info, w, p0)
     print("steering calibration: sweep r %+.2f, gain %.2e" % (cc, gain),
           flush=True)

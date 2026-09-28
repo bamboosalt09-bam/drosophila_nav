@@ -1,4 +1,4 @@
-"""Re-create one moment of a saved flight and split the intended turn.
+﻿"""Re-create one moment of a saved flight and split the intended turn.
 
 usage: diag_pose.py VER BEAMS T   (room 6, connectome path)
 Static: the circuit settles 3 cycles from rest at that pose, twin on, with
@@ -27,6 +27,7 @@ inp = VPInput(net, ann, info)
 inp.twin = True
 net.freeze_params(5.0)
 w, h, reach = room(6)
+C.wire_cue(net, inp, info, np.array(C.START))
 gain, cc, zero = C.calibrate(net, inp, info, w, np.array(C.START))
 inp.cam.rangefinder = Rangefinder(inp.cam.a, LAYOUTS[BEAMS])
 P = np.load(REPO / "results" / ("paths_room6_%s.npz" % VER))["b%d_connectome" % BEAMS]
@@ -55,7 +56,7 @@ def u(drop=()):
 
 
 full, tr = u()
-orn = np.r_[inp.orn_l, inp.orn_r]
+orn = np.r_[inp.cue_left, inp.cue_right]      # the goal cue (PFL3)
 vis = np.setdiff1d(inp.vp_rows, inp.thr_rows)
 print("%s %d beams, t=%.1f s: pos (%.1f, %.1f) heading %+.0f deg, speed %.1f m/s"
       % (VER, BEAMS, T, p[0], p[1], math.degrees(hd), inp.speed))

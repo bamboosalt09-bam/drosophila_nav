@@ -421,6 +421,22 @@ path of Westeinde 2024, this project's own Stage 0 core; PFL3 one-sided
 moves DNa01/02 by ~3,000 °/s at 1/cell), instead of ORN.  HANDOFF already
 listed ORN vs goal representation as an open modelling choice.
 
+**v15 = goal cue into PFL3 (user: "PFL3로 옮기고").**  ORN injection
+removed; the cue (strongest blob's bearing) pushes/pulls PFL3, split per
+side by count, strength `m/(m + CUE_HALF)` (CUE_HALF = a beacon's mass at
+25 m), `CUE_GAIN = 0.01`/cell.  Polarity measured each run by
+`cx_vp_room.wire_cue` (this run: left PFL3 alone −88, right +70 °/s → right
+PFL3 carries "goal on the left").  Static check at the v14 fly-away pose:
+cue alone +37.8 °/s toward the beacon (ORN gave 0.0), total +49.
+Room 6 (`sweep_v15_*`): connectome 0c/5/5/5/5/5; every beam count 1–24
+now flies the SAME tour (right-side beacons, bottom row, bottom-left);
+turning 16–32 °/m (v14 15–45), zig-zag flips roughly halved, speed up
+to 1.6–1.7 m/s, corr 0.16–0.45 (v14 0.10–0.39; predicted > 0.5, only
+partly met).  Remaining: the 6th beacon behind the upper partition is
+never found — once nothing is in view the drone wanders the lower half and
+never goes round the left end.  24 beams lost the 6/6 of v14.  0 beams
+still hits the partition at 3 s.
+
 (Superseded proposal, kept for the record:) a *mirror twin* — run a second copy of the
 circuit on the mirror image of every input (camera flipped, beams flipped,
 odour and gyro sign-flipped) and steer on `(u − u_mirror)/2`.  Exact

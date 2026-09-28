@@ -1,0 +1,34 @@
+﻿
+34125 neurons, 1086631 edges (0 s); threat in: 311 LC4/LPLC2 cells by direction; escape out L5 R5; steer from DNa01/02 
+L2 R2
+goal cue -> PFL3: left side alone turns -88, right +70 deg/s
+steering calibration: sweep r -0.78, gain -4.47e+03
+
+beams arm          reach'ble   walled  collided  steps  stopped  dist m
+    0 connectome        0/6         0      True     32       0%     6.0
+    0 planner           5/6         0      True    504       0%   100.4
+    0 centroid          3/6         0      True    251       0%    48.0
+      (14 s; escape base L0.000 R0.000, peak L0.229 R0.177)
+    1 connectome        5/6         0     False   1200       5%   194.8
+    1 planner           5/6         0     False   1200      28%   143.3
+    1 centroid          4/6         0     False   1200       2%   223.2
+      (81 s; escape base L0.000 R0.000, peak L0.229 R0.177)
+    3 connectome        5/6         0     False   1200       1%   207.9
+    3 planner           5/6         0     False   1200      30%   141.0
+    3 centroid          4/6         0     False   1200       2%   221.6
+      (88 s; escape base L0.000 R0.000, peak L0.229 R0.177)
+    6 connectome        5/6         0     False   1200       4%   192.2
+    6 planner           5/6         0     False   1200      26%   147.7
+    6 centroid          4/6         0     False   1200       1%   226.3
+      (93 s; escape base L0.000 R0.000, peak L0.229 R0.177)
+   12 connectome        5/6         0     False   1200       2%   202.3
+   12 planner           5/6         0     False   1200      25%   147.3
+   12 centroid          4/6         0     False   1200       2%   221.4
+      (85 s; escape base L0.000 R0.000, peak L0.229 R0.177)
+   24 connectome        5/6         0     False   1200       1%   199.9
+   24 planner           5/6         0     False   1200      26%   148.0
+   24 centroid          4/6         0     False   1200       2%   222.6
+      (98 s; escape base L0.000 R0.000, peak L0.229 R0.177)
+wrote sweep_beams_room6.csv
+
+
