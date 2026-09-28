@@ -302,7 +302,17 @@ My answer (agreed in substance, awaiting their choice):
    changes.  Targets the cause, no geometric threshold.
 
 Recommended: remove the geometric alternation, try (2) alone on room 6, then
-(1) separately.  **Nothing is implemented yet.**  After that, finish 2D with
+(1) separately.  **Nothing is implemented yet.**
+
+**UPDATE, same day — (2) is refuted before running it.**
+`diag/diag_odour.py` re-rendered the looping flights: after the fifth
+beacon the odour cue is **exactly zero for the rest of the flight** (v11 12
+beams: none after t = 65 s; v9 24 beams: none after t = 78.6 s).  Beacon 2 is
+never visible from the corridor.  Nothing pulls; there is nothing to adapt
+to.  The loop is what the circuit does **with no cue at all** — a standing
+turn bias under vision + threat alone.  Next step proposed to the user:
+log the intended turn during the loop (is it a constant offset?) before
+choosing a fix.  After that, finish 2D with
 the proper evaluation: rooms 0/5/6/7 × 4 start headings × beams 1/6/24 ×
 alternation on/off, then path efficiency (path length / shortest path).
 
