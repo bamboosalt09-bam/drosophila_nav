@@ -112,7 +112,6 @@ def calibrate_threat(net, inp, p0):
     on the beam layout, and sparse coverage correctly reads as less threat.
     """
     from sensors.vp_input import THREAT_GAIN
-    inp.yaw_rate = 0.0
     far = np.array([300.0, 0.0, 2.0])
     empty = TargetWorld(target=far, obstacles=[])
     side = inp.ann["side"].astype(str).to_numpy()[inp.thr_rows]
@@ -167,7 +166,6 @@ def calibrate(net, inp, info, w, p0):
     ponytail: two free numbers, sign and scale, from a clean probe.  If the
     day comes that these are trained rather than probed, delete this.
     """
-    inp.yaw_rate = 0.0          # static probes: no rotation, and none left over
     from environment.target_world import TargetWorld
     vals = []
     for brg in range(-120, 121, 15):
@@ -262,7 +260,6 @@ def fly(net, inp, info, w, heading, gain, zero, base, peak):
     mem = {}                               # drone-layer state, per flight
     thr_sum = 0.0
     for k in range(MAX_STEPS):
-        inp.yaw_rate = ag.plant.r          # the gyro reads the real plant
         d, tr = inp.drive(ag.world, ag.p, ag.heading)
         v, r = step_circuit(net, v, d)
         # the INTENDED turn, not clipped: the drone layer decides what of it

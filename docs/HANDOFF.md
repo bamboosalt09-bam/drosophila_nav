@@ -221,7 +221,14 @@ world-frame obstacle memory.  Flights are 120 s (1,200 steps).
 
 ### INPUTS — the current spec (2026-09-28, after the cleanup; read this, not the history)
 
-Four sensors, four routes, one strength each.  No mirror twin, no ORN.
+Three inputs, three routes, one strength each.  No mirror twin, no ORN,
+no gyro (removed at the user's word, "biological route, or none": via JO it
+did 0.2 deg/s; the biological route is the haltere -- 205 afferents,
+entryNerve DMetaN, subclass "haltere", no direct synapse onto DNa01/02 but
+2,489 via 98 relays (PS059, AN02A002, PS013, GNG100) -- and only 2 of them
+are in this brain-only subnet, so putting it back means rebuilding the
+subnet with the haltere afferents as a second input population).  After the
+gyro's removal: vision −22.7/+13.5, threat −45.0/+36.0, cue +20.9/−25.1.
 Measured alone, same baseline, stimulus left / right (`diag/diag_inputs.py`,
 u in deg/s, + = left):
 

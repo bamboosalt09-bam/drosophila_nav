@@ -8,7 +8,7 @@ deg/s (+ = left) through the runner's own calibration.
     vision  a pillar 2.5 m away at +-45 deg, standing (no looming)
     threat  the same pillar approached at 2 m/s, 12 beams, threat part only
     cue     a beacon 10 m away at +-60 deg, the PFL3 goal cue only
-    gyro    turning at +-90 deg/s, the JO part only
+    (gyro: removed 2026-09-28 -- via JO it measured -0.2 / +0.2 deg/s)
 """
 import math
 import sys
@@ -37,13 +37,13 @@ far = np.array([300.0, 0.0, 2.0])
 x0, y0 = p0[0], p0[1]
 
 
-def drive(world, speed=0.0, yaw=0.0, cue=0.0):
+def drive(world, speed=0.0, cue=0.0):
     """The stationary drive for one condition (two frames, so no ramp)."""
-    inp.speed, inp.yaw_rate, inp.cue_gain = speed, yaw, cue
+    inp.speed, inp.cue_gain = speed, cue
     inp.reset()
     inp.drive(world, p0, 0.0)
     d, _ = inp.drive(world, p0, 0.0)
-    inp.speed, inp.yaw_rate, inp.cue_gain = 2.0, 0.0, CUE_GAIN
+    inp.speed, inp.cue_gain = 2.0, CUE_GAIN
     return d
 
 
@@ -86,17 +86,14 @@ for sign in (1, -1):
     wb = beacon(sign)
     cue = drive(wb, cue=CUE_GAIN) - drive(wb)         # the PFL3 part
     rows.append(("cue", sign, only(cue)))
-    gyr = drive(empty, yaw=math.radians(90) * sign) - base
-    rows.append(("gyro", sign, only(gyr)))
 
 print("baseline u %+.1f deg/s; calibration gain %.3g; PFL3 wiring L %+.0f R %+.0f"
       % (u0, gain, ul, ur))
 print("\n%-7s %14s %14s %10s   %s" % ("input", "stim LEFT", "stim RIGHT", "L+R", "expected"))
 expect = {"vision": "away from the pillar (L-, R+)",
           "threat": "away from the pillar (L-, R+)",
-          "cue": "toward the beacon (L+, R-)",
-          "gyro": "against the rotation (L-, R+)"}
-for name in ("vision", "threat", "cue", "gyro"):
+          "cue": "toward the beacon (L+, R-)"}
+for name in ("vision", "threat", "cue"):
     a = [u for n, s, u in rows if n == name and s == 1][0]
     b = [u for n, s, u in rows if n == name and s == -1][0]
     print("%-7s %+12.1f %+14.1f %+10.1f   %s" % (name, a, b, a + b, expect[name]))

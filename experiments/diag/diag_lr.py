@@ -16,7 +16,7 @@ side = ann["side"].astype(str).to_numpy()
 ct = ann["cell_type"].astype(str).to_numpy()
 az = np.full(net.n, np.nan)
 az[inp.vp_rows] = inp.vp_az
-for name, l, r in (("PFL3 goal cue", inp.pfl3_l, inp.pfl3_r), ("JO gyro", inp.jo_l, inp.jo_r),
+for name, l, r in (("PFL3 goal cue", inp.pfl3_l, inp.pfl3_r), 
                    ("steer DNa01/02", inp.steer_l, inp.steer_r),
                    ("PFL3", inp.pfl3_l, inp.pfl3_r)):
     print("%-15s left %4d  right %4d" % (name, len(l), len(r)))

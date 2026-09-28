@@ -108,7 +108,7 @@ def mirror_weights(az, band=MIRROR_BAND):
     often differ in number (LC4+LPLC2 are 165 left vs 146 right), so the
     same stimulus on the other side arrived stronger or weaker purely by
     count.  Each cell's share is scaled by (mean count of the pair) / (its
-    side's count) -- the rule the odour and gyro inputs already follow per
+    side's count) -- the rule the goal cue follows per
     side.  Cells without a direction, or whose mirror band is empty, keep 1.
 
     ponytail: azimuth only; elevation bands are not balanced.
@@ -135,23 +135,15 @@ def threat_level(beams, centres_deg, speed):
     return (float(s[c >= 0].max()) if (c >= 0).any() else 0.0,
             float(s[c <= 0].max()) if (c <= 0).any() else 0.0)
 
-# GYRO -> JOHNSTON'S ORGAN.  The drone's measured yaw rate goes to the JO
-# afferents in the subnetwork (19 cells: JO-EV3 14, JO-FV 3, JO-EV1, JO-ED2_a).
-# Drosophila's main rotation sensor is the halteres, but antennal JO works as
-# a gyroscope in hawkmoths (Sane et al. 2007), and JO carries real weight to
-# the descending neurons here: driven on one side only it moved the steering
-# readout by +202..+436 deg/s (left) and -54..-116 (right), where 7 olfactory
-# channels managed 0.2-10.
-#
-# SIGN is set by what rotation sensing is FOR -- a corrective reflex that
-# opposes the rotation -- not by trial: turning left drives the RIGHT JO
-# harder, and one-sided right JO drive was measured to turn the drive right.
-# Push-pull like the goal odour, normalised per side because the counts are
-# 14:5.  With no rotation both sides get GYRO_BASE, which the static
-# calibration absorbs into `zero`.  GYRO_BASE is a declared setting, chosen
-# for a correction of about a third of the 90 deg/s limit at full rate.
-GYRO_FULL = math.radians(90.0)
-GYRO_BASE = 1.0
+# NO GYRO INPUT (removed 2026-09-28, user: "biological route, or none").
+# The IMU yaw rate went to Johnston's organ, push-pull.  Measured against the
+# pooled 1,304-DN readout it was strong; against DNa01/02 it moved the turn
+# by 0.2 deg/s at 90 deg/s of rotation -- dead since v2.  The fly's real
+# rotation sensor is the haltere: MaleCNS has 205 haltere afferents
+# (entryNerve DMetaN, subclass "haltere"), no direct synapse onto DNa01/02,
+# 2,489 synapses via 98 relay cells (PS059, AN02A002, PS013, GNG100, ...).
+# Only 2 of the 205 are in this brain-only subnet, so using them means
+# rebuilding it -- recorded in docs/HANDOFF.md as the way back in.
 
 # SPONTANEOUS ALTERNATION was here (v8-v11): a push through PFL3 after a
 # full 360 deg turn within 20 s, later only within a 3 m radius.  Removed:
@@ -250,13 +242,6 @@ class VPInput:
         is_esc = np.isin(ct, ESCAPE_TYPES)
         self.esc_l = np.flatnonzero(is_esc & (side == "left"))
         self.esc_r = np.flatnonzero(is_esc & (side == "right"))
-        is_jo = np.char.startswith(ct, "JO")
-        self.jo_l = np.flatnonzero(is_jo & (side == "left"))
-        self.jo_r = np.flatnonzero(is_jo & (side == "right"))
-        self.jo_scale_l = 1.0 / max(len(self.jo_l), 1)
-        self.jo_scale_r = 1.0 / max(len(self.jo_r), 1)
-        self.gyro_base = GYRO_BASE
-        self.yaw_rate = 0.0       # rad/s, set by the runner from the plant
         self.speed = 2.0          # current forward speed, for looming
         self.n_sub = N_SUB
         self._prev_val = None         # last frame's per-neuron drive
@@ -281,16 +266,14 @@ class VPInput:
         frac = float(np.clip(scent / (self.cam.az_span / 2), -1.0, 1.0))
         s = (scent_mass / (scent_mass + CUE_HALF)
              if self.fixed_strength is None else self.fixed_strength)
-        # gyro: opposing push-pull on JO; + yaw is a LEFT turn
-        g = float(np.clip(-self.yaw_rate / GYRO_FULL, -1.0, 1.0))
-        d = self._build(scene[self._px], frac, g, s, beams_m, cen)
+        d = self._build(scene[self._px], frac, s, beams_m, cen)
         return d, {"bearing": r["bearing"], "scent": scent,
                    "scent_mass": scent_mass,
                    "blocked": r["blocked"], "weight": r["weight"],
                    "rear": r["rear"], "threat_in": (a_l, a_r),
                    "beams": beams_m}
 
-    def _build(self, lum, frac, g, s, beams_m, cen):
+    def _build(self, lum, frac, s, beams_m, cen):
         """The drive for one control cycle, one column per sub-step."""
         # contrast, as the lamina transmits it: a uniform scene has no
         # direction in it and must not drive anything
@@ -332,8 +315,6 @@ class VPInput:
         c = self.cue_gain * s * n
         d[self.cue_left, :] += c * (1 + frac) / max(len(self.cue_left), 1)
         d[self.cue_right, :] += c * (1 - frac) / max(len(self.cue_right), 1)
-        d[self.jo_l, :] = self.gyro_base * (1 + g) * self.jo_scale_l
-        d[self.jo_r, :] = self.gyro_base * (1 - g) * self.jo_scale_r
         return d
 
 
