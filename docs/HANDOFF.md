@@ -401,6 +401,26 @@ all 6 in 79 s over 100 m — the best flight so far.  1 beam dropped to 3
 Room-6 sweep now ~9 min (connectome ~2× per step).  Single flights: the
 next step is the multi-room, multi-heading evaluation.
 
+**Why v14 looks "much weirder" (user) — the ODOUR CHANNEL IS DEAD.**
+`diag_compare.py v13 v14`: goal visible longer (cue 0.61–0.75) but the turn
+tracks it less (corr 3 beams 0.42 → 0.18) and zig-zags more.  In the
+12-beam flight a beacon sat at +103…+113° for 6 s (t = 23–29 s) while the
+drone flew away from it.  `diag_pose.py v14 12 T` at t = 22/24/27 s:
+removing the odour changes nothing; odour alone gives +0.0.
+`diag_orn.py`: odour alone, beacon 60° left, versus strength — 0.0 at the
+masses a beacon has at 10–25 m, **at most +3.8 °/s** (strength 0.5), falling
+again above that.  ORN barely reaches DNa01/02.  It was measured strong
+only against the old pooled 1,304-DN readout; nobody re-measured after the
+readout moved to DNa01/02 (v2) — the same silent death as the JO gyro.
+So since v2 **all goal attraction has come from VISION of the bright
+beacon**, which competes with walls; the right bias used to hide it.
+
+Proposal to the user (open): deliver the virtual attraction cue as a
+goal-bearing push-pull into **PFL3** (the central-complex goal → steering
+path of Westeinde 2024, this project's own Stage 0 core; PFL3 one-sided
+moves DNa01/02 by ~3,000 °/s at 1/cell), instead of ORN.  HANDOFF already
+listed ORN vs goal representation as an open modelling choice.
+
 (Superseded proposal, kept for the record:) a *mirror twin* — run a second copy of the
 circuit on the mirror image of every input (camera flipped, beams flipped,
 odour and gyro sign-flipped) and steer on `(u − u_mirror)/2`.  Exact
