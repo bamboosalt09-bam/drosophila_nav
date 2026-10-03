@@ -81,6 +81,7 @@ extension built for CPython 3.13 / win_amd64
 neither MSVC nor the 2 GB connectome is needed.  Watch a flight with
 `experiments/live_view.py` and `--live` (see `CLAUDE.md`).
 
+A short Korean summary of the whole process: `docs/PROGRESS.md`.
 Where the work stands and how to resume: `docs/HANDOFF.md` (start with
 "INPUTS" and "DRONE LAYER" in the 2026-09-28 section), `CLAUDE.md` for a
 new Claude session, and the settled research design in

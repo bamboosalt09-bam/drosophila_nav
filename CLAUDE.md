@@ -1,6 +1,6 @@
 # drosophila_nav — read before doing anything
 
-1. Read `docs/HANDOFF.md`: the goal section, then the **2026-09-28
+1. Skim `docs/PROGRESS.md` (short summary), then read `docs/HANDOFF.md`: the goal section, then the **2026-09-28
    Structure B** section — its "INPUTS" and "DRONE LAYER" specs are the
    current state; the newest entry at its end is the open question.  Then
    "Working with this user".  Do not implement ahead of an open decision.
