@@ -1,0 +1,58 @@
+{
+  "repository": "bamboosalt09-bam/drosophila_nav",
+  "tag": "flight-recovery-2026-10-20",
+  "source_run_date": "2026-10-18",
+  "published_date": "2026-10-20",
+  "raw_source": "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/",
+  "raw_license": "CC-BY; attribution to FlyEM MaleCNS v1.0",
+  "assets": [
+    {
+      "name": "flight_runtime_2026-10-18.tar.gz",
+      "category": "runtime",
+      "cache_path": "recovery_backups/flight_runtime_2026-10-18.tar.gz",
+      "bytes": 104863526,
+      "sha256": "da70270313c844dfc762ccca99d9002bec5b72285b07bb4fa2c9c309bc1f29ed",
+      "url": "https://github.com/bamboosalt09-bam/drosophila_nav/releases/download/flight-recovery-2026-10-20/flight_runtime_2026-10-18.tar.gz"
+    },
+    {
+      "name": "flight_derived_2026-10-18.tar.gz",
+      "category": "derived",
+      "cache_path": "recovery_backups/flight_derived_2026-10-18.tar.gz",
+      "bytes": 192853961,
+      "sha256": "8dc6aa1a01629160af99e6e1cff35af85906faf21f08fee6ef4018fc1776e775",
+      "url": "https://github.com/bamboosalt09-bam/drosophila_nav/releases/download/flight-recovery-2026-10-20/flight_derived_2026-10-18.tar.gz"
+    },
+    {
+      "name": "flight_results_2026-10-18.tar.gz",
+      "category": "results",
+      "cache_path": "recovery_backups/flight_results_2026-10-18.tar.gz",
+      "bytes": 26395912,
+      "sha256": "b45240a60aec47a4fdfd3b2a91bfa5bdacd57ebf12f3fea17462ec504b9100c3",
+      "url": "https://github.com/bamboosalt09-bam/drosophila_nav/releases/download/flight-recovery-2026-10-20/flight_results_2026-10-18.tar.gz"
+    },
+    {
+      "name": "body-annotations-male-cns-v1.0-minconf-0.5.feather",
+      "category": "raw",
+      "cache_path": "data/malecns/body-annotations-male-cns-v1.0-minconf-0.5.feather",
+      "bytes": 14483314,
+      "sha256": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+      "url": "https://github.com/bamboosalt09-bam/drosophila_nav/releases/download/flight-recovery-2026-10-20/body-annotations-male-cns-v1.0-minconf-0.5.feather"
+    },
+    {
+      "name": "body-neurotransmitters-male-cns-v1.0.feather",
+      "category": "raw",
+      "cache_path": "data/malecns/body-neurotransmitters-male-cns-v1.0.feather",
+      "bytes": 43282834,
+      "sha256": "95c9289220663abeb3409f3ad9e5a7f8a53f8093f5139d15502cd08da8879621",
+      "url": "https://github.com/bamboosalt09-bam/drosophila_nav/releases/download/flight-recovery-2026-10-20/body-neurotransmitters-male-cns-v1.0.feather"
+    },
+    {
+      "name": "connectome-weights-male-cns-v1.0-minconf-0.5.feather",
+      "category": "raw",
+      "cache_path": "data/malecns/connectome-weights-male-cns-v1.0-minconf-0.5.feather",
+      "bytes": 1051241946,
+      "sha256": "e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1",
+      "url": "https://github.com/bamboosalt09-bam/drosophila_nav/releases/download/flight-recovery-2026-10-20/connectome-weights-male-cns-v1.0-minconf-0.5.feather"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{"calibration_channel": 0, "channels": 47}
+{"calibration_channel": 8, "channels": 47}
+{"calibration_channel": 16, "channels": 47}
+{"calibration_channel": 24, "channels": 47}
+Traceback (most recent call last):
+  File "/workspace/drosophila_nav/flight_recovery/neural.py", line 89, in <module>
+    if __name__=='__main__':calibrate()
+                            ~~~~~~~~~^^
+  File "/workspace/drosophila_nav/flight_recovery/neural.py", line 65, in calibrate
+    mn=brain.step(v)-75
+       ~~~~~~~~~~^^^
+  File "/workspace/drosophila_nav/flight_recovery/neural.py", line 39, in step
+    recurrent=np.zeros_like(self.delta) if self.cut else self.W@self.delta
+                                                         ~~~~~~^~~~~~~~~~~
+  File "/workspace/drosophila_nav/.venv/lib/python3.13/site-packages/scipy/sparse/_base.py", line 1010, in __matmul__
+    return self._matmul_dispatch(other)
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/workspace/drosophila_nav/.venv/lib/python3.13/site-packages/scipy/sparse/_base.py", line 895, in _matmul_dispatch
+    return self._matmul_vector(other)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/workspace/drosophila_nav/.venv/lib/python3.13/site-packages/scipy/sparse/_compressed.py", line 395, in _matmul_vector
+    fn(M, N, self.indptr, self.indices, self.data, other, result)
+    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

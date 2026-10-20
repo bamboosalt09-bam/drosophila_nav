@@ -1,0 +1,33 @@
+{
+  "force_and_gravity": {
+    "four_rotor_force_torque_max_errors": [
+      4.1359030627651384e-24,
+      4.1359030627651384e-24,
+      4.1359030627651384e-24,
+      4.1359030627651384e-24
+    ],
+    "freefall_100ms_height_error_m": 2.55351295663786e-15,
+    "all_pass": true
+  },
+  "same_step_replay": {
+    "dt_s": 2.5e-05,
+    "samples": 10001,
+    "passive_force": "Same declared drag law evaluated on the replayed body every 2ms",
+    "maximum_position_error_m": 0.0,
+    "maximum_angle_error_deg": 7.82496472061276e-06,
+    "gate_position_m": 0.0001,
+    "gate_angle_deg": 0.1,
+    "all_pass": true
+  },
+  "half_step_replay": {
+    "dt_s": 1.25e-05,
+    "samples": 10001,
+    "passive_force": "Same declared drag law evaluated on the replayed body every 2ms",
+    "maximum_position_error_m": 6.689903093070774e-06,
+    "maximum_angle_error_deg": 0.00015596741082494697,
+    "gate_position_m": 0.0001,
+    "gate_angle_deg": 0.1,
+    "all_pass": true
+  },
+  "all_pass": true
+}

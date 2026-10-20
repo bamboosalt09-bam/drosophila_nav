@@ -1,0 +1,7 @@
+{"batch": 0, "rows": 65536, "kept": 65531}
+{"batch": 400, "rows": 26279936, "kept": 10984157}
+{"batch": 800, "rows": 52494336, "kept": 14825553}
+{"batch": 1200, "rows": 78708736, "kept": 18905140}
+{"batch": 1600, "rows": 104923136, "kept": 22654693}
+{"batch": 2000, "rows": 131137536, "kept": 25052272}
+{"source": "FlyEM MaleCNS v1.0 public flat connectome, CC-BY", "nodes": 211577, "raw_contact_rows": 151856684, "annotated_pairs": 26028386, "signed_pairs": 25214058, "synapses": 125365933, "motor_neurons": 815, "food_ORNs": 223, "all_annotated_sensory": 17937, "graph_orientation": "row postsynaptic, column presynaptic", "gain": 0.9, "normalization": "total unsigned incoming synapses", "histamine_sign": -1, "seconds": 40.31135348999999, "files": {"body-neurotransmitters-male-cns-v1.0.feather": "95c9289220663abeb3409f3ad9e5a7f8a53f8093f5139d15502cd08da8879621", "body-annotations-male-cns-v1.0-minconf-0.5.feather": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2", "connectome-weights-male-cns-v1.0-minconf-0.5.feather": "e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1"}}

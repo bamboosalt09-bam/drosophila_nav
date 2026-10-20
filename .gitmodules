@@ -1,0 +1,3 @@
+[submodule "reference/flybody_recovered"]
+	path = reference/flybody_recovered
+	url = https://github.com/TuragaLab/flybody.git

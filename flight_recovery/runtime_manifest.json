@@ -1,0 +1,120 @@
+{
+  "scope": "Standalone runtime code and required cached graph/readout/body properties; Python environment installed separately",
+  "files": [
+    {
+      "path": "flight_recovery/FLYBODY_LICENSE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "flight_recovery/README.md",
+      "bytes": 1722,
+      "sha256": "2a58d8df5939f71934db77886a8b145146b99db43700a7a473408c1ab6cdae70"
+    },
+    {
+      "path": "flight_recovery/build_graph.py",
+      "bytes": 3555,
+      "sha256": "c4219a79896d9e5774e893652b2d45a543060702538662de6e3b303df4aa08b9"
+    },
+    {
+      "path": "flight_recovery/derived/annotations.parquet",
+      "bytes": 6287734,
+      "sha256": "f98d158064f72587c0a25230b89f916c7e063574e3b963a07583c55e86a9b2b0"
+    },
+    {
+      "path": "flight_recovery/derived/binding.npz",
+      "bytes": 840951,
+      "sha256": "66cbf792e63242d56eadc34d61e5384059edcc5ec577cb537d3361b87e938653"
+    },
+    {
+      "path": "flight_recovery/derived/flybody_mass_properties.npz",
+      "bytes": 655,
+      "sha256": "f2c6c420fbaea1fb59d29c100b25c2737f9410d4583d9df2145464b57bac1924"
+    },
+    {
+      "path": "flight_recovery/derived/flybody_source.json",
+      "bytes": 287,
+      "sha256": "12e13f14e140349f30284a83b901ceb0c7ee07884e6ee5ce73613f01c830ba95"
+    },
+    {
+      "path": "flight_recovery/derived/graph.json",
+      "bytes": 952,
+      "sha256": "27e06ae4e93da6a236167817aaba3ceab78c9b452f7bb3793082f64ba9bc9856"
+    },
+    {
+      "path": "flight_recovery/derived/operator.npz",
+      "bytes": 99320283,
+      "sha256": "ebabb9155279a79e738142aed72b432073b9d6521c94c2fe9a96629f3a898465"
+    },
+    {
+      "path": "flight_recovery/derived/readout.json",
+      "bytes": 1872,
+      "sha256": "7601ed4215c438329aa8a6b613545a661c26ed656d89639cb0eb802f015edbaa"
+    },
+    {
+      "path": "flight_recovery/derived/readout.npz",
+      "bytes": 48181,
+      "sha256": "48d8b2e300c6efd95186f16d38b0642c14953bec8ac11dbb1fdf1d3d75fbca7d"
+    },
+    {
+      "path": "flight_recovery/derived/readout_search.json",
+      "bytes": 1407,
+      "sha256": "2c5151b7a8e6f417647f06c8f77eb519253e57a5610a58ed0c169d5406028cf7"
+    },
+    {
+      "path": "flight_recovery/neural.py",
+      "bytes": 6744,
+      "sha256": "c733261558d7a70849bd2dd5939f57458640892766ea0fb1e87f13918bb42739"
+    },
+    {
+      "path": "flight_recovery/plant.py",
+      "bytes": 5651,
+      "sha256": "fbe37ba44ece523d282121c44e01be483957b0e8f603054bf11cca6f0a315f6a"
+    },
+    {
+      "path": "flight_recovery/requirements.txt",
+      "bytes": 90,
+      "sha256": "770a4b6c9a5d44127dbba6e11eb34ec8f9bd96bfa75d48dbdc0cef3040750415"
+    },
+    {
+      "path": "flight_recovery/run.py",
+      "bytes": 6081,
+      "sha256": "4d3d9d41f750d6d48d436d615a6096a40eca0a78bc845e557d7f8157bb252767"
+    },
+    {
+      "path": "flight_recovery/summarize.py",
+      "bytes": 9532,
+      "sha256": "b5c0183df7d2b20be000792e180e6239e1a8f76ecc01ac85848cf19ef33e67b6"
+    },
+    {
+      "path": "flight_recovery/three.min.js",
+      "bytes": 651651,
+      "sha256": "3b3a1c97de3ce65ec5b28c28d9f2805a738e9651622691ba771aa95c79d41d51"
+    },
+    {
+      "path": "flight_recovery/validate_viewer.js",
+      "bytes": 2555,
+      "sha256": "361375f18a94a7fca3179a077aabcd1f3f8836fab2f00f33733aba8dcd47c141"
+    },
+    {
+      "path": "flight_recovery/verify_physics.py",
+      "bytes": 2963,
+      "sha256": "32fa138ae60916a29e8d1bab491c73126c156b58d85c850799f6ec80f32812a0"
+    },
+    {
+      "path": "flight_recovery/verify_readout.py",
+      "bytes": 1766,
+      "sha256": "4fa556d8a85f01d15ac637a6bce25a2a3f54d728136a9736d5d399cd6cf2243b"
+    },
+    {
+      "path": "flight_recovery/viewer_template.html",
+      "bytes": 5810,
+      "sha256": "a65efff953d3c2bfb132ac328a00a7148affde51c8e3a59ff979af6b7e8c05e8"
+    },
+    {
+      "path": "scripts/get_malecns.py",
+      "bytes": 1485,
+      "sha256": "0cb51783388001015337c55f658e56d5027434036f22adde22ef493d713af316"
+    }
+  ]
+}

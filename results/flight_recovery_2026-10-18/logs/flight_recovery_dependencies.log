@@ -1,0 +1,205 @@
+Collecting dm_control
+  Downloading dm_control-1.0.49-py3-none-any.whl.metadata (1.5 kB)
+Requirement already satisfied: absl-py>=0.7.0 in ./.venv/lib/python3.13/site-packages (from dm_control) (2.5.0)
+Collecting dm-env (from dm_control)
+  Downloading dm_env-1.6-py3-none-any.whl.metadata (966 bytes)
+Collecting dm-tree!=0.1.2 (from dm_control)
+  Downloading dm_tree-0.1.10-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (2.6 kB)
+Requirement already satisfied: glfw in ./.venv/lib/python3.13/site-packages (from dm_control) (2.10.2)
+Collecting labmaze (from dm_control)
+  Downloading labmaze-1.0.6.tar.gz (4.7 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.7/4.7 MB 19.8 MB/s  0:00:00
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Collecting lxml (from dm_control)
+  Downloading lxml-6.1.3-cp313-cp313-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl.metadata (3.3 kB)
+Collecting mujoco>=3.16.0 (from dm_control)
+  Downloading mujoco-3.16.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (232 kB)
+Requirement already satisfied: numpy>=1.9.0 in ./.venv/lib/python3.13/site-packages (from dm_control) (2.5.3)
+Collecting protobuf>=3.19.4 (from dm_control)
+  Downloading protobuf-7.36.2-cp310-abi3-manylinux2014_x86_64.whl.metadata (595 bytes)
+Requirement already satisfied: pyopengl>=3.1.4 in ./.venv/lib/python3.13/site-packages (from dm_control) (3.1.10)
+Requirement already satisfied: pyparsing>=3.0.0 in ./.venv/lib/python3.13/site-packages (from dm_control) (3.3.3)
+Collecting requests (from dm_control)
+  Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+Requirement already satisfied: setuptools!=50.0.0 in ./.venv/lib/python3.13/site-packages (from dm_control) (78.1.0)
+Requirement already satisfied: scipy in ./.venv/lib/python3.13/site-packages (from dm_control) (1.18.1)
+Collecting tqdm (from dm_control)
+  Downloading tqdm-4.70.1-py3-none-any.whl.metadata (57 kB)
+Collecting attrs>=18.2.0 (from dm-tree!=0.1.2->dm_control)
+  Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+Collecting wrapt>=1.11.2 (from dm-tree!=0.1.2->dm_control)
+  Downloading wrapt-2.5.1-cp313-cp313-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (7.6 kB)
+Requirement already satisfied: etils[epath] in ./.venv/lib/python3.13/site-packages (from mujoco>=3.16.0->dm_control) (1.14.0)
+Collecting websockets>=13 (from mujoco>=3.16.0->dm_control)
+  Downloading websockets-17.2-cp313-cp313-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (6.3 kB)
+Requirement already satisfied: fsspec in ./.venv/lib/python3.13/site-packages (from etils[epath]->mujoco>=3.16.0->dm_control) (2026.7.0)
+Requirement already satisfied: typing_extensions in ./.venv/lib/python3.13/site-packages (from etils[epath]->mujoco>=3.16.0->dm_control) (4.16.0)
+Requirement already satisfied: zipp in ./.venv/lib/python3.13/site-packages (from etils[epath]->mujoco>=3.16.0->dm_control) (4.1.0)
+Collecting charset_normalizer<4,>=2 (from requests->dm_control)
+  Downloading charset_normalizer-3.5.2-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (46 kB)
+Collecting idna<4,>=2.5 (from requests->dm_control)
+  Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Collecting urllib3<3,>=1.26 (from requests->dm_control)
+  Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+Collecting certifi>=2023.5.7 (from requests->dm_control)
+  Downloading certifi-2026.7.22-py3-none-any.whl.metadata (2.5 kB)
+Downloading dm_control-1.0.49-py3-none-any.whl (56.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 56.5/56.5 MB 18.0 MB/s  0:00:03
+Downloading dm_tree-0.1.10-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (186 kB)
+Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+Downloading mujoco-3.16.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (30.6 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 30.6/30.6 MB 24.1 MB/s  0:00:01
+Downloading protobuf-7.36.2-cp310-abi3-manylinux2014_x86_64.whl (343 kB)
+Downloading websockets-17.2-cp313-cp313-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (225 kB)
+Downloading wrapt-2.5.1-cp313-cp313-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (248 kB)
+Downloading dm_env-1.6-py3-none-any.whl (26 kB)
+Downloading lxml-6.1.3-cp313-cp313-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl (5.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.2/5.2 MB 19.9 MB/s  0:00:00
+Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+Downloading charset_normalizer-3.5.2-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (254 kB)
+Downloading idna-3.20-py3-none-any.whl (69 kB)
+Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
+Downloading tqdm-4.70.1-py3-none-any.whl (80 kB)
+Building wheels for collected packages: labmaze
+  Building wheel for labmaze (pyproject.toml): started
+  Building wheel for labmaze (pyproject.toml): finished with status 'error'
+  error: subprocess-exited-with-error
+  
+  × Building wheel for labmaze (pyproject.toml) did not run successfully.
+  │ exit code: 1
+  ╰─> [120 lines of output]
+      running bdist_wheel
+      running build
+      running build_py
+      creating build/lib.linux-x86_64-cpython-313/labmaze
+      copying labmaze/text_grid_test.py -> build/lib.linux-x86_64-cpython-313/labmaze
+      copying labmaze/text_grid.py -> build/lib.linux-x86_64-cpython-313/labmaze
+      copying labmaze/random_maze_test.py -> build/lib.linux-x86_64-cpython-313/labmaze
+      copying labmaze/random_maze.py -> build/lib.linux-x86_64-cpython-313/labmaze
+      copying labmaze/fixed_maze_test.py -> build/lib.linux-x86_64-cpython-313/labmaze
+      copying labmaze/fixed_maze.py -> build/lib.linux-x86_64-cpython-313/labmaze
+      copying labmaze/defaults.py -> build/lib.linux-x86_64-cpython-313/labmaze
+      copying labmaze/base.py -> build/lib.linux-x86_64-cpython-313/labmaze
+      copying labmaze/__init__.py -> build/lib.linux-x86_64-cpython-313/labmaze
+      creating build/lib.linux-x86_64-cpython-313/labmaze/cc
+      copying labmaze/cc/__init__.py -> build/lib.linux-x86_64-cpython-313/labmaze/cc
+      creating build/lib.linux-x86_64-cpython-313/labmaze/assets
+      copying labmaze/assets/assets_test.py -> build/lib.linux-x86_64-cpython-313/labmaze/assets
+      copying labmaze/assets/__init__.py -> build/lib.linux-x86_64-cpython-313/labmaze/assets
+      creating build/lib.linux-x86_64-cpython-313/labmaze/cc/python
+      copying labmaze/cc/python/__init__.py -> build/lib.linux-x86_64-cpython-313/labmaze/cc/python
+      creating build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/style_03/wall_blue_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/style_03/wall_purple_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      creating build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_02
+      copying labmaze/assets/sky_02/lf.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_02
+      creating build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_01
+      copying labmaze/assets/sky_01/lf.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_01
+      creating build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_03
+      copying labmaze/assets/sky_03/rt.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_03
+      copying labmaze/assets/style_03/wall_cyan_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      creating build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/style_01/wall_cerise_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/sky_03/bk.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_03
+      copying labmaze/assets/style_01/floor_blue_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/sky_01/up.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_01
+      copying labmaze/assets/sky_03/up.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_03
+      copying labmaze/assets/style_03/wall_orange_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/style_03/floor_green_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/style_01/wall_blue_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      creating build/lib.linux-x86_64-cpython-313/labmaze/assets/style_04
+      copying labmaze/assets/style_04/floor_blue_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_04
+      creating build/lib.linux-x86_64-cpython-313/labmaze/assets/style_02
+      copying labmaze/assets/style_02/wall_blue_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_02
+      copying labmaze/assets/sky_01/dn.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_01
+      copying labmaze/assets/style_01/wall_light_m.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/sky_03/ft.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_03
+      copying labmaze/assets/style_04/floor_orange_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_04
+      copying labmaze/assets/style_02/wall_lgreen_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_02
+      copying labmaze/assets/style_02/floor_orange_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_02
+      copying labmaze/assets/style_02/floor_green_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_02
+      copying labmaze/assets/style_03/floor_green_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/style_03/floor_light2_m.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/style_01/floor_blue_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/style_03/wall_gray_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/sky_02/up.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_02
+      creating build/lib.linux-x86_64-cpython-313/labmaze/assets/style_05
+      copying labmaze/assets/style_05/floor_light1_m.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_05
+      copying labmaze/assets/sky_02/ft.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_02
+      copying labmaze/assets/style_01/wall_red_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/style_04/floor_dorange_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_04
+      copying labmaze/assets/style_02/floor_blue_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_02
+      copying labmaze/assets/sky_02/rt.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_02
+      copying labmaze/assets/style_02/wall_blue_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_02
+      copying labmaze/assets/style_04/floor_orange_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_04
+      copying labmaze/assets/style_01/wall_green_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/style_03/floor_light3_m.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/sky_01/rt.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_01
+      copying labmaze/assets/style_05/floor_blue_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_05
+      copying labmaze/assets/style_05/wall_yellow_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_05
+      copying labmaze/assets/sky_01/ft.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_01
+      copying labmaze/assets/style_04/floor_blue_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_04
+      copying labmaze/assets/style_01/wall_yellow_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/style_03/floor_blue_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/style_05/floor_blue_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_05
+      copying labmaze/assets/style_05/floor_orange_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_05
+      copying labmaze/assets/style_03/floor_orange_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/style_05/wall_red_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_05
+      copying labmaze/assets/style_03/floor_light1_m.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/sky_02/dn.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_02
+      copying labmaze/assets/style_05/floor_orange_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_05
+      copying labmaze/assets/style_03/wall_orange_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/style_04/floor_cyan_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_04
+      copying labmaze/assets/style_02/wall_yellow_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_02
+      copying labmaze/assets/style_02/wall_dblue_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_02
+      copying labmaze/assets/style_01/4tile_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/style_02/floor_blue_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_02
+      copying labmaze/assets/style_05/floor_light2_m.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_05
+      copying labmaze/assets/style_02/wall_yellow_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_02
+      copying labmaze/assets/style_01/wall_purple_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/style_03/wall_gray_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/style_01/wall_red_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/sky_02/bk.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_02
+      copying labmaze/assets/style_03/floor_blue_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/style_05/wall_yellow_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_05
+      copying labmaze/assets/style_01/floor_orange_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/style_04/wall_purple_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_04
+      copying labmaze/assets/style_05/wall_red_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_05
+      copying labmaze/assets/style_04/wall_green_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_04
+      copying labmaze/assets/style_03/wall_light_m.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/style_01/floor_light_m.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/style_04/wall_cerise_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_04
+      copying labmaze/assets/style_01/ceiling_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/style_02/wall_purple_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_02
+      copying labmaze/assets/style_02/floor_light_m.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_02
+      copying labmaze/assets/sky_03/dn.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_03
+      copying labmaze/assets/style_03/floor_red_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/style_01/floor_orange_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/style_04/wall_red_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_04
+      copying labmaze/assets/sky_03/lf.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_03
+      copying labmaze/assets/style_01/floor_blue_team_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/style_01/floor_red_team_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/style_04/wall_red_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_04
+      copying labmaze/assets/style_01/wall_green_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_01
+      copying labmaze/assets/style_03/floor_purple_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_03
+      copying labmaze/assets/style_02/floor_green_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_02
+      copying labmaze/assets/sky_01/bk.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/sky_01
+      copying labmaze/assets/style_04/wall_green_bright_d.png -> build/lib.linux-x86_64-cpython-313/labmaze/assets/style_04
+      running build_ext
+      bazel build //labmaze/cc/python:_defaults --symlink_prefix=build/temp.linux-x86_64-cpython-313/bazel- --compilation_mode=opt
+      error: command 'bazel' failed: No such file or directory
+      [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+  ERROR: Failed building wheel for labmaze
+Failed to build labmaze
+error: failed-wheel-build-for-install
+
+× Failed to build installable wheels for some pyproject.toml based projects
+╰─> labmaze

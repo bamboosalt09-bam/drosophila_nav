@@ -1,0 +1,13 @@
+{
+  "force_and_gravity": {
+    "four_rotor_force_torque_max_errors": [
+      4.1359030627651384e-24,
+      4.1359030627651384e-24,
+      4.1359030627651384e-24,
+      4.1359030627651384e-24
+    ],
+    "freefall_100ms_height_error_m": 2.55351295663786e-15,
+    "all_pass": true
+  },
+  "all_pass": true
+}

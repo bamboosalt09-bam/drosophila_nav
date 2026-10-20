@@ -1,0 +1,8 @@
+{
+  "source": "https://github.com/TuragaLab/flybody",
+  "commit": "d015e9bfe441bd90ae431bac24c55cb74bdbce26",
+  "xml_sha256": "d14946fd0311025ecca70c8eeb5de80e1fe18700d3072be37ecbb18d33d80fd8",
+  "pose": "Native qpos0",
+  "native_units": "g, cm, s",
+  "mass_kg": 9.846214691323196e-07
+}

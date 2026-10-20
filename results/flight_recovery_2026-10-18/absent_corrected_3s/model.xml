@@ -1,0 +1,10 @@
+<mujoco model="reconstructed_fly_equivalent">
+      <compiler angle="radian"/><option timestep="2.5e-05" gravity="0 0 -9.81" integrator="RK4"/>
+      <worldbody><geom name="floor" type="plane" size="5 5 .01" rgba=".2 .25 .3 1"/>
+      <geom name="marker" type="sphere" pos="0.2 0.15 0.3" size=".025" rgba=".15 .15 .15 1" contype="0" conaffinity="0"/>
+      <body name="fly_equivalent" pos="0 0 .0011"><freejoint name="root"/>
+      <inertial pos="0 0 0" mass="9.846214691323196e-07" fullinertia="1.907292114466957e-13 6.03683935212589e-13 6.571019857204405e-13 -6.831597201188938e-16 -6.62692954615056e-14 -2.5419240957306156e-17"/>
+      <geom name="massless_skid" type="sphere" size=".0011" mass="0" friction="0 0 0" condim="1" priority="1" solref=".001 1" group="3"/>
+      <site name="imu" size=".0001"/><site name="rotor0" pos="0.0008 0.0008 0" size=".0001"/><site name="rotor1" pos="-0.0008 0.0008 0" size=".0001"/><site name="rotor2" pos="-0.0008 -0.0008 0" size=".0001"/><site name="rotor3" pos="0.0008 -0.0008 0" size=".0001"/></body></worldbody><actuator><general name="rotor0" site="rotor0" gear="0 0 1 0 0 3e-05" dyntype="filterexact" dynprm=".002" ctrllimited="true" ctrlrange="0 7.727309289750445e-06"/><general name="rotor1" site="rotor1" gear="0 0 1 0 0 -3e-05" dyntype="filterexact" dynprm=".002" ctrllimited="true" ctrlrange="0 7.727309289750445e-06"/><general name="rotor2" site="rotor2" gear="0 0 1 0 0 3e-05" dyntype="filterexact" dynprm=".002" ctrllimited="true" ctrlrange="0 7.727309289750445e-06"/><general name="rotor3" site="rotor3" gear="0 0 1 0 0 -3e-05" dyntype="filterexact" dynprm=".002" ctrllimited="true" ctrlrange="0 7.727309289750445e-06"/></actuator>
+      <sensor><gyro name="gyro" site="imu"/><velocimeter name="velocity" site="imu"/><accelerometer name="accel" site="imu"/></sensor>
+      </mujoco>

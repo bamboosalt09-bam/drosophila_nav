@@ -25,3 +25,9 @@ results/live.json.tmp
 # committed on purpose, so a fresh clone runs without the 2 GB connectome or MSVC:
 !src/sensors/_fisheye_cpp/_fisheye.cp313-win_amd64.pyd
 !results/subnet/vp_h4_rho0.50_ol_intrinsic.pkl
+
+# Large reproducible assets are preserved in the GitHub flight-recovery release.
+flight_recovery/derived/operator.npz
+flight_recovery/derived/contacts.npz
+flight_recovery/derived/calibration_responses.npz
+recovery_backups/*.tar.gz

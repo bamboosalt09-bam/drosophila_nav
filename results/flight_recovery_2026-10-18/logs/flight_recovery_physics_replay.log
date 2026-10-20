@@ -1,0 +1,6 @@
+{"force_and_gravity": {"four_rotor_force_torque_max_errors": [4.1359030627651384e-24, 4.1359030627651384e-24, 4.1359030627651384e-24, 4.1359030627651384e-24], "freefall_100ms_height_error_m": 2.55351295663786e-15, "all_pass": true}, "same_step_replay": {"dt_s": 2.5e-05, "samples": 10001, "maximum_position_error_m": 0.0, "maximum_angle_error_deg": 7.82496472061276e-06, "gate_position_m": 0.0001, "gate_angle_deg": 0.1, "all_pass": true}, "half_step_replay": {"dt_s": 1.25e-05, "samples": 10001, "maximum_position_error_m": 0.00042666646640440617, "maximum_angle_error_deg": 0.00038030417244023455, "gate_position_m": 0.0001, "gate_angle_deg": 0.1, "all_pass": false}, "all_pass": false}
+Traceback (most recent call last):
+  File "/workspace/drosophila_nav/flight_recovery/verify_physics.py", line 44, in <module>
+    if not result['all_pass']:raise RuntimeError('Physics verification failed')
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Physics verification failed

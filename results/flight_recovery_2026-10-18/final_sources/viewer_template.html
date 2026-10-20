@@ -1,0 +1,39 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>비행 재검증</title>
+<style>body{margin:0;background:#0c1726;color:#dbe5ee;font:16px/1.7 system-ui}main{max-width:1100px;margin:30px auto;padding:20px}h1{font-size:26px}select,button{background:#20394e;color:inherit;padding:10px;border:1px solid #63819b;border-radius:5px}canvas{width:100%;display:block;border-radius:8px}#scene{height:530px;background:#102034}input{width:100%}.note{color:#ffbe80}a{color:#95d5ff}#plot{height:180px}#stats{white-space:pre-line}</style>
+<main><h1>지면 출발 · 실제 물리 비행 재검증</h1>
+<p>측정 감각 → MaleCNS 발화율 모델 → 새로 교정한 출력층 → 4개 대체 추력 → 물리 이동 → 감각 재측정</p>
+<p class="note">지난 실행 파일의 동일 복구가 아닌 원자료 기반 재구성입니다. 학습 출력층·자세 안정기·대체 추력을 사용하며 자연 날갯짓 비행의 검증은 아닙니다.</p>
+<p>몸체는 숨겼습니다. 흰 점은 기록된 질량중심, 주황 선은 실제 궤적, 초록 구는 고정 표식입니다.</p>
+<select id="trial"></select> <button id="play">재생</button> <button id="reset">처음</button>
+<p id="result"></p><canvas id="scene"></canvas><input id="time" type="range" min="0" max="1000" value="0"><p>드래그: 회전 · 휠: 확대/축소</p>
+<div id="stats"></div><canvas id="plot" width="1100" height="180"></canvas>
+<p><a href="results.md">검증 결과·재실행 방법</a> · <a href="summary.json">전체 수치</a></p></main>
+<script>__THREE__</script><script>
+const DATA=__DATA__, $=s=>document.getElementById(s);
+const renderer=new THREE.WebGLRenderer({canvas:$('scene'),antialias:true});renderer.setPixelRatio(devicePixelRatio);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x102034);
+const camera=new THREE.PerspectiveCamera(45,2,.0001,30);
+scene.add(new THREE.GridHelper(1.2,24,0x6489a0,0x25475d));
+const xyz=v=>new THREE.Vector3(v[0],v[2],-v[1]);
+const target=new THREE.Mesh(new THREE.SphereGeometry(.025,24,16),new THREE.MeshBasicMaterial({color:0x65d999,wireframe:true}));target.name='fixed_marker';scene.add(target);
+const point=new THREE.Mesh(new THREE.SphereGeometry(.0025,12,12),new THREE.MeshBasicMaterial({color:0xffffff}));point.name='position_point';scene.add(point);
+let path=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xffae46}));path.name='measured_path';scene.add(path);
+let row,index=0,running=false,at=0,base=0,az=.9,el=.55,radius=.9,focus=new THREE.Vector3(.1,.13,-.07);
+for(const d of DATA){const o=document.createElement('option');o.value=d.name;o.textContent=d.label;$('trial').appendChild(o)}
+function look(){camera.position.copy(focus).add(new THREE.Vector3(radius*Math.cos(el)*Math.cos(az),radius*Math.sin(el),radius*Math.cos(el)*Math.sin(az)));camera.lookAt(focus)}
+function select(){row=DATA.find(d=>d.name===$('trial').value);target.position.copy(xyz(row.target));target.visible=!row.absent;index=0;running=false;$('play').textContent='재생';
+ path.geometry.dispose();path.geometry=new THREE.BufferGeometry().setFromPoints(row.p.map(xyz));
+ $('result').textContent=`${row.duration.toFixed(1)}초 기록 · 연속 무접촉 ${row.airborne.toFixed(3)}초 · 마지막 높이 ${(row.height*100).toFixed(2)}cm`;draw()}
+function draw(){const t=row.t[index];point.position.copy(xyz(row.p[index]));path.geometry.setDrawRange(0,index+1);$('time').value=index/(row.t.length-1)*1000;
+ $('stats').textContent=`시간 ${t.toFixed(3)}초 · 높이 ${(row.p[index][2]*100).toFixed(2)}cm\n기울기 ${row.tilt[index].toFixed(4)}° · ${row.contact[index]?'지면 접촉':'무접촉'} · 추력/체중 ${row.force[index].toFixed(4)}`;
+ const c=$('plot').getContext('2d');c.clearRect(0,0,1100,180);const max=Math.max(.05,...row.p.map(p=>p[2]));c.strokeStyle='#ffae46';c.beginPath();row.t.forEach((v,i)=>{const x=35+1030*v/row.duration,y=155-130*row.p[i][2]/max;i?c.lineTo(x,y):c.moveTo(x,y)});c.stroke();c.fillStyle='#b6c9da';c.fillText(`높이: 0–${(max*100).toFixed(1)}cm`,35,18);c.fillText('0초',35,176);c.fillText(row.duration+'초',1020,176);c.strokeStyle='#d8e7f0';c.beginPath();const x=35+1030*t/row.duration;c.moveTo(x,25);c.lineTo(x,155);c.stroke();}
+$('trial').onchange=select;$('time').oninput=()=>{running=false;index=Math.round(+$('time').value/1000*(row.t.length-1));$('play').textContent='재생';draw()};
+$('play').onclick=()=>{if(index===row.t.length-1)index=0;running=!running;at=performance.now();base=row.t[index];$('play').textContent=running?'일시정지':'재생'};
+$('reset').onclick=()=>{running=false;index=0;$('play').textContent='재생';draw()};
+let drag=null;$('scene').onpointerdown=e=>{drag=[e.clientX,e.clientY];e.target.setPointerCapture(e.pointerId)};$('scene').onpointerup=()=>drag=null;
+$('scene').onpointermove=e=>{if(drag){az-=(e.clientX-drag[0])*.006;el=Math.max(.02,Math.min(1.5,el+(e.clientY-drag[1])*.006));drag=[e.clientX,e.clientY];look()}};
+$('scene').onwheel=e=>{e.preventDefault();radius=Math.min(8,Math.max(.08,radius*Math.exp(e.deltaY*.001)));look()};
+function frame(){requestAnimationFrame(frame);const w=$('scene').clientWidth,h=$('scene').clientHeight;if(renderer.domElement.width!==Math.round(w*devicePixelRatio)||renderer.domElement.height!==Math.round(h*devicePixelRatio)){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+ if(running){const t=Math.min(row.duration,base+(performance.now()-at)/1000);while(index+1<row.t.length&&row.t[index+1]<=t)index++;if(t>=row.duration){running=false;$('play').textContent='재생'}draw()}renderer.render(scene,camera)}
+select();look();frame();window.flightViewer={DATA,scene,camera,get row(){return row},get index(){return index}};
+</script></html>

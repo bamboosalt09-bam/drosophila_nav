@@ -1,0 +1,65 @@
+[
+  {
+    "threshold": 1e-08,
+    "rank": 263,
+    "ridge": 0.0001,
+    "target_error": 0.16164811741306961,
+    "nuisance_error": 0.0009369303963921993
+  },
+  {
+    "threshold": 1e-08,
+    "rank": 263,
+    "ridge": 1e-06,
+    "target_error": 0.010104942721754995,
+    "nuisance_error": 0.0055733789786245325
+  },
+  {
+    "threshold": 1e-08,
+    "rank": 263,
+    "ridge": 1e-08,
+    "target_error": 0.0007272605741164284,
+    "nuisance_error": 0.04698671612777616
+  },
+  {
+    "threshold": 1e-10,
+    "rank": 339,
+    "ridge": 0.0001,
+    "target_error": 0.20593819246946587,
+    "nuisance_error": 1.2518589528554003e-05
+  },
+  {
+    "threshold": 1e-10,
+    "rank": 339,
+    "ridge": 1e-06,
+    "target_error": 0.01188493253154177,
+    "nuisance_error": 6.938799651834415e-05
+  },
+  {
+    "threshold": 1e-10,
+    "rank": 339,
+    "ridge": 1e-08,
+    "target_error": 0.0008537299396031983,
+    "nuisance_error": 0.0005526301974896342
+  },
+  {
+    "threshold": 1e-12,
+    "rank": 414,
+    "ridge": 0.0001,
+    "target_error": 0.2640014081003381,
+    "nuisance_error": 1.4729755548614776e-07
+  },
+  {
+    "threshold": 1e-12,
+    "rank": 414,
+    "ridge": 1e-06,
+    "target_error": 0.013325179928672437,
+    "nuisance_error": 1.3023582141613588e-06
+  },
+  {
+    "threshold": 1e-12,
+    "rank": 414,
+    "ridge": 1e-08,
+    "target_error": 0.001081432283078776,
+    "nuisance_error": 5.516223609447479e-06
+  }
+]
