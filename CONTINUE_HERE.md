@@ -1,6 +1,6 @@
 # 여기서 작업을 이어가십시오
 
-현재 비행 재구성의 코드는 `flight_recovery/`, 검증 결과는 `results/flight_recovery_2026-10-18/`에 있습니다. 저장소 기본 브랜치와 GitHub Release를 함께 사용하여 다른 환경에서 이어갈 수 있습니다.
+현재 비행 재구성의 코드는 `flight_recovery/`, 검증 결과는 `results/flight_recovery_2026-10-18/`에 있습니다. 저장소 기본 브랜치와 별도의 데이터 태그(Release에서 안내)를 함께 사용하여 다른 환경에서 이어갈 수 있습니다.
 
 1. `python flight_recovery/restore_artifacts.py`로 실행 캐시를 내려받으십시오. 파일별 SHA256을 검사합니다.
 2. `flight_recovery/requirements.txt`의 Python 의존성을 준비하십시오. 검증 환경은 Python 3.13.15입니다.

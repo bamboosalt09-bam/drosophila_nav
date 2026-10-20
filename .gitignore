@@ -31,3 +31,4 @@ flight_recovery/derived/operator.npz
 flight_recovery/derived/contacts.npz
 flight_recovery/derived/calibration_responses.npz
 recovery_backups/*.tar.gz
+recovery_backups/github_chunks/

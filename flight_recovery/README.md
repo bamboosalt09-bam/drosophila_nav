@@ -2,8 +2,9 @@
 
 For a fresh clone, first run `python flight_recovery/restore_artifacts.py` to
 restore the hash-verified graph/body/readout cache from the repository's GitHub
-release. Source and measured results are tracked in Git. Larger assets are
-preserved in [the release](https://github.com/bamboosalt09-bam/drosophila_nav/releases/tag/flight-recovery-2026-10-20).
+artifact tag. Source and measured results are tracked in Git. Larger assets are
+preserved in [the independent data tag](https://github.com/bamboosalt09-bam/drosophila_nav/tree/flight-artifacts-2026-10-20),
+linked from [the release](https://github.com/bamboosalt09-bam/drosophila_nav/releases/tag/flight-recovery-2026-10-20).
 See [CONTINUE_HERE.md](../CONTINUE_HERE.md) for the handoff and
 [recovery_backups/README.md](../recovery_backups/README.md) for all download options.
 

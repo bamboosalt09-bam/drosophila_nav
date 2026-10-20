@@ -1,4 +1,4 @@
-2026-10-20 보존·인계: 최신 비행 재구성은 `flight_recovery/`이며, 시작점은 [CONTINUE_HERE.md](CONTINUE_HERE.md)입니다. 새 clone에서는 `python flight_recovery/restore_artifacts.py`로 실행 캐시를 복원하십시오. 대용량 캐시·원자료·원본 백업은 [GitHub Release](https://github.com/bamboosalt09-bam/drosophila_nav/releases/tag/flight-recovery-2026-10-20)에 보존합니다.
+2026-10-20 보존·인계: 최신 비행 재구성은 `flight_recovery/`이며, 시작점은 [CONTINUE_HERE.md](CONTINUE_HERE.md)입니다. 새 clone에서는 `python flight_recovery/restore_artifacts.py`로 실행 캐시를 복원하십시오. 대용량 캐시·원자료·원본 백업은 같은 저장소의 [데이터 태그](https://github.com/bamboosalt09-bam/drosophila_nav/tree/flight-artifacts-2026-10-20)에 보존하며 [Release](https://github.com/bamboosalt09-bam/drosophila_nav/releases/tag/flight-recovery-2026-10-20)에서 안내합니다.
 
 2026-10-18 비행 재검증: 이전 `nav_v2` 결과는 현재 작업공간에서 찾지 못해, 공개 MaleCNS/Flybody 원자료로 대체 추력 비행 모델을 새로 재구성했습니다. 두 조건의 20초 지면 출발 시험, 신경 차단·표식 없음·비행 중 모터 차단 대조와 물리 재생을 검증했습니다. 이번 결과는 [비행 재검증 보고서](results/flight_recovery_2026-10-18/results.md), 실행 방법은 [flight_recovery/README.md](flight_recovery/README.md)에 있습니다. 과거 실행과의 동일 복원이나 자연 날갯짓 비행의 검증은 아닙니다. 아래는 기존 연구 기록입니다.
 

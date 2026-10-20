@@ -1,4 +1,4 @@
-"""Restore hash-verified flight artifacts from the repository's GitHub release.
+"""Restore hash-verified flight artifacts from the repository's GitHub data tag.
 
 Default: the runtime's graph/body/readout cache only. Historical source files in
 the runtime backup never overwrite the current checked-out source code.
@@ -30,7 +30,20 @@ def fetch(asset, root):
         raise RuntimeError('Existing file differs; preserving it: ' + str(destination))
     partial = destination.with_name(destination.name + '.restore.part')
     print('Downloading:', asset['name'], flush=True)
-    urllib.request.urlretrieve(asset['url'], partial)
+    if asset.get('parts'):
+        with partial.open('wb') as output:
+            for part in asset['parts']:
+                piece = destination.parent / (destination.name + '.' + part['name'] + '.restore.part')
+                print('  Part:', part['name'], flush=True)
+                urllib.request.urlretrieve(part['url'], piece)
+                if piece.stat().st_size != part['bytes'] or sha256(piece) != part['sha256']:
+                    piece.unlink(missing_ok=True)
+                    raise RuntimeError('Part checksum mismatch: ' + part['name'])
+                with piece.open('rb') as source:
+                    shutil.copyfileobj(source, output)
+                piece.unlink()
+    else:
+        urllib.request.urlretrieve(asset['url'], partial)
     if partial.stat().st_size != asset['bytes'] or sha256(partial) != asset['sha256']:
         partial.unlink(missing_ok=True)
         raise RuntimeError('Asset checksum mismatch: ' + asset['name'])

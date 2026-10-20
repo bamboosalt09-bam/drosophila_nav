@@ -12,7 +12,32 @@
       "cache_path": "recovery_backups/flight_runtime_2026-10-18.tar.gz",
       "bytes": 104863526,
       "sha256": "da70270313c844dfc762ccca99d9002bec5b72285b07bb4fa2c9c309bc1f29ed",
-      "url": "https://github.com/bamboosalt09-bam/drosophila_nav/releases/download/flight-recovery-2026-10-20/flight_runtime_2026-10-18.tar.gz"
+      "parts": [
+        {
+          "name": "part-0000.bin",
+          "bytes": 33554432,
+          "sha256": "ce06bf04a7d806f56169ed4d81c441cc377134bb3d19194cb6797b659dcfe369",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/flight_runtime_2026-10-18.tar.gz/part-0000.bin"
+        },
+        {
+          "name": "part-0001.bin",
+          "bytes": 33554432,
+          "sha256": "21cd7b21cd843306b43b96303290120886d18e74c0405f5802cc6129874a5d3c",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/flight_runtime_2026-10-18.tar.gz/part-0001.bin"
+        },
+        {
+          "name": "part-0002.bin",
+          "bytes": 33554432,
+          "sha256": "b088701ebf108c1e0054a806c6f939059c9492b076b7c8eda35c3aa05186ef82",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/flight_runtime_2026-10-18.tar.gz/part-0002.bin"
+        },
+        {
+          "name": "part-0003.bin",
+          "bytes": 4200230,
+          "sha256": "ee27c81ef51e1f18996a4051c6f84c0d17b9eb5a3dae60c685eb4b047854a443",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/flight_runtime_2026-10-18.tar.gz/part-0003.bin"
+        }
+      ]
     },
     {
       "name": "flight_derived_2026-10-18.tar.gz",
@@ -20,7 +45,44 @@
       "cache_path": "recovery_backups/flight_derived_2026-10-18.tar.gz",
       "bytes": 192853961,
       "sha256": "8dc6aa1a01629160af99e6e1cff35af85906faf21f08fee6ef4018fc1776e775",
-      "url": "https://github.com/bamboosalt09-bam/drosophila_nav/releases/download/flight-recovery-2026-10-20/flight_derived_2026-10-18.tar.gz"
+      "parts": [
+        {
+          "name": "part-0000.bin",
+          "bytes": 33554432,
+          "sha256": "c838833ed7c41eef52f006cb8724e723d38d591899df29f9ddc015b678a175a4",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/flight_derived_2026-10-18.tar.gz/part-0000.bin"
+        },
+        {
+          "name": "part-0001.bin",
+          "bytes": 33554432,
+          "sha256": "dd144f3eb26847b9d605aee7adfaba51617a765dc4242ccd7417c52578e9863d",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/flight_derived_2026-10-18.tar.gz/part-0001.bin"
+        },
+        {
+          "name": "part-0002.bin",
+          "bytes": 33554432,
+          "sha256": "e1f21d78b0bdcb1a5a7af46a6df817f540560e3d0f8962c431fd4c569b087f24",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/flight_derived_2026-10-18.tar.gz/part-0002.bin"
+        },
+        {
+          "name": "part-0003.bin",
+          "bytes": 33554432,
+          "sha256": "3ac7d66c009c733a03cc137ff52f267fad8fe2d94b38c7ac304b0e97349506fa",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/flight_derived_2026-10-18.tar.gz/part-0003.bin"
+        },
+        {
+          "name": "part-0004.bin",
+          "bytes": 33554432,
+          "sha256": "4eabab138ab112e2ad5c6e350a6822fd9dcc05347b5ca6cb0801da9d02de9a07",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/flight_derived_2026-10-18.tar.gz/part-0004.bin"
+        },
+        {
+          "name": "part-0005.bin",
+          "bytes": 25081801,
+          "sha256": "21f16c4ac156b8ba1745aa02b902153ff907b6e6059878c46d50685ac26ec48c",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/flight_derived_2026-10-18.tar.gz/part-0005.bin"
+        }
+      ]
     },
     {
       "name": "flight_results_2026-10-18.tar.gz",
@@ -28,7 +90,14 @@
       "cache_path": "recovery_backups/flight_results_2026-10-18.tar.gz",
       "bytes": 26395912,
       "sha256": "b45240a60aec47a4fdfd3b2a91bfa5bdacd57ebf12f3fea17462ec504b9100c3",
-      "url": "https://github.com/bamboosalt09-bam/drosophila_nav/releases/download/flight-recovery-2026-10-20/flight_results_2026-10-18.tar.gz"
+      "parts": [
+        {
+          "name": "part-0000.bin",
+          "bytes": 26395912,
+          "sha256": "b45240a60aec47a4fdfd3b2a91bfa5bdacd57ebf12f3fea17462ec504b9100c3",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/flight_results_2026-10-18.tar.gz/part-0000.bin"
+        }
+      ]
     },
     {
       "name": "body-annotations-male-cns-v1.0-minconf-0.5.feather",
@@ -36,7 +105,14 @@
       "cache_path": "data/malecns/body-annotations-male-cns-v1.0-minconf-0.5.feather",
       "bytes": 14483314,
       "sha256": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
-      "url": "https://github.com/bamboosalt09-bam/drosophila_nav/releases/download/flight-recovery-2026-10-20/body-annotations-male-cns-v1.0-minconf-0.5.feather"
+      "parts": [
+        {
+          "name": "part-0000.bin",
+          "bytes": 14483314,
+          "sha256": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/body-annotations-male-cns-v1.0-minconf-0.5.feather/part-0000.bin"
+        }
+      ]
     },
     {
       "name": "body-neurotransmitters-male-cns-v1.0.feather",
@@ -44,7 +120,20 @@
       "cache_path": "data/malecns/body-neurotransmitters-male-cns-v1.0.feather",
       "bytes": 43282834,
       "sha256": "95c9289220663abeb3409f3ad9e5a7f8a53f8093f5139d15502cd08da8879621",
-      "url": "https://github.com/bamboosalt09-bam/drosophila_nav/releases/download/flight-recovery-2026-10-20/body-neurotransmitters-male-cns-v1.0.feather"
+      "parts": [
+        {
+          "name": "part-0000.bin",
+          "bytes": 33554432,
+          "sha256": "120b48f3e90ff6e01dedc27bcd0bd0d312240ac4e39bc2f515833511da0f6b2d",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/body-neurotransmitters-male-cns-v1.0.feather/part-0000.bin"
+        },
+        {
+          "name": "part-0001.bin",
+          "bytes": 9728402,
+          "sha256": "b311d09cc9469fbbc65788c96858244823baae92e96fae5add9a105d441752d3",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/body-neurotransmitters-male-cns-v1.0.feather/part-0001.bin"
+        }
+      ]
     },
     {
       "name": "connectome-weights-male-cns-v1.0-minconf-0.5.feather",
@@ -52,7 +141,202 @@
       "cache_path": "data/malecns/connectome-weights-male-cns-v1.0-minconf-0.5.feather",
       "bytes": 1051241946,
       "sha256": "e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1",
-      "url": "https://github.com/bamboosalt09-bam/drosophila_nav/releases/download/flight-recovery-2026-10-20/connectome-weights-male-cns-v1.0-minconf-0.5.feather"
+      "parts": [
+        {
+          "name": "part-0000.bin",
+          "bytes": 33554432,
+          "sha256": "bcef29eb21d98f48ecd65791f44d708c7a31a2ec88132ca143f633989b4a236e",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0000.bin"
+        },
+        {
+          "name": "part-0001.bin",
+          "bytes": 33554432,
+          "sha256": "5b71bb588817d740a7e72c234f175d93321c3be36ebc936a7f516f9ff02a6de5",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0001.bin"
+        },
+        {
+          "name": "part-0002.bin",
+          "bytes": 33554432,
+          "sha256": "41c391f29e22f7fb85f5e99e0f5248aba48bd3650c076009d7b05571b42e4a08",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0002.bin"
+        },
+        {
+          "name": "part-0003.bin",
+          "bytes": 33554432,
+          "sha256": "b3c67e56a15d8a57ed08641fd0148b5dd812c1d9f7b8e57b10592847b37731f5",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0003.bin"
+        },
+        {
+          "name": "part-0004.bin",
+          "bytes": 33554432,
+          "sha256": "36bbfa61b0b58cccca2bb12fdf9d8f9a2d73e6c136202c89f2d77ac858c9d73f",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0004.bin"
+        },
+        {
+          "name": "part-0005.bin",
+          "bytes": 33554432,
+          "sha256": "61a2d794d17872f972d915c5c5ede75a154474e9d3e0782c32e7d3f43e2f1943",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0005.bin"
+        },
+        {
+          "name": "part-0006.bin",
+          "bytes": 33554432,
+          "sha256": "9910ae7467b3872972667ead5945bed36e5f2485b2cbae2c0a52d0f06ff33c2d",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0006.bin"
+        },
+        {
+          "name": "part-0007.bin",
+          "bytes": 33554432,
+          "sha256": "8cde733aca84514b663bc62f564c6370ce35a979d4fc576847f4c58841a7920e",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0007.bin"
+        },
+        {
+          "name": "part-0008.bin",
+          "bytes": 33554432,
+          "sha256": "8a6dbe3e3c162651db4ec5f657c2923284e358573dd94efeea1f0463c7d4454d",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0008.bin"
+        },
+        {
+          "name": "part-0009.bin",
+          "bytes": 33554432,
+          "sha256": "de7bd188329816b4a193ac3e673310c7099863e139545cc8e74bb0acaec51b72",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0009.bin"
+        },
+        {
+          "name": "part-0010.bin",
+          "bytes": 33554432,
+          "sha256": "6bac6f2bc2b3fb84826710ab9fa7fcbe98e8ef163edc7d61656983a1ebe28b78",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0010.bin"
+        },
+        {
+          "name": "part-0011.bin",
+          "bytes": 33554432,
+          "sha256": "ccae454f60c53ae0ea9ec9df49306a8cf5f3d3eea9df5a1ca7a7056b1916eb87",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0011.bin"
+        },
+        {
+          "name": "part-0012.bin",
+          "bytes": 33554432,
+          "sha256": "0d47da07f09cc3fcf43cabca815a3076a00e2aa9e386de141585bc262a064236",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0012.bin"
+        },
+        {
+          "name": "part-0013.bin",
+          "bytes": 33554432,
+          "sha256": "6ef02c4abe36950d5c16fa8a83f57728e1b30a4235927e7fee3e49bf13f1a719",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0013.bin"
+        },
+        {
+          "name": "part-0014.bin",
+          "bytes": 33554432,
+          "sha256": "f3fe9b4013985ed4effa8d83d877a7994ef863e48ebb613f857e8b72ed8f9310",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0014.bin"
+        },
+        {
+          "name": "part-0015.bin",
+          "bytes": 33554432,
+          "sha256": "2d777225ef4b860e785644f6de389a00dccdd3da5315d0a9135c7b81e33fffcb",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0015.bin"
+        },
+        {
+          "name": "part-0016.bin",
+          "bytes": 33554432,
+          "sha256": "7665be4eb9e0cd5126a53b686133ae28ccdab54d8fdf9ae1824e9752fe7f5bf7",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0016.bin"
+        },
+        {
+          "name": "part-0017.bin",
+          "bytes": 33554432,
+          "sha256": "f2090943e65d18b7b87b2d74401a68761e512cf1ff2d6db2556c4d0eff261de8",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0017.bin"
+        },
+        {
+          "name": "part-0018.bin",
+          "bytes": 33554432,
+          "sha256": "ac24dd77897fa674ba1b19320dc7b1a2b0ba1f625472a6a2add565f1e322f352",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0018.bin"
+        },
+        {
+          "name": "part-0019.bin",
+          "bytes": 33554432,
+          "sha256": "5ab2fe6462ef3446c34765615dd5a3e61af659861f0d0d03867e10b8a0adfb5c",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0019.bin"
+        },
+        {
+          "name": "part-0020.bin",
+          "bytes": 33554432,
+          "sha256": "4f914618d5894f752c60ad8ce64167fc9ed7cceaeb72e4957b9def5e76f09219",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0020.bin"
+        },
+        {
+          "name": "part-0021.bin",
+          "bytes": 33554432,
+          "sha256": "f95f00460cd84e498afb0b631c08c5419632fb8748661514ab1f3ee86d009881",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0021.bin"
+        },
+        {
+          "name": "part-0022.bin",
+          "bytes": 33554432,
+          "sha256": "c891b26bac9332a1e2eece8a02065c4709338a20df76d83ddb7bbb271a64d523",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0022.bin"
+        },
+        {
+          "name": "part-0023.bin",
+          "bytes": 33554432,
+          "sha256": "8562771402bdd54fc33e6de5e8a010d2a41f657cf9fb7582f04eb9aa65ba13ef",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0023.bin"
+        },
+        {
+          "name": "part-0024.bin",
+          "bytes": 33554432,
+          "sha256": "71d6f715209e85cc28e44b2f066d44b06ab8f55fb907cbdc6ebf610d1137b0b3",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0024.bin"
+        },
+        {
+          "name": "part-0025.bin",
+          "bytes": 33554432,
+          "sha256": "4e5dfc2417e6a6e0fb923770b0c021b829bd914d24c33ed5453f4def664fa440",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0025.bin"
+        },
+        {
+          "name": "part-0026.bin",
+          "bytes": 33554432,
+          "sha256": "504bb3620be1d9084d1efdde5fd17b83bdda6901f8c70d2394fdd3a34601054b",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0026.bin"
+        },
+        {
+          "name": "part-0027.bin",
+          "bytes": 33554432,
+          "sha256": "fbfed39e0f3f991a934d6dd8bc81c0105490ff4390962304ac7389549dc6cd34",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0027.bin"
+        },
+        {
+          "name": "part-0028.bin",
+          "bytes": 33554432,
+          "sha256": "cf3775b4570553c5c56ef8e57ff1eb9409e1916810f442b2f52b4279d9d37d0e",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0028.bin"
+        },
+        {
+          "name": "part-0029.bin",
+          "bytes": 33554432,
+          "sha256": "b7c6f3f098648ac5000ed0d23c473b2ccc21053475e062cee8ab006b7867fa33",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0029.bin"
+        },
+        {
+          "name": "part-0030.bin",
+          "bytes": 33554432,
+          "sha256": "254118299fa905c09498a3985c85b5e573de7af239d504fbbf41096c51d75656",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0030.bin"
+        },
+        {
+          "name": "part-0031.bin",
+          "bytes": 11054554,
+          "sha256": "bff8ff7825ed6faa648dd5d6c26b4dbb389c22e613bca414fb81b50db479e34e",
+          "url": "https://raw.githubusercontent.com/bamboosalt09-bam/drosophila_nav/flight-artifacts-2026-10-20/assets/connectome-weights-male-cns-v1.0-minconf-0.5.feather/part-0031.bin"
+        }
+      ]
     }
-  ]
+  ],
+  "storage": "Git blobs split into <=32MiB parts under a separate orphan artifact tag; default source clones do not fetch this independent tag",
+  "artifact_tag": "flight-artifacts-2026-10-20"
 }
