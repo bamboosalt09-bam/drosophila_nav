@@ -1,5 +1,12 @@
 # 여기서 작업을 이어가십시오
 
+코드부터 받으려면 다음처럼 데이터 태그를 제외한 얕은 복제를 사용하십시오. 모든 태그를 포함하는 전체 clone은 대용량 자료도 내려받습니다.
+
+```bash
+git clone --depth 1 --single-branch --branch master --no-tags https://github.com/bamboosalt09-bam/drosophila_nav.git
+cd drosophila_nav
+```
+
 현재 비행 재구성의 코드는 `flight_recovery/`, 검증 결과는 `results/flight_recovery_2026-10-18/`에 있습니다. 저장소 기본 브랜치와 별도의 데이터 태그(Release에서 안내)를 함께 사용하여 다른 환경에서 이어갈 수 있습니다.
 
 1. `python flight_recovery/restore_artifacts.py`로 실행 캐시를 내려받으십시오. 파일별 SHA256을 검사합니다.

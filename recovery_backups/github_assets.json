@@ -337,6 +337,6 @@
       ]
     }
   ],
-  "storage": "Git blobs split into <=32MiB parts under a separate orphan artifact tag; default source clones do not fetch this independent tag",
+  "storage": "Git blobs split into <=32MiB parts under a separate orphan artifact tag. Use a shallow single-branch clone with --no-tags for source-only checkouts.",
   "artifact_tag": "flight-artifacts-2026-10-20"
 }

@@ -1,5 +1,7 @@
 # GitHub와 로컬의 비행 자료
 
+코드만 먼저 받을 때는 `git clone --depth 1 --single-branch --branch master --no-tags https://github.com/bamboosalt09-bam/drosophila_nav.git`를 사용하십시오. 모든 태그를 포함하는 전체 clone은 대용량 데이터 객체도 내려받습니다.
+
 코드·실행 설명·검증 결과는 저장소 기본 브랜치에 기록합니다. 대용량 실행 캐시와 원자료, 원본 압축 백업은 같은 저장소의 [데이터 전용 태그](https://github.com/bamboosalt09-bam/drosophila_nav/tree/flight-artifacts-2026-10-20)에 32MiB 이하 조각으로 보존합니다. [Release 안내](https://github.com/bamboosalt09-bam/drosophila_nav/releases/tag/flight-recovery-2026-10-20)에서도 해당 위치를 찾을 수 있습니다. SHA256과 다운로드 주소는 `github_assets.json`에 있습니다.
 
 새 작업환경에서 저장소를 내려받은 다음 다음 명령으로 실행 캐시를 복원하십시오. Python 표준 라이브러리만 필요하며, 현재 코드 파일을 과거 백업으로 덮어쓰지 않습니다.
